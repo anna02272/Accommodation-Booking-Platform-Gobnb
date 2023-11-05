@@ -1,0 +1,10 @@
+docker-compose up -d 
+docker-compose down
+docker logs <ime_kotenjnera> -f (da vidis uzivo sve logove)
+docker exec -it <idkontejnera> cqlsh
+docker system prune -a
+
+
+ZA SLUCAJ KAD NECE ODMA DA POKRENE KONTEJNER A KREIRA GA (DUGO SE CEKA)
+docker ps -a - da vidis sve kontejnere,i one koji se ne vrte
+docker run <id_kontejnera> - pokreni odredjeni kontejner
