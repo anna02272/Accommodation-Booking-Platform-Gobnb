@@ -1,7 +1,6 @@
-package auth_service
+package main
 
 import (
-	"auth-service/config"
 	"auth-service/handlers"
 	"auth-service/routes"
 	"auth-service/services"
@@ -9,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -33,15 +33,9 @@ var (
 )
 
 func init() {
-	config, err := config.LoadConfig(".")
-	if err != nil {
-		log.Fatal("Could not load environment variables", err)
-	}
-
 	ctx = context.TODO()
 
-	// Connect to MongoDB
-	mongoconn := options.Client().ApplyURI(config.DBUri)
+	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
 	if err != nil {
@@ -55,7 +49,7 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
-	authCollection = mongoclient.Database("golang_mongodb").Collection("users")
+	authCollection = mongoclient.Database("Airbnb").Collection("users")
 	userService = services.NewUserServiceImpl(authCollection, ctx)
 	authService = services.NewAuthService(authCollection, ctx)
 	AuthHandler = handlers.NewAuthHandler(authService, userService)
@@ -67,12 +61,6 @@ func init() {
 }
 
 func main() {
-	config, err := config.LoadConfig(".")
-
-	if err != nil {
-		log.Fatal("Could not load config", err)
-	}
-
 	defer mongoclient.Disconnect(ctx)
 
 	corsConfig := cors.DefaultConfig()
@@ -88,5 +76,10 @@ func main() {
 
 	AuthRouteHandler.AuthRoute(router, userService)
 	UserRouteHandler.UserRoute(router, userService)
-	log.Fatal(server.Run(":" + config.Port))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Fatal(server.Run(":" + port))
 }

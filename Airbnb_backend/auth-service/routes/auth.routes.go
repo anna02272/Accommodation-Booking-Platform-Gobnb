@@ -3,7 +3,6 @@ package routes
 import (
 	"auth-service/handlers"
 	"auth-service/services"
-	"auth-service/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,5 +18,5 @@ func (rc *AuthRouteHandler) AuthRoute(rg *gin.RouterGroup, userService services.
 	router := rg.Group("/auth")
 
 	router.POST("/login", rc.authHandler.Login)
-	router.GET("/logout", utils.DeserializeUser(userService), rc.authHandler.LogoutUser)
+	//router.GET("/logout", utils.DeserializeUser(userService), rc.authHandler.LogoutUser)
 }
