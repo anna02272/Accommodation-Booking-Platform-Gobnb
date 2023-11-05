@@ -4,9 +4,9 @@ COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
-RUN go build -o SOA_NoSQL_IB-MRS-2023-2024
+RUN go build -o server
 
 FROM alpine
-COPY --from=build_container /app/SOA_NoSQL_IB-MRS-2023-2024 /usr/bin/SOA_NoSQL_IB-MRS-2023-2024
+COPY --from=build_container /app/server /usr/bin
 EXPOSE 8080
-ENTRYPOINT ["SOA_NoSQL_IB-MRS-2023-2024"]
+ENTRYPOINT ["server"]

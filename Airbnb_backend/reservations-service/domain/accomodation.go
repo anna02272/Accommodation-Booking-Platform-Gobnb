@@ -1,12 +1,9 @@
 package domain
 
+import "github.com/gocql/gocql"
+
 type Accommodation struct {
-	Name          string
-	Location      string
-	Benefits      string
-	MinGuests     int
-	MaxGuests     int
-	Pictures      []string
-	PricePerNight float64
-	IsFree        bool
+	Name            string
+	Location        string
+	AccommodationId gocql.UUID
 }

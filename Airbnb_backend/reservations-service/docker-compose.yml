@@ -7,8 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    container_name: "reservation-server"
-    hostname: "reservation-server"
+    container_name: "res-server"
+    hostname: "res-server"
     #Mapping ports
     ports:
       # <port_on_local>:<port_in_machine>

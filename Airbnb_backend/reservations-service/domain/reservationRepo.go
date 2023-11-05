@@ -66,12 +66,9 @@ func (sr *ReservationRepo) CreateTable() {
 		`CREATE TABLE IF NOT EXISTS reservations_by_guest (
         reservation_id UUID,
         guest_id UUID,
+        accommodation_id UUID,
         accommodation_name text,
-        accomodation_location text,
-        accomodation_benefits text,
-        accomodation_min_guests int,
-        accomodation max_guests int,
-        accomodation_images list<text>
+        accommodation_location text,
         check_in_date timestamp,
         check_out_date timestamp,
         PRIMARY KEY (reservation_id, guest_id)
@@ -84,22 +81,18 @@ func (sr *ReservationRepo) CreateTable() {
 }
 
 // inserting reservation into table reservation_by_guest
-func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *ReservationByGuest) error {
-	reservationId := gocql.TimeUUID() // Generiše random UUID
+func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *ReservationByGuestCreate) error {
+	reservationId := gocql.TimeUUID()
 
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
-         (reservation_id, guest_id, accommodation_name, accommodation_location, 
-          accommodation_benefits, accommodation_min_guests, accommodation_max_guests, 
-          accommodation_images, check_in_date, check_out_date) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (reservation_id, guest_id,accommodation_id, accommodation_name,accommodation_location, check_in_date, check_out_date) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		reservationId,
 		guestReservation.GuestId,
-		guestReservation.Accommodation.Name,
-		guestReservation.Accommodation.Benefits,
-		guestReservation.Accommodation.MinGuests,
-		guestReservation.Accommodation.MaxGuests,
-		guestReservation.Accommodation.Pictures,
+		guestReservation.AccommodationId,
+		guestReservation.AccommodationName,
+		guestReservation.AccommodationLocation,
 		guestReservation.CheckInDate,
 		guestReservation.CheckOutDate,
 	).Exec()
@@ -113,9 +106,9 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *Reservatio
 }
 
 func (sr *ReservationRepo) GetReservationsByGuest(id string) (ReservationsByGuest, error) {
-	scanner := sr.session.Query(`SELECT reservation_id, guest_id,
-       accommodation_name, accommodation_location, accommodation_benefits, accommodation_min_guests,
-       accommodation_max_guests, accommodation_images, check_in_date, check_out_date
+	scanner := sr.session.Query(`SELECT reservation_id, guest_id, accommodation_id, 
+       accommodation_name, accommodation_location,
+      check_in_date, check_out_date
 FROM reservations_by_guest WHERE guest_id = ?`,
 		id).Iter().Scanner()
 
@@ -123,8 +116,7 @@ FROM reservations_by_guest WHERE guest_id = ?`,
 	for scanner.Next() {
 		var rsv ReservationByGuest
 		err := scanner.Scan(&rsv.ReservationId, &rsv.GuestId,
-			&rsv.Accommodation.Name, &rsv.Accommodation.Location,
-			&rsv.Accommodation.Benefits, &rsv.Accommodation.MinGuests, &rsv.Accommodation.MaxGuests,
+			&rsv.AccommodationName, &rsv.AccommodationLocation,
 			&rsv.CheckInDate, &rsv.CheckOutDate)
 		if err != nil {
 			sr.logger.Println(err)
@@ -137,25 +129,4 @@ FROM reservations_by_guest WHERE guest_id = ?`,
 		return nil, err
 	}
 	return reservations, nil
-}
-
-func (sr *ReservationRepo) GetDistinctIds(idColumnName string, tableName string) ([]string, error) {
-	scanner := sr.session.Query(
-		fmt.Sprintf(`SELECT DISTINCT %s FROM %s`, idColumnName, tableName)).
-		Iter().Scanner()
-	var ids []string
-	for scanner.Next() {
-		var id string
-		err := scanner.Scan(&id)
-		if err != nil {
-			sr.logger.Println(err)
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-	if err := scanner.Err(); err != nil {
-		sr.logger.Println(err)
-		return nil, err
-	}
-	return ids, nil
 }

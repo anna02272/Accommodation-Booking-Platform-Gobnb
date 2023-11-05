@@ -1,4 +1,4 @@
-package reservations_service
+package main
 
 import (
 	"context"
@@ -44,8 +44,8 @@ func main() {
 	router := mux.NewRouter()
 	router.Use(reservationsHandler.MiddlewareContentTypeSet)
 
-	getReservationsByGuest := router.Methods(http.MethodGet).Subrouter()
-	getReservationsByGuest.HandleFunc("/guests/{id}", reservationsHandler.GetReservationsByGuest)
+	//getReservationsByGuest := router.Methods(http.MethodGet).Subrouter()
+	//getReservationsByGuest.HandleFunc("/guests/{id}", reservationsHandler.GetReservationsByGuest)
 
 	postReservationForGuest := router.Methods(http.MethodPost).Subrouter()
 	postReservationForGuest.HandleFunc("/reservations", reservationsHandler.CraeteReservationForGuest)
