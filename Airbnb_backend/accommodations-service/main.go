@@ -4,13 +4,14 @@ import (
 	"accomodations-service/domain"
 	"accomodations-service/handlers"
 	"context"
-	gorillaHandlers "github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	gorillaHandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -27,10 +28,10 @@ func main() {
 	defer cancel()
 
 	//Initialize the logger we are going to use, with prefix and datetime for every log
-	logger := log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
-	storeLogger := log.New(os.Stdout, "[reservation-store] ", log.LstdFlags)
+	logger := log.New(os.Stdout, "[accommodation-api] ", log.LstdFlags)
+	storeLogger := log.New(os.Stdout, "[accommodation-store] ", log.LstdFlags)
 
-	// NoSQL: Initialize Reservation Repository store
+	// NoSQL: Initialize Accommodation Repository store
 	store, err := domain.New(storeLogger)
 	if err != nil {
 		logger.Fatal(err)
@@ -38,18 +39,15 @@ func main() {
 	defer store.CloseSession()
 	store.CreateTable()
 
-	reservationsHandler := handlers.NewAccommodationsHandler(logger, store)
+	accommodationsHandler := handlers.NewAccommodationsHandler(logger, store)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
-	router.Use(reservationsHandler.MiddlewareContentTypeSet)
-
-	//getReservationsByGuest := router.Methods(http.MethodGet).Subrouter()
-	//getReservationsByGuest.HandleFunc("/guests/{id}", reservationsHandler.GetReservationsByGuest)
+	router.Use(accommodationsHandler.MiddlewareContentTypeSet)
 
 	postAccommodation := router.Methods(http.MethodPost).Subrouter()
-	postAccommodation.HandleFunc("/api/accommodations/create", reservationsHandler.CreateAccommodations)
-	postAccommodation.Use(reservationsHandler.MiddlewareAccommodationDeserialization)
+	postAccommodation.HandleFunc("/api/accommodations/create", accommodationsHandler.CreateAccommodations)
+	postAccommodation.Use(accommodationsHandler.MiddlewareAccommodationDeserialization)
 
 	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
 
