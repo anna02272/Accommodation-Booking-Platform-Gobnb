@@ -27,7 +27,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - PORT=8081
+      - PORT=8082
       - CASS_DB=cassandra:9042
     depends_on:
       cassandra:
@@ -47,7 +47,7 @@ services:
       - cass_store:/var/lib/cassandra/data
 
   mongo:
-    image: mongo
+    image: mongo:4.4.25
     restart: always
     ports:
       - "27017:27017"
