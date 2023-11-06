@@ -2,7 +2,6 @@ package routes
 
 import (
 	"auth-service/handlers"
-	"auth-service/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,8 +13,8 @@ func NewRouteUserHandler(userHandler handlers.UserHandler) UserRouteHandler {
 	return UserRouteHandler{userHandler}
 }
 
-func (uc *UserRouteHandler) UserRoute(rg *gin.RouterGroup, userService services.UserService) {
+func (uc *UserRouteHandler) UserRoute(rg *gin.RouterGroup) {
 
 	router := rg.Group("users")
-	router.GET("/me", uc.userHandler.GetCurrentUser)
+	router.GET("/currentUser", uc.userHandler.CurrentUser)
 }
