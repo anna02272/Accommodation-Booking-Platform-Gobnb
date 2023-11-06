@@ -1,40 +1,68 @@
 version: "3.1"
 
 services:
-  server:
+  auth-server:
     build:
-      context: .
+      context: ./auth-service/
       dockerfile: Dockerfile
     restart: always
     container_name: "auth-server"
     hostname: "auth-server"
-
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
       - PORT=8080
       - MONGO_DB_URI=mongodb://root:root@mongo:27017
     depends_on:
       mongo:
         condition: service_healthy
+
+  res-server:
+    build:
+      context: ./reservations-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "res-server"
+    hostname: "res-server"
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8081
+      - CASS_DB=cassandra:9042
+    depends_on:
+      cassandra:
+        condition: service_healthy
+
+  cassandra:
+    image: cassandra
+    restart: always
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster;'"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+    volumes:
+      - cass_store:/var/lib/cassandra/data
+
   mongo:
     image: mongo
     restart: always
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
-      MONGO_INITDB_DATABASE: mongoDemo
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=mongoDemo
     healthcheck:
-      test: echo 'db.runCommand("ping").ok'
+      test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok"]
       interval: 10s
       timeout: 10s
       retries: 10
     volumes:
       - mongo_store:/data/db
 
-  # NoSQL: MongoExpress
   mongo-express:
     image: mongo-express
     restart: always
@@ -45,7 +73,8 @@ services:
       - ME_CONFIG_BASICAUTH_USERNAME=admin
       - ME_CONFIG_BASICAUTH_PASSWORD=admin
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     ports:
       - "8081:8081"
     volumes:
@@ -54,3 +83,4 @@ services:
 volumes:
   mongo_store:
   mongo_express_data:
+  cass_store:
