@@ -1,96 +1,76 @@
 package utils
 
-//func CreateToken(ttl time.Duration, payload interface{}, privateKey string) (string, error) {
-//	decodedPrivateKey, err := base64.StdEncoding.DecodeString(privateKey)
-//	if err != nil {
-//		return "", fmt.Errorf("could not decode key: %w", err)
-//	}
-//	key, err := jwt.ParseRSAPrivateKeyFromPEM(decodedPrivateKey)
-//
-//	if err != nil {
-//		return "", fmt.Errorf("create: parse key: %w", err)
-//	}
-//
-//	now := time.Now().UTC()
-//
-//	claims := make(jwt.MapClaims)
-//	claims["sub"] = payload
-//	claims["exp"] = now.Add(ttl).Unix()
-//	claims["iat"] = now.Unix()
-//	claims["nbf"] = now.Unix()
-//
-//	token, err := jwt.NewWithClaims(jwt.SigningMethodRS256, claims).SignedString(key)
-//
-//	if err != nil {
-//		return "", fmt.Errorf("create: sign token: %w", err)
-//	}
-//
-//	return token, nil
-//}
-//
-//func ValidateToken(token string, publicKey string) (interface{}, error) {
-//	decodedPublicKey, err := base64.StdEncoding.DecodeString(publicKey)
-//	if err != nil {
-//		return nil, fmt.Errorf("could not decode: %w", err)
-//	}
-//
-//	key, err := jwt.ParseRSAPublicKeyFromPEM(decodedPublicKey)
-//
-//	if err != nil {
-//		return "", fmt.Errorf("validate: parse key: %w", err)
-//	}
-//
-//	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
-//		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-//			return nil, fmt.Errorf("unexpected method: %s", t.Header["alg"])
-//		}
-//		return key, nil
-//	})
-//
-//	if err != nil {
-//		return nil, fmt.Errorf("validate: %w", err)
-//	}
-//
-//	claims, ok := parsedToken.Claims.(jwt.MapClaims)
-//	if !ok || !parsedToken.Valid {
-//		return nil, fmt.Errorf("validate: invalid token")
-//	}
-//
-//	return claims["sub"], nil
-//}
-//func DeserializeUser(userService services.UserService) gin.HandlerFunc {
-//	return func(ctx *gin.Context) {
-//		var access_token string
-//		cookie, err := ctx.Cookie("access_token")
-//
-//		authorizationHeader := ctx.Request.Header.Get("Authorization")
-//		fields := strings.Fields(authorizationHeader)
-//
-//		if len(fields) != 0 && fields[0] == "Bearer" {
-//			access_token = fields[1]
-//		} else if err == nil {
-//			access_token = cookie
-//		}
-//
-//		if access_token == "" {
-//			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "You are not logged in"})
-//			return
-//		}
-//
-//		config, _ := config.LoadConfig(".")
-//		sub, err := ValidateToken(access_token, config.AccessTokenPublicKey)
-//		if err != nil {
-//			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": err.Error()})
-//			return
-//		}
-//
-//		user, err := userService.FindUserById(fmt.Sprint(sub))
-//		if err != nil {
-//			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "fail", "message": "The user belonging to this token no logger exists"})
-//			return
-//		}
-//
-//		ctx.Set("currentUser", user)
-//		ctx.Next()
-//	}
-//}
+import (
+	"auth-service/config"
+	"auth-service/domain"
+	"auth-service/services"
+	"errors"
+	"fmt"
+	"github.com/golang-jwt/jwt"
+	"time"
+)
+
+func CreateToken(username string) (string, error) {
+	config, _ := config.LoadConfig(".")
+	var secretKey = []byte((config.SecretKey))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"username": username,
+			"exp":      time.Now().Add(time.Hour * 24).Unix(),
+		})
+
+	tokenString, err := token.SignedString(secretKey)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
+}
+
+func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
+	if err := VerifyToken(tokenString); err != nil {
+		return nil, err
+	}
+
+	claims, err := ParseTokenClaims(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	username, ok := claims["username"].(string)
+	if !ok {
+		return nil, errors.New("invalid username in token")
+	}
+
+	user, err := userService.FindUserByUsername(username)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func VerifyToken(tokenString string) error {
+	config, _ := config.LoadConfig(".")
+	var secretKey = []byte((config.SecretKey))
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+	if err != nil {
+		return err
+	}
+	if !token.Valid {
+		return fmt.Errorf("invalid token")
+	}
+
+	return nil
+}
+func ParseTokenClaims(tokenString string) (jwt.MapClaims, error) {
+	token, _ := jwt.Parse(tokenString, nil)
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, fmt.Errorf("invalid token claims")
+	}
+	return claims, nil
+}
