@@ -7,8 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
-    container_name: "res-server"
-    hostname: "res-server"
+    container_name: "acc-server"
+    hostname: "acc-server"
     #Mapping ports
     ports:
       # <port_on_local>:<port_in_machine>

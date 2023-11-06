@@ -2,14 +2,15 @@ package domain
 
 import (
 	"encoding/json"
-	"github.com/gocql/gocql"
 	"io"
+
+	"github.com/gocql/gocql"
 )
 
 type Accommodation struct {
-	Name            string
-	Location        string
-	AccommodationId gocql.UUID
+	Name            string     `json:"accommodation_name"`
+	Location        string     `json:"accommodation_location"`
+	AccommodationId gocql.UUID `json:"accommodation_id"`
 }
 
 type Accommodations []*Accommodation
