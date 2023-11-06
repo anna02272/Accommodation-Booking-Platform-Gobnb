@@ -39,12 +39,18 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 
 	if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password"})
+
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{"status": "success", "user": user})
+	accessToken, err := utils.CreateToken(user.Username)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "accessToken": accessToken})
 
 }
+
 func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	var user *domain.User
 
