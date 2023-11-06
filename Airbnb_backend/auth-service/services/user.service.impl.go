@@ -52,3 +52,18 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 
 	return user, nil
 }
+func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, error) {
+	var user *domain.User
+
+	query := bson.M{"username": strings.ToLower(username)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.User{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}

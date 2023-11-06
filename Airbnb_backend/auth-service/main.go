@@ -74,8 +74,8 @@ func main() {
 		ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Message"})
 	})
 
-	AuthRouteHandler.AuthRoute(router, userService)
-	UserRouteHandler.UserRoute(router, userService)
+	AuthRouteHandler.AuthRoute(router)
+	UserRouteHandler.UserRoute(router)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
