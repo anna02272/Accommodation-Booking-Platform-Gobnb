@@ -48,7 +48,7 @@ func main() {
 	//getReservationsByGuest.HandleFunc("/guests/{id}", reservationsHandler.GetReservationsByGuest)
 
 	postReservationForGuest := router.Methods(http.MethodPost).Subrouter()
-	postReservationForGuest.HandleFunc("/reservations", reservationsHandler.CraeteReservationForGuest)
+	postReservationForGuest.HandleFunc("/api/reservations/create", reservationsHandler.CraeteReservationForGuest)
 	postReservationForGuest.Use(reservationsHandler.MiddlewareReservationForGuestDeserialization)
 
 	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
