@@ -10,6 +10,8 @@ services:
     hostname: "auth-server"
     ports:
       - "8080:8080"
+    env_file:
+      - ./auth-service/app.env
     environment:
       - PORT=8080
       - MONGO_DB_URI=mongodb://root:root@mongo:27017
