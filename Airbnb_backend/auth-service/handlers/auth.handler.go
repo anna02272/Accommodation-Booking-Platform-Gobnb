@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
+	"strings"
 )
 
 type AuthHandler struct {
@@ -36,7 +37,7 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 
-	if err := utils.VerifyNotHashedPassword(user.Password, credentials.Password); err != nil {
+	if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password"})
 
 		return
@@ -47,4 +48,32 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "accessToken": accessToken})
+
+}
+
+func (ac *AuthHandler) Registration(ctx *gin.Context) {
+	var user *domain.User
+
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	//if user.Password != user.PasswordConfirm {
+	//	ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
+	//	return
+	//}
+
+	newUser, err := ac.authService.Registration(user)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "email already exist") {
+			ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": err.Error()})
+			return
+		}
+		ctx.JSON(http.StatusBadGateway, gin.H{"status": "error", "message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{"status": "success", "data": gin.H{"user": newUser}})
 }
