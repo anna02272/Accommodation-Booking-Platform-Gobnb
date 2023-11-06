@@ -97,13 +97,13 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) e
 	return nil
 }
 
-func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodation, error) {
+func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error) {
 	scanner := sr.session.Query(`SELECT accommodation_id, 
        accommodation_name, accommodation_location
 FROM accommodations WHERE accommodation_id = ?`,
 		id).Iter().Scanner()
 
-	var accommodations Accommodation
+	var accommodations Accommodations
 	for scanner.Next() {
 		var acm Accommodation
 		err := scanner.Scan(&acm.AccommodationId, &acm.Name,
