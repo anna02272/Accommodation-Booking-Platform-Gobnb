@@ -2,9 +2,6 @@ package utils
 
 import (
 	"auth-service/config"
-	"auth-service/domain"
-	"auth-service/services"
-	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"time"
@@ -26,29 +23,6 @@ func CreateToken(username string) (string, error) {
 	}
 
 	return tokenString, nil
-}
-
-func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
-	if err := VerifyToken(tokenString); err != nil {
-		return nil, err
-	}
-
-	claims, err := ParseTokenClaims(tokenString)
-	if err != nil {
-		return nil, err
-	}
-
-	username, ok := claims["username"].(string)
-	if !ok {
-		return nil, errors.New("invalid username in token")
-	}
-
-	user, err := userService.FindUserByUsername(username)
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
 }
 
 func VerifyToken(tokenString string) error {
