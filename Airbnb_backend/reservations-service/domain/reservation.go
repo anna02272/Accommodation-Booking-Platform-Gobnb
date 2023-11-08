@@ -8,22 +8,22 @@ import (
 )
 
 type ReservationByGuest struct {
-	ReservationId         gocql.UUID
-	GuestId               gocql.UUID
-	AccommodationId       gocql.UUID
-	AccommodationName     string
-	AccommodationLocation string
-	CheckInDate           time.Time
-	CheckOutDate          time.Time
+	ReservationIdTimeCreated gocql.UUID
+	GuestId                  gocql.UUID
+	AccommodationId          gocql.UUID
+	AccommodationName        string
+	AccommodationLocation    string
+	CheckInDate              time.Time
+	CheckOutDate             time.Time
 }
 
 type ReservationByGuestCreate struct {
-	GuestId               gocql.UUID `json:"guest_id"`
-	AccommodationId       gocql.UUID `json:"accommodation_id"`
-	AccommodationName     string     `json:"accommodation_name"`
-	AccommodationLocation string     `json:"accommodation_location"`
-	CheckInDate           time.Time  `json:"check_in_date"`
-	CheckOutDate          time.Time  `json:"check_out_date"`
+	GuestId                  gocql.UUID `json:"guest_id"`
+	ReservationIdTimeCreated gocql.UUID `json:"accommodation_id_time_created"`
+	AccommodationName        string     `json:"accommodation_name"`
+	AccommodationLocation    string     `json:"accommodation_location"`
+	CheckInDate              time.Time  `json:"check_in_date"`
+	CheckOutDate             time.Time  `json:"check_out_date"`
 }
 
 type ReservationsByGuest []*ReservationByGuest

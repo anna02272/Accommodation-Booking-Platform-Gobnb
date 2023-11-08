@@ -64,15 +64,15 @@ func (sr *ReservationRepo) CloseSession() {
 func (sr *ReservationRepo) CreateTable() {
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS reservations_by_guest (
-        reservation_id UUID,
+        reservation_id_time_created timeuuid,
         guest_id UUID,
         accommodation_id UUID,
         accommodation_name text,
         accommodation_location text,
         check_in_date timestamp,
         check_out_date timestamp,
-        PRIMARY KEY (reservation_id, guest_id)
-    ) WITH CLUSTERING ORDER BY (guest_id ASC);`,
+        PRIMARY KEY ((guest_id, reservation_id_time_created),check_in_date)
+    ) WITH CLUSTERING ORDER BY (check_in_date ASC);`,
 	).Exec()
 
 	if err != nil {
@@ -82,15 +82,15 @@ func (sr *ReservationRepo) CreateTable() {
 
 // inserting reservation into table reservation_by_guest
 func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *ReservationByGuestCreate) error {
-	reservationId := gocql.TimeUUID()
+	reservationIdTimeCreated := gocql.TimeUUID()
 
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
-         (reservation_id, guest_id,accommodation_id, accommodation_name,accommodation_location, check_in_date, check_out_date) 
+         (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, check_in_date, check_out_date) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		reservationId,
+		reservationIdTimeCreated,
 		guestReservation.GuestId,
-		guestReservation.AccommodationId,
+		guestReservation.ReservationIdTimeCreated,
 		guestReservation.AccommodationName,
 		guestReservation.AccommodationLocation,
 		guestReservation.CheckInDate,
@@ -106,7 +106,7 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *Reservatio
 }
 
 func (sr *ReservationRepo) GetReservationsByGuest(id string) (ReservationsByGuest, error) {
-	scanner := sr.session.Query(`SELECT reservation_id, guest_id, accommodation_id, 
+	scanner := sr.session.Query(`SELECT reservation_id_time_created, guest_id, accommodation_id, 
        accommodation_name, accommodation_location,
       check_in_date, check_out_date
 FROM reservations_by_guest WHERE guest_id = ?`,
@@ -115,7 +115,8 @@ FROM reservations_by_guest WHERE guest_id = ?`,
 	var reservations ReservationsByGuest
 	for scanner.Next() {
 		var rsv ReservationByGuest
-		err := scanner.Scan(&rsv.ReservationId, &rsv.GuestId,
+		err := scanner.Scan(&rsv.ReservationIdTimeCreated, &rsv.GuestId,
+			&rsv.AccommodationId,
 			&rsv.AccommodationName, &rsv.AccommodationLocation,
 			&rsv.CheckInDate, &rsv.CheckOutDate)
 		if err != nil {
