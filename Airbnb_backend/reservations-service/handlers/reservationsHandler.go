@@ -19,12 +19,12 @@ func NewReservationsHandler(l *log.Logger, r *domain.ReservationRepo) *Reservati
 	return &ReservationsHandler{l, r}
 }
 
-func (s *ReservationsHandler) CraeteReservationForGuest(rw http.ResponseWriter, h *http.Request) {
+func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	guestReservation := h.Context().Value(KeyProduct{}).(*domain.ReservationByGuestCreate)
 	err := s.repo.InsertReservationByGuest(guestReservation)
 	if err != nil {
 		s.logger.Print("Database exception: ", err)
-		rw.WriteHeader(http.StatusBadRequest)
+		http.Error(rw, "Reservation with that guest_id, accommodation_id and check_in date already exists.", http.StatusBadRequest)
 		return
 	}
 	rw.WriteHeader(http.StatusCreated)

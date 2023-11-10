@@ -20,6 +20,7 @@ type ReservationByGuest struct {
 type ReservationByGuestCreate struct {
 	GuestId                  gocql.UUID `json:"guest_id"`
 	ReservationIdTimeCreated gocql.UUID `json:"accommodation_id_time_created"`
+	AccommodationId          gocql.UUID `json:"accommodation_id"`
 	AccommodationName        string     `json:"accommodation_name"`
 	AccommodationLocation    string     `json:"accommodation_location"`
 	CheckInDate              time.Time  `json:"check_in_date"`
