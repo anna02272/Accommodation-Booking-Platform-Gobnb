@@ -1,10 +1,9 @@
-package domain
+package data
 
 import (
 	"github.com/google/uuid"
 )
 
-// this needs to store user id,so we know who reserved the accomodation
 type User struct {
 	Id uuid.UUID
 }

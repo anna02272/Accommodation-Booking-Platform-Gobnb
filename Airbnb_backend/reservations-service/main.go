@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reservations-service/domain"
 	"reservations-service/handlers"
+	"reservations-service/repository"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func main() {
 	storeLogger := log.New(os.Stdout, "[reservation-store] ", log.LstdFlags)
 
 	// NoSQL: Initialize Reservation Repository store
-	store, err := domain.New(storeLogger)
+	store, err := repository.New(storeLogger)
 	if err != nil {
 		logger.Fatal(err)
 	}

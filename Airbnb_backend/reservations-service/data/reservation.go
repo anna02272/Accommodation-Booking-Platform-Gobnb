@@ -1,4 +1,4 @@
-package domain
+package data
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 type ReservationByGuest struct {
 	ReservationIdTimeCreated gocql.UUID
-	GuestId                  gocql.UUID
+	GuestId                  string
 	AccommodationId          gocql.UUID
 	AccommodationName        string
 	AccommodationLocation    string
@@ -18,7 +18,6 @@ type ReservationByGuest struct {
 }
 
 type ReservationByGuestCreate struct {
-	GuestId                  gocql.UUID `json:"guest_id"`
 	ReservationIdTimeCreated gocql.UUID `json:"accommodation_id_time_created"`
 	AccommodationId          gocql.UUID `json:"accommodation_id"`
 	AccommodationName        string     `json:"accommodation_name"`

@@ -2,9 +2,13 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"reservations-service/domain"
+	"reservations-service/data"
+	error2 "reservations-service/error"
+	"reservations-service/repository"
 )
 
 type KeyProduct struct{}
@@ -12,22 +16,74 @@ type KeyProduct struct{}
 type ReservationsHandler struct {
 	logger *log.Logger
 	// NoSQL: injecting student repository
-	repo *domain.ReservationRepo
+	repo *repository.ReservationRepo
 }
 
-func NewReservationsHandler(l *log.Logger, r *domain.ReservationRepo) *ReservationsHandler {
+func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *ReservationsHandler {
 	return &ReservationsHandler{l, r}
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
-	guestReservation := h.Context().Value(KeyProduct{}).(*domain.ReservationByGuestCreate)
-	err := s.repo.InsertReservationByGuest(guestReservation)
+	token := h.Header.Get("Authorization")
+	url := "http://auth-server:8080/api/users/currentUser"
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		s.logger.Print("Database exception: ", err)
-		http.Error(rw, "Reservation with that guest_id, accommodation_id and check_in date already exists.", http.StatusBadRequest)
+		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
 		return
 	}
+	req.Header.Set("Authorization", token)
+
+	// Perform the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
+		return
+	}
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		error2.ReturnJSONError(rw, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Read the response body
+	// Create a JSON decoder for the response body
+	decoder := json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var response struct {
+		LoggedInUser struct {
+			ID string `json:"id"`
+		} `json:"Logged in user"`
+		Message string `json:"message"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&response); err != nil {
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Access the 'id' from the decoded struct
+	guestId := response.LoggedInUser.ID
+	guestReservation := h.Context().Value(KeyProduct{}).(*data.ReservationByGuestCreate)
+	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId)
+	if errReservation != nil {
+		s.logger.Print("Database exception: ", errReservation)
+		error2.ReturnJSONError(rw, "Reservation with that guest_id, accommodation_id, and check-in date exists.",
+			http.StatusBadRequest)
+		return
+	}
+
+	responseJSON, err := json.Marshal(guestReservation)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusCreated)
+	rw.Write(responseJSON)
 }
 
 //func (s *ReservationsHandler) GetReservationsByGuest(rw http.ResponseWriter, h *http.Request) {
@@ -63,7 +119,7 @@ func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.H
 
 func (s *ReservationsHandler) MiddlewareReservationForGuestDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
-		patient := &domain.ReservationByGuestCreate{}
+		patient := &data.ReservationByGuestCreate{}
 		err := patient.FromJSON(h.Body)
 		if err != nil {
 			http.Error(rw, "Unable to decode json", http.StatusBadRequest)

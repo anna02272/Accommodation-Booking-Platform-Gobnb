@@ -1,10 +1,11 @@
-package domain
+package repository
 
 import (
 	"fmt"
 	"github.com/gocql/gocql"
 	"log"
 	"os"
+	"reservations-service/data"
 )
 
 // NoSQL: ReservationRepo struct encapsulating Cassandra api client
@@ -66,7 +67,7 @@ func (sr *ReservationRepo) CreateTable() {
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS reservations_by_guest (
         reservation_id_time_created timeuuid,
-        guest_id UUID,
+        guest_id text,
         accommodation_id UUID,
         accommodation_name text,
         accommodation_location text,
@@ -90,13 +91,13 @@ func (sr *ReservationRepo) CreateTable() {
 }
 
 // inserting reservation into table reservation_by_guest
-func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *ReservationByGuestCreate) error {
+func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate, guestId string) error {
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
 		`SELECT COUNT(*) FROM reservations_by_guest 
          WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? ALLOW FILTERING`,
-		guestReservation.GuestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
+		guestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
 	).Scan(&existingReservationCount)
 
 	if errSameReservation != nil {
@@ -114,12 +115,13 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *Reservatio
 
 	// If no existing reservation is found, proceed with the insertion
 	reservationIdTimeCreated := gocql.TimeUUID()
+
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
          (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, check_in_date, check_out_date) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		reservationIdTimeCreated,
-		guestReservation.GuestId,
+		guestId,
 		guestReservation.AccommodationId,
 		guestReservation.AccommodationName,
 		guestReservation.AccommodationLocation,
@@ -135,16 +137,16 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *Reservatio
 	return nil
 }
 
-func (sr *ReservationRepo) GetReservationsByGuest(id string) (ReservationsByGuest, error) {
+func (sr *ReservationRepo) GetReservationsByGuest(id string) (data.ReservationsByGuest, error) {
 	scanner := sr.session.Query(`SELECT reservation_id_time_created, guest_id, accommodation_id, 
        accommodation_name, accommodation_location,
       check_in_date, check_out_date
 FROM reservations_by_guest WHERE guest_id = ?`,
 		id).Iter().Scanner()
 
-	var reservations ReservationsByGuest
+	var reservations data.ReservationsByGuest
 	for scanner.Next() {
-		var rsv ReservationByGuest
+		var rsv data.ReservationByGuest
 		err := scanner.Scan(&rsv.ReservationIdTimeCreated, &rsv.GuestId,
 			&rsv.AccommodationId,
 			&rsv.AccommodationName, &rsv.AccommodationLocation,
