@@ -3,6 +3,7 @@ package handlers
 import (
 	"accomodations-service/domain"
 	"context"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
@@ -28,6 +29,33 @@ func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *
 		return
 	}
 	rw.WriteHeader(http.StatusCreated)
+}
+
+func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
+	vars := mux.Vars(h)
+	accommodationID := vars["id"]
+
+	accommodations, err := s.repo.GetAccommodations(accommodationID)
+	if err != nil {
+		s.logger.Print("Database exception: ", err)
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(accommodations) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// Assuming you want to return the first accommodation found
+	accommodation := accommodations[0]
+
+	// Send the JSON response
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	if err := accommodation.ToJSON(rw); err != nil {
+		s.logger.Println("Error encoding JSON:", err)
+	}
 }
 
 func (s *AccommodationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {

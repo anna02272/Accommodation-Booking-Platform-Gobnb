@@ -49,6 +49,9 @@ func main() {
 	postAccommodation.HandleFunc("/api/accommodations/create", accommodationsHandler.CreateAccommodations)
 	postAccommodation.Use(accommodationsHandler.MiddlewareAccommodationDeserialization)
 
+	getAccommodationById := router.Methods(http.MethodGet).Subrouter()
+	getAccommodationById.HandleFunc("/api/accommodations/get/{id:[a-zA-Z0-9-]+}", accommodationsHandler.GetAccommodationById)
+
 	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
 
 	//Initialize the server

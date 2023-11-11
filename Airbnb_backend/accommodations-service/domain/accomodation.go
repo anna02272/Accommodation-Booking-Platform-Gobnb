@@ -11,6 +11,10 @@ type Accommodation struct {
 	Name            string     `json:"accommodation_name"`
 	Location        string     `json:"accommodation_location"`
 	AccommodationId gocql.UUID `json:"accommodation_id"`
+	Amenities       string     `json:"accommodation_amenities"`
+	MinGuests       int        `json:"accommodation_min_guests"`
+	MaxGuests       int        `json:"accommodation_max_guests"`
+	ImageUrl        string     `json:"accommodation_image_url"`
 }
 
 type Accommodations []*Accommodation
