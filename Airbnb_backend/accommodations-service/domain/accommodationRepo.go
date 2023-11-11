@@ -2,12 +2,13 @@ package domain
 
 import (
 	"fmt"
-	"github.com/gocql/gocql"
 	"log"
 	"os"
+
+	"github.com/gocql/gocql"
 )
 
-// NoSQL: AccommodationsRepo struct encapsulating Cassandra api client
+// NoSQL: AccommodationRepo struct encapsulating Cassandra api client
 type AccommodationRepo struct {
 	session *gocql.Session //connection towards CassandraDB
 	logger  *log.Logger    //write messages inside Console
@@ -27,7 +28,7 @@ func New(logger *log.Logger) (*AccommodationRepo, error) {
 		logger.Println(err)
 		return nil, err
 	}
-	// Create 'accommodation' keyspace
+	// Create 'reservation' keyspace
 	err = session.Query(
 		fmt.Sprintf(`CREATE KEYSPACE IF NOT EXISTS %s
 					WITH replication = {
@@ -39,7 +40,7 @@ func New(logger *log.Logger) (*AccommodationRepo, error) {
 	}
 	session.Close()
 
-	// Connect to accommodation keyspace
+	// Connect to reservation keyspace
 	cluster.Keyspace = "accommodation"
 	cluster.Consistency = gocql.One
 	session, err = cluster.CreateSession()
@@ -63,12 +64,15 @@ func (sr *AccommodationRepo) CloseSession() {
 // Create accommodation table
 func (sr *AccommodationRepo) CreateTable() {
 	err := sr.session.Query(
-		`CREATE TABLE IF NOT EXISTS accommodation (
-        accommodationId UUID,
-        accommodation_name text,
-        accommodation_location text
-        PRIMARY KEY (raccommodationId)
-    ) WITH CLUSTERING ORDER BY (accommodationId ASC);`,
+		`CREATE TABLE IF NOT EXISTS accommodation.accommodations
+			(accommodationId UUID,
+			accommodation_name text,
+			accommodation_location text,
+			accommodation_amenities text,
+			accommodation_min_guests int,
+			accommodation_max_guests int,
+			accommodation_image_url text,
+			PRIMARY KEY (accommodationId))`,
 	).Exec()
 
 	if err != nil {
@@ -82,11 +86,15 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) e
 
 	err := sr.session.Query(
 		`INSERT INTO accommodations 
-         (accommodationId, accommodation_name,accommodation_location) 
+         (accommodationId, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		accommodationId,
 		accommodation.Name,
 		accommodation.Location,
+		accommodation.Amenities,
+		accommodation.MinGuests,
+		accommodation.MaxGuests,
+		accommodation.ImageUrl,
 	).Exec()
 
 	if err != nil {
@@ -98,16 +106,15 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) e
 }
 
 func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error) {
-	scanner := sr.session.Query(`SELECT accommodation_id, 
-       accommodation_name, accommodation_location
-FROM accommodations WHERE accommodation_id = ?`,
+	scanner := sr.session.Query(`SELECT accommodationId, 
+        accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url
+        FROM accommodation.accommodations WHERE accommodationId = ?`,
 		id).Iter().Scanner()
 
 	var accommodations Accommodations
 	for scanner.Next() {
 		var acm Accommodation
-		err := scanner.Scan(&acm.AccommodationId, &acm.Name,
-			&acm.Location)
+		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location)
 		if err != nil {
 			sr.logger.Println(err)
 			return nil, err
