@@ -35,6 +35,21 @@ services:
       cassandra:
         condition: service_healthy
 
+  acc-server:
+    build:
+      context: ./accommodations-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "acc-server"
+    hostname: "acc-server"
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - CASS_DB=cassandra:9042
+    depends_on:
+      cassandra:
+        condition: service_healthy
   cassandra:
     image: cassandra
     restart: always

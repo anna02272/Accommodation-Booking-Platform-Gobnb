@@ -63,10 +63,30 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
-
 	// Access the 'id' from the decoded struct
 	guestId := response.LoggedInUser.ID
 	guestReservation := h.Context().Value(KeyProduct{}).(*data.ReservationByGuestCreate)
+	accId := guestReservation.AccommodationId.String()
+	urlAccommodationCheck := "http://acc-server:8083/api/accommodations/get/" + accId
+	fmt.Sprintf(urlAccommodationCheck + "api url")
+	reqAccommodation, errAccommodation := http.NewRequest("GET", urlAccommodationCheck, nil)
+	if errAccommodation != nil {
+		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
+		return
+	}
+	// Perform the request
+	clientAccommodation := &http.Client{}
+	respAccommodation, errAccommodation1 := clientAccommodation.Do(reqAccommodation)
+	if errAccommodation1 != nil {
+		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
+		return
+	}
+	statusCodeAccommodation := respAccommodation.StatusCode
+	if statusCodeAccommodation != 200 {
+		error2.ReturnJSONError(rw, "Accommodation with that id does not exist", http.StatusBadRequest)
+		return
+	}
+
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
