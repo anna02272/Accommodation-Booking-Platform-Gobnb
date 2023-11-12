@@ -7,8 +7,14 @@ import (
 	"time"
 )
 
+type TimeUUID gocql.UUID
+
+func (t TimeUUID) MarshalJSON() ([]byte, error) {
+	return json.Marshal(gocql.UUID(t).String())
+}
+
 type ReservationByGuest struct {
-	ReservationIdTimeCreated gocql.UUID
+	ReservationIdTimeCreated TimeUUID
 	GuestId                  string
 	AccommodationId          gocql.UUID
 	AccommodationName        string
@@ -18,12 +24,12 @@ type ReservationByGuest struct {
 }
 
 type ReservationByGuestCreate struct {
-	ReservationIdTimeCreated gocql.UUID `json:"accommodation_id_time_created"`
-	AccommodationId          gocql.UUID `json:"accommodation_id"`
-	AccommodationName        string     `json:"accommodation_name"`
-	AccommodationLocation    string     `json:"accommodation_location"`
-	CheckInDate              time.Time  `json:"check_in_date"`
-	CheckOutDate             time.Time  `json:"check_out_date"`
+	//ReservationIdTimeCreated gocql.UUID `json:"reservation_id_time_created"`
+	AccommodationId       gocql.UUID `json:"accommodation_id"`
+	AccommodationName     string     `json:"accommodation_name"`
+	AccommodationLocation string     `json:"accommodation_location"`
+	CheckInDate           time.Time  `json:"check_in_date"`
+	CheckOutDate          time.Time  `json:"check_out_date"`
 }
 
 type ReservationsByGuest []*ReservationByGuest
