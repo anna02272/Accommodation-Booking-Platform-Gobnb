@@ -114,7 +114,7 @@ func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error
 	var accommodations Accommodations
 	for scanner.Next() {
 		var acm Accommodation
-		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location)
+		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
 		if err != nil {
 			sr.logger.Println(err)
 			return nil, err
