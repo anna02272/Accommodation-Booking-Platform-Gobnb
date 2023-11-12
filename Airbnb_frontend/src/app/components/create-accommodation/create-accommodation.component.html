@@ -1,0 +1,148 @@
+<div class="container-fluid">
+  <div class="modal-content">
+    <form enctype="multipart/form-data">
+      <div class="modal-content">
+        <div class="modal-header align-items-center">
+          <h5 class="text-center w-100" id="exampleModalLabel">
+            Create Accommodation
+          </h5>
+        </div>
+        <div class="modal-body">
+          <div class="my-1 p-1">
+            <div class="d-flex flex-column">
+              <div class="d-flex align-items-center">
+                <div class="p-4">
+                  <img
+                    src="assets/images/avatar.png"
+                    class="rounded-circle me-2"
+                    style="width: 38px; height: 38px; object-fit: cover"
+                  />
+                </div>
+                <div>
+                  <p class="m-0 fw-bold">username</p>
+                </div>
+              </div>
+
+              <ng-container>
+                <div class="row mb-3">
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Name</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <input type="text" class="form-control" />
+                  </div>
+
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Location</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <input type="text" class="form-control" />
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Description</h6>
+                  </div>
+                  <div class="col-sm-9 text-secondary">
+                    <textarea
+                      id="description"
+                      name="description"
+                      placeholder="Write a description"
+                      required
+                      cols="30"
+                      rows="5"
+                      class="form-control border-0"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Benefits</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <p>
+                      <label>
+                        <input type="checkbox" name="wifi" /> Free WiFi
+                      </label>
+                    </p>
+                    <p>
+                      <label>
+                        <input type="checkbox" name="kitchen" /> Kitchen
+                      </label>
+                    </p>
+                    <p>
+                      <label>
+                        <input type="checkbox" name="air-conditioning" />
+                        Air Conditioning
+                      </label>
+                    </p>
+                    <p>
+                      <label>
+                        <input type="checkbox" name="free-parking" /> Free
+                        Parking
+                      </label>
+                    </p>
+                  </div>
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Price</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <input type="text" class="form-control" />
+                  </div>
+                </div>
+
+                <div class="row mb-3">
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Minimum guests</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <input type="number" class="form-control" />
+                  </div>
+                  <div class="col-sm-2">
+                    <h6 class="mb-2">Maximum guests</h6>
+                  </div>
+                  <div class="col-sm-4 text-secondary">
+                    <input type="number" class="form-control" />
+                  </div>
+                </div>
+
+                <h6 class="mb-2">Add images:</h6>
+                <div class="image-pair-container">
+                  <div class="small-image-container">
+                    <button
+                      type="button"
+                      class="btn-close"
+                      aria-label="Close"
+                    ></button>
+                    <img src="assets/images/car.jpg" />
+                  </div>
+                </div>
+              </ng-container>
+              <div
+                class="d-flex justify-content-between border border-1 border-light rounded p-3 mt-3"
+              >
+                <div>
+                  <label for="fileUpload" class="upload-label">
+                    <i class="fas fa-images fs-5 text-success pointer mx-1"></i>
+                  </label>
+                  <input
+                    type="file"
+                    #fileInput
+                    name="images"
+                    accept="image/*"
+                    multiple
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn">Create Accommodation</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

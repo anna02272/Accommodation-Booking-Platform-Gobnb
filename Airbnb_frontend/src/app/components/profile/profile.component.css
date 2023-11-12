@@ -1,19 +1,4 @@
-.divider:after,
-.divider:before {
-content: "";
-flex: 1;
-height: 1px;
-background: #eee;
-}
-.h-custom {
-height: calc(100% - 73px);
-}
-@media (max-width: 450px) {
-.h-custom {
-height: 100%;
-}
-}
-.login-btn{
+.btn{
     float: left;
     width: 150px;
     height: 42px;
@@ -26,16 +11,17 @@ height: 100%;
     border-top-right-radius: 3px;
     border-bottom-right-radius: 3px;
 }
-.login-btn:hover{
+.btn:hover{
     background-color: #5D8AA8;
     cursor: pointer;
 }
-.title{
-    margin-top: 100px;
-    font-size: 46px;
+.container{
+    margin-top:100px;
+    color: #72A0C1;
+    
+}
+.username{
+    font-size: 25px;
     font-weight: 800;
     color: #72A0C1;
-}
-.img-fluid {
-    margin-top:100px
 }
