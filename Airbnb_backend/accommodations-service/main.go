@@ -52,6 +52,12 @@ func main() {
 	getAccommodationById := router.Methods(http.MethodGet).Subrouter()
 	getAccommodationById.HandleFunc("/api/accommodations/get/{id:[a-zA-Z0-9-]+}", accommodationsHandler.GetAccommodationById)
 
+	setAccommodationAvailabilty := router.Methods(http.MethodPost).Subrouter()
+	setAccommodationAvailabilty.HandleFunc("/api/accommodations/availability/{id:[a-zA-Z0-9-]+}", accommodationsHandler.SetAccommodationAvailability)
+
+	setAccommodationPrice := router.Methods(http.MethodPost).Subrouter()
+	setAccommodationPrice.HandleFunc("/api/accommodations/price/{id:[a-zA-Z0-9-]+}", accommodationsHandler.SetAccommodationPrice)
+
 	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
 
 	//Initialize the server

@@ -4,9 +4,11 @@ import (
 	"accomodations-service/domain"
 	"context"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type KeyProduct struct{}
@@ -84,6 +86,7 @@ func (s *AccommodationsHandler) MiddlewareAccommodationDeserialization(next http
 	})
 }
 
+/*
 func (s *AccommodationsHandler) SetAvailability(rw http.ResponseWriter, r *http.Request) {
 	var availabilityRequest AvailabilityRequest
 
@@ -109,7 +112,7 @@ func (s *AccommodationsHandler) SetAvailability(rw http.ResponseWriter, r *http.
 	}
 
 	for date, available := range availabilityRequest.Dates {
-		accommodation.Availability[date] = available
+		accommodation[0].Availability[date] = available
 	}
 
 	// Čuvanje promena u bazi podataka (prilagoditi prema vašoj implementaciji)
@@ -120,6 +123,47 @@ func (s *AccommodationsHandler) SetAvailability(rw http.ResponseWriter, r *http.
 }
 
 type AvailabilityRequest struct {
-	AccommodationID string          `json:"accommodation_id"`
-	Dates           map[string]bool `json:"dates"`
+	AccommodationID string             `json:"accommodation_id"`
+	Dates           map[time.Time]bool `json:"dates"`
+}
+*/
+
+func (s *AccommodationsHandler) SetAccommodationAvailability(rw http.ResponseWriter, h *http.Request) {
+	vars := mux.Vars(h)
+	accommodationID := vars["id"]
+	var availability map[time.Time]bool
+
+	err := json.NewDecoder(h.Body).Decode(&availability)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	nil := s.repo.UpdateAccommodationAvailability(accommodationID, availability)
+	if nil != nil {
+		s.logger.Print("Database exception: ", err)
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	rw.WriteHeader(http.StatusCreated)
+}
+
+func (s *AccommodationsHandler) SetAccommodationPrice(rw http.ResponseWriter, h *http.Request) {
+	vars := mux.Vars(h)
+	accommodationID := vars["id"]
+	var price map[time.Time]float32
+
+	err := json.NewDecoder(h.Body).Decode(&price)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	nil := s.repo.UpdateAccommodationPrice(accommodationID, price)
+	if nil != nil {
+		s.logger.Print("Database exception: ", err)
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	rw.WriteHeader(http.StatusCreated)
 }

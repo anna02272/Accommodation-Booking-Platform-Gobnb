@@ -17,7 +17,7 @@ type Accommodation struct {
 	MaxGuests       int                   `json:"accommodation_max_guests"`
 	ImageUrl        string                `json:"accommodation_image_url"`
 	Availability    map[time.Time]bool    `json:"accommodation_availability"`
-	Prices          map[time.Time]float64 `json:"accommodation_prices"`
+	Prices          map[time.Time]float32 `json:"accommodation_prices"`
 }
 
 type Accommodations []*Accommodation
@@ -32,6 +32,7 @@ func (o *Accommodation) FromJSON(r io.Reader) error {
 	return d.Decode(o)
 }
 
+/*
 func isAccommodationAvailable(accommodation *Accommodation, checkIn, checkOut time.Time) bool {
 	for t := checkIn; t.Before(checkOut); t = t.AddDate(0, 0, 1) {
 		if !accommodation.Availability[t] {
@@ -68,3 +69,4 @@ func isDateRangeAvailable(accommodation *Accommodation, checkIn, checkOut time.T
 	}
 	return true
 }
+*/
