@@ -31,7 +31,7 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "Logged in user": user})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": user})
 }
 func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
 	if err := utils.VerifyToken(tokenString); err != nil {
