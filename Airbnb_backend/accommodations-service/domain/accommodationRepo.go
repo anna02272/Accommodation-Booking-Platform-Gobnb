@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gocql/gocql"
 )
@@ -72,6 +73,8 @@ func (sr *AccommodationRepo) CreateTable() {
 			accommodation_min_guests int,
 			accommodation_max_guests int,
 			accommodation_image_url text,
+			accommodation_availability map<timestamp, boolean>,
+			accommodation_price map<timestamp, float>,
 			PRIMARY KEY (accommodationId))`,
 	).Exec()
 
@@ -86,8 +89,8 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) e
 
 	err := sr.session.Query(
 		`INSERT INTO accommodations 
-         (accommodationId, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         (accommodationId, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url, accommodation_availability, accommodation_price) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, null, null)`,
 		accommodationId,
 		accommodation.Name,
 		accommodation.Location,
@@ -126,4 +129,28 @@ func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error
 		return nil, err
 	}
 	return accommodations, nil
+}
+
+func (sr *AccommodationRepo) UpdateAccommodationAvailability(id string, availability map[time.Time]bool) (accommodation *Accommodation) {
+	err := sr.session.Query(`UPDATE accommodation.accommodations SET 
+        accommodation_availability = ? WHERE accommodationId = ?`, availability, id).Exec()
+
+	if err != nil {
+		sr.logger.Println(err)
+		return
+	}
+
+	return nil
+}
+
+func (sr *AccommodationRepo) UpdateAccommodationPrice(id string, price map[time.Time]float32) (accommodation *Accommodation) {
+	err := sr.session.Query(`UPDATE accommodation.accommodations SET 
+        accommodation_price = ? WHERE accommodationId = ?`, price, id).Exec()
+
+	if err != nil {
+		sr.logger.Println(err)
+		return
+	}
+
+	return nil
 }
