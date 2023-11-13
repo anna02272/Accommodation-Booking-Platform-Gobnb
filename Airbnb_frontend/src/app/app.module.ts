@@ -24,6 +24,10 @@ import { EditProfileComponent } from './components/edit-profile/edit-profile.com
 import { CreateAccommodationComponent } from './components/create-accommodation/create-accommodation.component';
 import { MobileVerificationComponent } from './components/mobile-verification/mobile-verification.component';
 import { MatDialogModule } from '@angular/material/dialog';
+import { ApiService, AuthService, ConfigService, UserService } from './services';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { TokenInterceptor } from './interceptor/TokenInterceptor';
+import { ReactiveFormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -43,6 +47,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     MobileVerificationComponent
   ],
   imports: [
+    HttpClientModule,
     BrowserModule,
     AppRoutingModule,
     MatDatepickerModule,
@@ -50,10 +55,22 @@ import { MatDialogModule } from '@angular/material/dialog';
     MatNativeDateModule,
     BrowserAnimationsModule,
     MatFormFieldModule,
-    MatDialogModule
+    MatDialogModule,
+    ReactiveFormsModule
 
   ],
-  providers: [],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: TokenInterceptor,
+      multi: true,
+    },
+    ConfigService,
+    ApiService,
+    AuthService,
+    UserService,
+    
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

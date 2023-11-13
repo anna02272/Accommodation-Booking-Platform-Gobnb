@@ -6,7 +6,7 @@
     <li routerLink="/register">Register</li>
     <li routerLink="/login">Log In</li>
     <li>
-      <div class="dropdown" >
+      <div class="dropdown"   *ngIf="hasSignedIn()">
         <button class="dropbtn rounded-circle"  style="width: 45px; height: 45px;">
           <img
             src="assets/images/avatar.png"
@@ -16,11 +16,13 @@
             loading="lazy"
           />
         </button>
+       
         <div class="dropdown-content">
           <a routerLink="/profile">Profile</a>
-          <a>Logout</a>
+          <a (click)="logout()">Logout</a>
         </div>
       </div>
     </li>
+    <li *ngIf="hasSignedIn()">{{ getUsername() }}</li>
   </ul>
 </header>
