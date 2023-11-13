@@ -36,16 +36,6 @@ type UserResponse struct {
 	UserRole UserRole `bson:"userRole" json:"userRole"`
 }
 
-func FilteredResponse(user *User) UserResponse {
-	return UserResponse{
-		Username: user.Username,
-		Email:    user.Email,
-		Name:     user.Name,
-		Lastname: user.Lastname,
-		UserRole: user.UserRole,
-	}
-}
-
 type Address struct {
 	Street  string `bson:"street,omitempty" json:"street"`
 	City    string `bson:"city,omitempty" json:"city"`

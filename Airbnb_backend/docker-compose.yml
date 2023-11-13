@@ -1,60 +1,82 @@
 version: "3.1"
 
 services:
+
   auth-server:
     build:
       context: ./auth-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: "auth-server"
-    hostname: "auth-server"
+    container_name: ${AUTH_SERVICE_HOST}
+    hostname: ${AUTH_SERVICE_HOST}
     ports:
-      - "8080:8080"
-    env_file:
-      - ./auth-service/app.env
+      -  ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
     environment:
-      - PORT=8080
-      - MONGO_DB_URI=mongodb://root:root@mongo:27017
+      - PORT=${AUTH_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
     depends_on:
       mongo:
         condition: service_healthy
+    networks:
+      - network
 
   res-server:
     build:
       context: ./reservations-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: "res-server"
-    hostname: "res-server"
+    container_name: ${RES_SERVICE_HOST}
+    hostname: ${RES_SERVICE_HOST}
     ports:
-      - "8082:8082"
+      - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
     environment:
-      - PORT=8082
-      - CASS_DB=cassandra:9042
+      - PORT=${RES_SERVICE_PORT}
+      - CASS_DB=${CASS_DB}
     depends_on:
       cassandra:
         condition: service_healthy
+    networks:
+      - network
 
   acc-server:
     build:
       context: ./accommodations-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: "acc-server"
-    hostname: "acc-server"
+    container_name: ${ACC_SERVICE_HOST}
+    hostname: ${ACC_SERVICE_HOST}
     ports:
-      - "8083:8083"
+      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
     environment:
-      - PORT=8083
-      - CASS_DB=cassandra:9042
+      - PORT=${ACC_SERVICE_PORT}
+      - CASS_DB=${CASS_DB}
     depends_on:
       cassandra:
         condition: service_healthy
+    networks:
+      - network
+
+  api_gateway:
+    build:
+      context: ./api-gateway/
+      dockerfile: Dockerfile
+    container_name: ${GATEWAY_HOST}
+    restart: on-failure
+    ports:
+      - ${GATEWAY_PORT}:${GATEWAY_PORT}
+    depends_on:
+      - auth-server
+      - res-server
+      - acc-server
+    networks:
+      - network
+
+
   cassandra:
     image: cassandra
     restart: always
     ports:
-      - "9042:9042"
+      - ${CASS_PORT}:${CASS_PORT}
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster;'"]
       interval: 15s
@@ -62,16 +84,18 @@ services:
       retries: 15
     volumes:
       - cass_store:/var/lib/cassandra/data
+    networks:
+      - network
 
   mongo:
     image: mongo:4.4.25
     restart: always
     ports:
-      - "27017:27017"
+      - ${MONGO_PORT}:${MONGO_PORT}
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=root
-      - MONGO_INITDB_ROOT_PASSWORD=root
-      - MONGO_INITDB_DATABASE=mongoDemo
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE}
     healthcheck:
       test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok"]
       interval: 10s
@@ -79,25 +103,33 @@ services:
       retries: 10
     volumes:
       - mongo_store:/data/db
+    networks:
+      - network
 
   mongo-express:
     image: mongo-express
     restart: always
     environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=root
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=root
-      - ME_CONFIG_BASICAUTH_USERNAME=admin
-      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+      - ME_CONFIG_MONGODB_SERVER=${MONGODB_SERVER}
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_USERNAME}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_PASSWORD}
+      - ME_CONFIG_BASICAUTH_USERNAME=${BASICAUTH_USERNAME}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${BASICAUTH_PASSWORD}
     depends_on:
       mongo:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - ${MONGO_EXPRESS_PORT}:${MONGO_EXPRESS_PORT}
     volumes:
       - mongo_express_data:/data/db
+    networks:
+      - network
 
 volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
+
+networks:
+  network:
+    driver: bridge
