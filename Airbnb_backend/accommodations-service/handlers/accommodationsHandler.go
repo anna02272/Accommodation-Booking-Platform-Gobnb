@@ -3,6 +3,7 @@ package handlers
 import (
 	"accomodations-service/domain"
 	"context"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -81,4 +82,44 @@ func (s *AccommodationsHandler) MiddlewareAccommodationDeserialization(next http
 		h = h.WithContext(ctx)
 		next.ServeHTTP(rw, h)
 	})
+}
+
+func (s *AccommodationsHandler) SetAvailability(rw http.ResponseWriter, r *http.Request) {
+	var availabilityRequest AvailabilityRequest
+
+	err := json.NewDecoder(r.Body).Decode(&availabilityRequest)
+	if err != nil {
+		s.logger.Println("Error decoding JSON:", err)
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	accommodationID := availabilityRequest.AccommodationID
+	if accommodationID == "" {
+		s.logger.Println("Accommodation ID is required.")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	accommodation, err := s.repo.GetAccommodations(accommodationID)
+	if accommodation == nil {
+		s.logger.Printf("Accommodation with ID %s not found.", accommodationID)
+		rw.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	for date, available := range availabilityRequest.Dates {
+		accommodation.Availability[date] = available
+	}
+
+	// Čuvanje promena u bazi podataka (prilagoditi prema vašoj implementaciji)
+	// s.repo.UpdateAccommodation(accommodation)
+
+	// Slanje uspešnog odgovora
+	rw.WriteHeader(http.StatusOK)
+}
+
+type AvailabilityRequest struct {
+	AccommodationID string          `json:"accommodation_id"`
+	Dates           map[string]bool `json:"dates"`
 }
