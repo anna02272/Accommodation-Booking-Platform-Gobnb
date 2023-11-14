@@ -3,8 +3,8 @@
     <img src="assets/images/logo.png" />
   </h1>
   <ul class="main-nav">
-    <li routerLink="/register">Register</li>
-    <li routerLink="/login">Log In</li>
+    <li *ngIf="!hasSignedIn()" routerLink="/register">Register</li>
+    <li *ngIf="!hasSignedIn()" routerLink="/login">Log In</li>
     <li>
       <div class="dropdown"   *ngIf="hasSignedIn()">
         <button class="dropbtn rounded-circle"  style="width: 45px; height: 45px;">
