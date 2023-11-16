@@ -44,7 +44,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     SearchComponent,
     EditProfileComponent,
     CreateAccommodationComponent,
-    MobileVerificationComponent
+    MobileVerificationComponent,
   ],
   imports: [
     HttpClientModule,
