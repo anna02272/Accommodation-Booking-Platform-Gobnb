@@ -82,8 +82,9 @@ func main() {
 	fmt.Println("Status od profile-server:", resp.Status)
 
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowOrigins = []string{"http://localhost:4200"}
 	corsConfig.AllowCredentials = true
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
 
 	server.Use(cors.New(corsConfig))
 

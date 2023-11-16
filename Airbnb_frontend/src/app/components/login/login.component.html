@@ -6,7 +6,15 @@
             class="img-fluid">
         </div>
         <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
-          <form>
+
+            <form
+            #loginForm="ngForm"
+            (ngSubmit)="onSubmit()"
+            *ngIf="!submitted"
+            [formGroup]="form"
+          >
+
+
             <div class="d-flex flex-row align-items-center justify-content-center justify-content-lg-start">
               <p class="title">Log in</p>
             </div>
@@ -14,25 +22,41 @@
   
             <!-- Email input -->
             <div class="form-outline mb-4">
-              <input type="email" id="form3Example3" class="form-control form-control-lg"
-                placeholder="Enter a valid email address" />
-              <label class="form-label" for="form3Example3">Email address</label>
+              <input type="text" id="email" 
+              class="form-control form-control-lg"
+              placeholder="Enter username or email"
+              formControlName="email"
+              name="email "
+              required />
+
+              <label class="form-label" for="email">Username/ Email</label>
             </div>
   
             <!-- Password input -->
             <div class="form-outline mb-3">
-              <input type="password" id="form3Example4" class="form-control form-control-lg"
-                placeholder="Enter password" />
-              <label class="form-label" for="form3Example4">Password</label>
+              <input type="password"
+               id="password"
+                class="form-control form-control-lg"
+                placeholder="Enter password"
+                formControlName="password"
+                name="password"
+                required />
+              <label class="form-label" for="password">Password</label>
             </div>
-  
+            <p class="error" *ngIf="notification" [class]="notification.msgType">
+              {{ notification.msgBody }}
+            </p>
             <div class="d-flex justify-content-between align-items-center">
               <!-- Checkbox -->
               <a class="text-body">Forgot password?</a>
             </div>
   
             <div class="text-center text-lg-start mt-4 pt-2">
-                <button class="login-btn">Login</button>
+                <button 
+                class="login-btn"
+                type="submit"
+                [disabled]="!loginForm.form.valid"
+                >Login</button>
               <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account? <a routerLink="/register"
                 >Register</a></p>
             </div>

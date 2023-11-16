@@ -39,3 +39,7 @@ height: 100%;
 .img-fluid {
     margin-top:100px
 }
+.error {
+    color: red;
+  }
+  

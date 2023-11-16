@@ -1,4 +1,8 @@
-POST   localhost:8080/api/accommodations/create
+cassandra CREATE TABLE IF NOT EXISTS accommodation.accommodations (accommodationId UUID, accommodation_name text, accommodation_location text, accommodation_amenities text, accommodation_min_guests int, accommodation_max_guests int, accommodation_image_url text, accommodation_availability map<timestamp, boolean>, accommodation_price map<timestamp, float>, PRIMARY KEY (accommodationId));
+
+-----
+
+POST   localhost:8083/api/accommodations/create
 
 {
 "accommodation_name": "Acc1",
@@ -11,7 +15,7 @@ POST   localhost:8080/api/accommodations/create
 
 -----
 
-POST   localhost:8080/api/accommodations/create
+POST   localhost:8083/api/accommodations/create
 
 {
 "accommodation_name": "Acc2",
@@ -24,8 +28,28 @@ POST   localhost:8080/api/accommodations/create
 
 -----
 
-GET   localhost:8080/api/accommodations/get/bb3bc267-80cc-11ee-be6f-0242ac130003
+GET   localhost:8083/api/accommodations/get/bb3bc267-80cc-11ee-be6f-0242ac130003
 
 -----
 
-GET   localhost:8080/api/accommodations/get/f1aaffe4-80ce-11ee-81b7-0242ac130003
+GET   localhost:8083/api/accommodations/get/f1aaffe4-80ce-11ee-81b7-0242ac130003
+
+-----
+
+POST localhost:8083/api/accommodations/availability/75a4f2cf-8278-11ee-846e-0242ac120007
+
+{
+"2023-11-15T12:00:00Z": true,
+"2023-11-16T12:00:00Z": true,
+"2023-11-17T12:00:00Z": false
+}
+
+-----
+
+POST localhost:8083/api/accommodations/price/75a4f2cf-8278-11ee-846e-0242ac120007
+
+{
+"2023-11-15T12:00:00Z": 100,
+"2023-11-16T12:00:00Z": 200,
+"2023-11-17T12:00:00Z": 300
+}
