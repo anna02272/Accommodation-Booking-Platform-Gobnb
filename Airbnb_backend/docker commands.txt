@@ -9,6 +9,9 @@ docker volume prune
 
 docker network ls - da se vidi mreza
 
+docker container stop <id_kontejnera> stopiranje
+docker container rm <id_kontejnera> brisanje kontejnera
+
 ZA SLUCAJ KAD NECE ODMA DA POKRENE KONTEJNER A KREIRA GA (DUGO SE CEKA)
 docker ps -a - da vidis sve kontejnere,i one koji se ne vrte
 docker run <id_kontejnera> - pokreni odredjeni kontejner
