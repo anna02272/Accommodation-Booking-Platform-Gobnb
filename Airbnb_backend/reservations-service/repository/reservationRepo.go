@@ -90,30 +90,8 @@ func (sr *ReservationRepo) CreateTable() {
 	}
 }
 
-// inserting reservation into table reservation_by_guest
 func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate, guestId string) error {
-	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
-	var existingReservationCount int
-	errSameReservation := sr.session.Query(
-		`SELECT COUNT(*) FROM reservations_by_guest 
-         WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? ALLOW FILTERING`,
-		guestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
-	).Scan(&existingReservationCount)
 
-	if errSameReservation != nil {
-		sr.logger.Println(errSameReservation)
-		return errSameReservation
-	}
-
-	if existingReservationCount > 0 {
-		return fmt.Errorf("Guest already has a reservation for the same accommodation and check-in date")
-		fmt.Println(existingReservationCount)
-		fmt.Println("existing reservations")
-	}
-
-	fmt.Println(errSameReservation)
-
-	// If no existing reservation is found, proceed with the insertion
 	reservationIdTimeCreated := gocql.TimeUUID()
 
 	err := sr.session.Query(
