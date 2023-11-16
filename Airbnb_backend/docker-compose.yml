@@ -53,8 +53,25 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-    networks:
-      - network
+
+
+
+  profile-server:
+    build:
+      context: ./profile-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: "profile-server"
+    hostname: "profile-server"
+    ports:
+      - "8084:8084"
+    environment:
+      - PORT=8084
+      - MONGO_DB_URI=mongodb://root:root@mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+
 
   api_gateway:
     build:
@@ -70,6 +87,7 @@ services:
       - acc-server
     networks:
       - network
+
 
 
   cassandra:
@@ -88,7 +106,7 @@ services:
       - network
 
   mongo:
-    image: mongo:4.4.25
+    image: mongo
     restart: always
     ports:
       - ${MONGO_PORT}:${MONGO_PORT}
@@ -99,7 +117,7 @@ services:
     healthcheck:
       test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok"]
       interval: 10s
-      timeout: 10s
+      timeout: 20s
       retries: 10
     volumes:
       - mongo_store:/data/db

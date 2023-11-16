@@ -2,7 +2,12 @@ package services
 
 import (
 	"auth-service/domain"
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -66,4 +71,45 @@ func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, er
 	}
 
 	return user, nil
+}
+
+//	func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
+//		// Slanje HTTP zahteva ka profile-servisu
+//		url := "http://localhost:8084/api/profile/createUser"
+//		reqBody, err := json.Marshal(user)
+//		if err != nil {
+//			return err
+//		}
+//
+//		_, err = http.Post(url, "application/json", bytes.NewBuffer(reqBody))
+//		if err != nil {
+//			return err
+//		}
+//
+//		return nil
+//	}
+func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
+	// Slanje HTTP zahteva ka profile-servisu
+	url := "http://profile-server:8084/api/profile/createUser"
+	reqBody, err := json.Marshal(user)
+	if err != nil {
+		return fmt.Errorf("error marshaling user JSON: %v", err)
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("error making HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusServiceUnavailable {
+			return fmt.Errorf("service unavailable: %s", resp.Status)
+		}
+
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected response status: %s, body: %s", resp.Status, body)
+	}
+
+	return nil
 }
