@@ -53,25 +53,26 @@ services:
     depends_on:
       cassandra:
         condition: service_healthy
-
-
+    networks:
+      - network
 
   profile-server:
     build:
       context: ./profile-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: "profile-server"
-    hostname: "profile-server"
+    container_name: ${PROFILE_SERVICE_HOST}
+    hostname: ${PROFILE_SERVICE_HOST}
     ports:
-      - "8084:8084"
+      - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
     environment:
-      - PORT=8084
-      - MONGO_DB_URI=mongodb://root:root@mongo:27017
+      - PORT=${PROFILE_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
     depends_on:
       mongo:
         condition: service_healthy
-
+    networks:
+      - network
 
   api_gateway:
     build:
@@ -85,10 +86,9 @@ services:
       - auth-server
       - res-server
       - acc-server
+      - profile-server
     networks:
       - network
-
-
 
   cassandra:
     image: cassandra
@@ -106,7 +106,7 @@ services:
       - network
 
   mongo:
-    image: mongo
+    image: mongo:4.4.25
     restart: always
     ports:
       - ${MONGO_PORT}:${MONGO_PORT}

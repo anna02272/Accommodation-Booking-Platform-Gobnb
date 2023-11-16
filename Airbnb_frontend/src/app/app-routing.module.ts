@@ -6,7 +6,6 @@ import { HomeComponent } from './components/home/home.component';
 import { AccommodationComponent } from './components/accommodation/accommodation.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
-import { ReservationComponent } from './components/reservation/reservation.component';
 import { MobileVerificationComponent } from './components/mobile-verification/mobile-verification.component';
 import { CreateAccommodationComponent } from './components/create-accommodation/create-accommodation.component';
 
@@ -44,6 +43,8 @@ const routes: Routes = [
     path: 'create-accommodation',
     component: CreateAccommodationComponent
   },
+
+
 
 
 ];
