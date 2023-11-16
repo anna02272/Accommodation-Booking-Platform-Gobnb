@@ -25,7 +25,9 @@ func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *Reser
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
+	fmt.Printf("Before url")
 	url := "http://auth-server:8080/api/users/currentUser"
+	fmt.Printf("After url")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
@@ -33,13 +35,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 	req.Header.Set("Authorization", token)
 
-	// Perform the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Printf("Error occurred")
 		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
 		return
 	}
+
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
 		error2.ReturnJSONError(rw, "Unauthorized", http.StatusUnauthorized)
