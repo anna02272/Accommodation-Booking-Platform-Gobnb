@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { UserService } from 'src/app/services';
 
 
 @Component({
@@ -8,5 +9,12 @@ import { Component } from '@angular/core';
 
 })
 export class HomeComponent {
+  constructor( 
+    private userService: UserService
+    ) 
+  { }
 
+  getRole() {
+    return this.userService.currentUser.user.userRole;
+  }
 }
