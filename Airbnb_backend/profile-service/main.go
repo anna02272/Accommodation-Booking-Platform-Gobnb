@@ -47,7 +47,7 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
-	profileCollection = mongoclient.Database("Airbnb").Collection("profile")
+	profileCollection = mongoclient.Database("Gobnb").Collection("profile")
 	profileService = services.NewUserServiceImpl(profileCollection)
 	ProfileHandler = handlers.NewProfileHandler(profileService)
 	ProfileRouteHandler = routes.NewRouteProfileHandler(ProfileHandler)
@@ -58,11 +58,10 @@ func init() {
 func main() {
 	defer mongoclient.Disconnect(ctx)
 
-	// Konfiguracija logovanja
-
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"*"}
+	corsConfig.AllowOrigins = []string{"http://localhost:4200"}
 	corsConfig.AllowCredentials = true
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
 
 	server.Use(cors.New(corsConfig))
 
