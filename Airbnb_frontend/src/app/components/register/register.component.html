@@ -1,7 +1,5 @@
 <div class="container-fluid h-custom">
- 
-  <div class="row">    
-    
+  <div class="row">
     <div class="col-xl-4">
       <form>
         <div
@@ -30,11 +28,12 @@
             class="form-control form-control-lg"
             placeholder="Enter password"
             required
+            name="password"
+            [(ngModel)]="password"
           />
           <label class="form-label" for="password">Password</label>
-          <div class="password-strength__bar-block progress mb-4">
-            <div class="password-strength__bar progress-bar bg-danger" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-          </div>
+          <app-password-strenght-validator [password]="password"
+          ></app-password-strenght-validator>
         </div>
         <!-- Email input -->
         <div class="form-outline mb-0">
@@ -164,6 +163,6 @@
     </div>
     <div class="col-xl-1">
       <img src="assets/images/hola.jpg" class="image" />
-      </div>
+    </div>
   </div>
 </div>

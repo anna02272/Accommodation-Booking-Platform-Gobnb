@@ -28,6 +28,9 @@ import { ApiService, AuthService, ConfigService, UserService } from './services'
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { TokenInterceptor } from './interceptor/TokenInterceptor';
 import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { PasswordStrenghtValidatorComponent } from './components/password-strenght-validator/password-strenght-validator.component';
+
 
 @NgModule({
   declarations: [
@@ -45,6 +48,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     EditProfileComponent,
     CreateAccommodationComponent,
     MobileVerificationComponent,
+    PasswordStrenghtValidatorComponent,
   ],
   imports: [
     HttpClientModule,
@@ -56,7 +60,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     BrowserAnimationsModule,
     MatFormFieldModule,
     MatDialogModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    FormsModule,
 
   ],
   providers: [

@@ -50,7 +50,7 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
-	authCollection = mongoclient.Database("Airbnb").Collection("users")
+	authCollection = mongoclient.Database("Gobnb").Collection("auth")
 	userService = services.NewUserServiceImpl(authCollection, ctx)
 	authService = services.NewAuthService(authCollection, ctx, userService)
 	AuthHandler = handlers.NewAuthHandler(authService, userService)
@@ -65,21 +65,19 @@ func main() {
 	defer mongoclient.Disconnect(ctx)
 
 	client := &http.Client{
-		Timeout: 5 * time.Second, // Postavite odgovarajući timeout
+		Timeout: 5 * time.Second,
 	}
 
-	// Adresa profile-server servisa
-	profileServerURL := "http://profile-server:8084/api/profile/createUser" // Ili druga odgovarajuća ruta
+	profileServerURL := "http://profile-server:8084/api/profile/createUser"
 
-	// Slanje GET zahteva na profile-server
 	resp, err := client.Get(profileServerURL)
 	if err != nil {
-		fmt.Println("Nije moguće uspostaviti vezu sa profile-server:", err)
+		fmt.Println("Could not connect to profile-server:", err)
 		return
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("Status od profile-server:", resp.Status)
+	fmt.Println("Status profile-server:", resp.Status)
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:4200"}

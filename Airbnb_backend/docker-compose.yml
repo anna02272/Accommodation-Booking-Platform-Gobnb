@@ -92,6 +92,7 @@ services:
 
   cassandra:
     image: cassandra
+    container_name: ${CASS_HOST}
     restart: always
     ports:
       - ${CASS_PORT}:${CASS_PORT}
@@ -107,6 +108,7 @@ services:
 
   mongo:
     image: mongo:4.4.25
+    container_name: ${MONGO_HOST}
     restart: always
     ports:
       - ${MONGO_PORT}:${MONGO_PORT}
@@ -126,6 +128,7 @@ services:
 
   mongo-express:
     image: mongo-express
+    container_name: ${MONGO_EX_HOST}
     restart: always
     environment:
       - ME_CONFIG_MONGODB_SERVER=${MONGODB_SERVER}

@@ -30,67 +30,73 @@
             </div>
           </div>
         </div>
-        
-      <div class="align-items-center card mt-3">
-        <div class="mb-2"><b>Change Password</b></div>
-        <form>
-          <div class="row">
-            <div class="col">
-              <div class="form-group">
-                <label>Current Password</label>
-                <input
-                  class="form-control"
-                  type="password"
-                  placeholder="Current Password"
-                />
+
+        <div class="align-items-center card mt-3">
+          <div class="mb-2"><b>Change Password</b></div>
+          <form>
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label>Current Password</label>
+                  <input
+                    class="form-control"
+                    type="password"
+                    placeholder="Current Password"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="form-group">
-                <label>New Password</label>
-                <input
-                  class="form-control"
-                  type="password"
-                  placeholder="New Password"
-                />
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label>New Password</label>
+                  <input
+                    class="form-control"
+                    type="password"
+                    placeholder="New Password"
+                    name="password"
+                    id="password"
+                    [(ngModel)]="password"
+                  />
+                  <app-password-strenght-validator
+                    [password]="password"
+                  ></app-password-strenght-validator>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="row">
-            <div class="col">
-              <div class="form-group">
-                <label>Confirm Password</label>
-                <input
-                  class="form-control"
-                  type="password"
-                  placeholder="Confirm Password"
-                />
+            <div class="row">
+              <div class="col">
+                <div class="form-group">
+                  <label>Confirm Password</label>
+                  <input
+                    class="form-control"
+                    type="password"
+                    placeholder="Confirm Password"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="showPassword"
-            />
-            <label class="form-check-label" for="showPassword"
-              >Show Password</label
-            >
-          </div>
-          <div class="row">
-            <div class="col d-flex justify-content-start mt-3">
-              <button class="btn btn-warning" type="button">
-                Change password
-              </button>
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="showPassword"
+              />
+              <label class="form-check-label" for="showPassword"
+                >Show Password</label
+              >
             </div>
-          </div>
-        </form>
+            <div class="row">
+              <div class="col d-flex justify-content-start mt-3">
+                <button class="btn btn-warning" type="button">
+                  Change password
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
-      </div>
-      
+
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
@@ -107,11 +113,7 @@
                 <h6 class="mb-0">Email</h6>
               </div>
               <div class="col-sm-9 text-secondary">
-                <input
-                  type="text"
-                  class="form-control"
-                  value="Email"
-                />
+                <input type="text" class="form-control" value="Email" />
               </div>
             </div>
             <div class="row mb-3">
@@ -119,11 +121,7 @@
                 <h6 class="mb-0">Name</h6>
               </div>
               <div class="col-sm-9 text-secondary">
-                <input
-                  type="text"
-                  class="form-control"
-                  value="Name"
-                />
+                <input type="text" class="form-control" value="Name" />
               </div>
             </div>
             <div class="row mb-3">
@@ -131,11 +129,7 @@
                 <h6 class="mb-0">Last Name</h6>
               </div>
               <div class="col-sm-9 text-secondary">
-                <input
-                  type="text"
-                  class="form-control"
-                  value="Last Name"
-                />
+                <input type="text" class="form-control" value="Last Name" />
               </div>
             </div>
             <div class="row mb-3">
@@ -143,52 +137,48 @@
                 <h6 class="mb-0">Street</h6>
               </div>
               <div class="col-sm-9 text-secondary">
-                <input
-                  type="text"
-                  class="form-control"
-                  value="Street"
-                />
+                <input type="text" class="form-control" value="Street" />
               </div>
             </div>
             <div class="row mb-3">
-                <div class="col-sm-3">
-                  <h6 class="mb-0">City</h6>
-                </div>
-                <div class="col-sm-9 text-secondary">
-                  <input type="text" class="form-control" value="City" />
-                </div>
+              <div class="col-sm-3">
+                <h6 class="mb-0">City</h6>
               </div>
-              <div class="row mb-3">
-                <div class="col-sm-3">
-                  <h6 class="mb-0">Country</h6>
-                </div>
-                <div class="col-sm-9 text-secondary">
-                  <input type="text" class="form-control" value="Country" />
-                </div>
+              <div class="col-sm-9 text-secondary">
+                <input type="text" class="form-control" value="City" />
               </div>
-              <div class="row mb-3">
-                <div class="col-sm-3">
-                  <h6 class="mb-0">Age</h6>
-                </div>
-                <div class="col-sm-9 text-secondary">
-                  <input type="number" class="form-control" value="30" />
-                </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-sm-3">
+                <h6 class="mb-0">Country</h6>
               </div>
-              <div class="row mb-3">
-                <div class="col-sm-3">
-                  <h6 class="mb-0">Gender</h6>
-                </div>
-                <div class="col-sm-9 text-secondary">
-                      <input type="radio" id="male" name="gender" value="Male" />  
-                    <label for="male">Male</label><br />
-                     
-                    <input type="radio" id="female" name="gender" value="Female" />
-                      <label for="female">Female</label><br />
-                     
-                    <input type="radio" id="other" name="gender" value="Other" />  
-                    <label for="other">Other</label>
-                </div>
+              <div class="col-sm-9 text-secondary">
+                <input type="text" class="form-control" value="Country" />
               </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-sm-3">
+                <h6 class="mb-0">Age</h6>
+              </div>
+              <div class="col-sm-9 text-secondary">
+                <input type="number" class="form-control" value="30" />
+              </div>
+            </div>
+            <div class="row mb-3">
+              <div class="col-sm-3">
+                <h6 class="mb-0">Gender</h6>
+              </div>
+              <div class="col-sm-9 text-secondary">
+                  <input type="radio" id="male" name="gender" value="Male" />  
+                <label for="male">Male</label><br />
+                 
+                <input type="radio" id="female" name="gender" value="Female" />
+                  <label for="female">Female</label><br />
+                 
+                <input type="radio" id="other" name="gender" value="Other" />  
+                <label for="other">Other</label>
+              </div>
+            </div>
             <div class="row">
               <div class="col-sm-3"></div>
               <div class="col-sm-9 text-secondary">
