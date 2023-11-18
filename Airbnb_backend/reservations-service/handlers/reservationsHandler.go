@@ -53,8 +53,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	// Define a struct to represent the JSON structure
 	var response struct {
 		LoggedInUser struct {
-			ID string `json:"id"`
-		} `json:"Logged in user"`
+			ID       string        `json:"id"`
+			UserRole data.UserRole `json:"userRole"`
+		} `json:"user"`
 		Message string `json:"message"`
 	}
 
@@ -65,6 +66,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 	// Access the 'id' from the decoded struct
 	guestId := response.LoggedInUser.ID
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != data.Guest {
+		error2.ReturnJSONError(rw, "Permission denied. Only guests can create reservations.", http.StatusForbidden)
+		return
+	}
+
 	guestReservation := h.Context().Value(KeyProduct{}).(*data.ReservationByGuestCreate)
 	accId := guestReservation.AccommodationId.String()
 	urlAccommodationCheck := "http://acc-server:8083/api/accommodations/get/" + accId
