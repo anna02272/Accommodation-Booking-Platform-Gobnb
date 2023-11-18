@@ -54,5 +54,8 @@ export class AuthService {
   getToken() {
     return this.access_token;
   }
+  getRole() {
+    return this.userService.currentUser.user.userRole;
+  }
  
 }
