@@ -9,6 +9,7 @@ import (
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"reservations-service/repository"
+	"time"
 )
 
 type KeyProduct struct{}
@@ -25,22 +26,23 @@ func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *Reser
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
-	fmt.Printf("Before url")
 	url := "http://auth-server:8080/api/users/currentUser"
-	fmt.Printf("After url")
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
-		return
-	}
-	req.Header.Set("Authorization", token)
 
-	resp, err := http.DefaultClient.Do(req)
+	timeout := 5 * time.Second // Adjust the timeout duration as needed
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.performAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		fmt.Printf("Error occurred")
-		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
+		if ctx.Err() == context.DeadlineExceeded {
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
 	}
+	defer resp.Body.Close()
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
@@ -56,7 +58,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	var response struct {
 		LoggedInUser struct {
 			ID string `json:"id"`
-		} `json:"Logged in user"`
+		} `json:"user"`
 		Message string `json:"message"`
 	}
 
@@ -71,19 +73,20 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	accId := guestReservation.AccommodationId.String()
 	urlAccommodationCheck := "http://acc-server:8083/api/accommodations/get/" + accId
 	fmt.Sprintf(urlAccommodationCheck + "api url")
-	reqAccommodation, errAccommodation := http.NewRequest("GET", urlAccommodationCheck, nil)
-	if errAccommodation != nil {
-		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
+
+	resp, err = s.performAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			error2.ReturnJSONError(rw, "Acommodation service is not available.", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
 	}
-	// Perform the request
-	clientAccommodation := &http.Client{}
-	respAccommodation, errAccommodation1 := clientAccommodation.Do(reqAccommodation)
-	if errAccommodation1 != nil {
-		error2.ReturnJSONError(rw, "Error performing request", http.StatusBadRequest)
-		return
-	}
-	statusCodeAccommodation := respAccommodation.StatusCode
+	defer resp.Body.Close()
+
+	statusCodeAccommodation := resp.StatusCode
 	if statusCodeAccommodation != 200 {
 		error2.ReturnJSONError(rw, "Accommodation with that id does not exist", http.StatusBadRequest)
 		return
@@ -92,7 +95,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
-		error2.ReturnJSONError(rw, "Reservation with that guest_id, accommodation_id, and check-in date exists.",
+		error2.ReturnJSONError(rw, "Data validation error. Reservation can't be created.",
 			http.StatusBadRequest)
 		return
 	}
@@ -152,4 +155,21 @@ func (s *ReservationsHandler) MiddlewareReservationForGuestDeserialization(next 
 		h = h.WithContext(ctx)
 		next.ServeHTTP(rw, h)
 	})
+}
+
+func (s *ReservationsHandler) performAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
+	// Perform the request with the provided context
+	client := &http.Client{}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
