@@ -90,7 +90,6 @@ func (sr *ReservationRepo) CreateTable() {
 	}
 }
 
-// inserting reservation into table reservation_by_guest
 func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate, guestId string) error {
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int

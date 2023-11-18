@@ -68,6 +68,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
+
 	// Access the 'id' from the decoded struct
 	guestId := response.LoggedInUser.ID
 	userRole := response.LoggedInUser.UserRole
