@@ -72,6 +72,12 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	//	return
 	//}
 
+	passwordExistsBlackList, err := utils.CheckBlackList(user.Password, "blacklist.txt")
+
+	if passwordExistsBlackList {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Password is in blacklist!"})
+		return
+	}
 	newUser, err := ac.authService.Registration(user)
 
 	if err != nil {

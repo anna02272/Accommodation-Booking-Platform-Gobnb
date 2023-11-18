@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"golang.org/x/crypto/bcrypt"
+	"os"
 )
 
 func HashPassword(password string) (string, error) {
@@ -23,4 +25,28 @@ func VerifyNotHashedPassword(notHashedPassword string, candidatePassword string)
 		return errors.New("passwords do not match")
 	}
 	return nil
+}
+
+func CheckBlackList(password string, filepath string) (bool, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		fmt.Println("here")
+		fmt.Println(err.Error())
+		return false, err
+	}
+	defer file.Close()
+
+	blacklist := make(map[string]bool)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Println("Before reading file")
+		fmt.Println("Line from file:", line)
+		blacklist[line] = true
+	}
+	if blacklist[password] {
+		return true, nil
+	}
+	return false, nil
+
 }
