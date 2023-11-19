@@ -13,6 +13,6 @@ export class AccommodationComponent {
   { }
 
   getRole() {
-    return this.userService.currentUser.user.userRole;
+    return this.userService.currentUser?.user.userRole;
   }
 }

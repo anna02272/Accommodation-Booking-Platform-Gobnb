@@ -74,7 +74,7 @@
     appearance: none;
     cursor: pointer;
   }
-  
+/*   
   label {
     position: absolute;
     left: 8px;
@@ -89,7 +89,7 @@
     transition: color 0.3s, top 0.3s, background-color 0.8s;
     background-color: rgba(255, 255, 255, 1);
  
-  }
+  } */
   
   button{
     float: right;
