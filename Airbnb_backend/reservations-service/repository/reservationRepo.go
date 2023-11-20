@@ -90,7 +90,8 @@ func (sr *ReservationRepo) CreateTable() {
 	}
 }
 
-func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate, guestId string) error {
+func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate,
+	guestId string, accommodationName string, accommodationLocation string) error {
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
@@ -120,8 +121,8 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 		reservationIdTimeCreated,
 		guestId,
 		guestReservation.AccommodationId,
-		guestReservation.AccommodationName,
-		guestReservation.AccommodationLocation,
+		accommodationName,
+		accommodationLocation,
 		guestReservation.CheckInDate,
 		guestReservation.CheckOutDate,
 	).Exec()

@@ -100,7 +100,22 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		return
 	}
 
-	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId)
+	decoder = json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var responseAccommodation struct {
+		accommodationName     string `json:"acommodation_name"`
+		accommodationLocation string `json:"accommodation_location"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseAccommodation); err != nil {
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
+		responseAccommodation.accommodationName, responseAccommodation.accommodationLocation)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
 		error2.ReturnJSONError(rw, "Data validation error. Reservation can't be created.",
