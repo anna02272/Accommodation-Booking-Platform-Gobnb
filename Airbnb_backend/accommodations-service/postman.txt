@@ -1,4 +1,4 @@
-cassandra CREATE TABLE IF NOT EXISTS accommodation.accommodations (accommodationId UUID, accommodation_name text, accommodation_location text, accommodation_amenities text, accommodation_min_guests int, accommodation_max_guests int, accommodation_image_url text, accommodation_availability map<timestamp, boolean>, accommodation_price map<timestamp, float>, PRIMARY KEY (accommodationId));
+cassandra CREATE TABLE IF NOT EXISTS accommodation.accommodations (accommodationId UUID, accommodation_name text, accommodation_location text, accommodation_amenities text, accommodation_min_guests int, accommodation_max_guests int, accommodation_image_url text, accommodation_availability map<timestamp, boolean>, accommodation_price map<timestamp, int>, PRIMARY KEY (accommodationId));
 
 -----
 
@@ -49,7 +49,7 @@ POST localhost:8083/api/accommodations/availability/75a4f2cf-8278-11ee-846e-0242
 POST localhost:8083/api/accommodations/price/75a4f2cf-8278-11ee-846e-0242ac120007
 
 {
-"2023-11-15T12:00:00Z": 100,
-"2023-11-16T12:00:00Z": 200,
-"2023-11-17T12:00:00Z": 300
+"2023-11-15T12:00:00Z": "100",
+"2023-11-16T12:00:00Z": "200",
+"2023-11-17T12:00:00Z": "300"
 }

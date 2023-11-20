@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"accomodations-service/domain"
+	errJson "accomodations-service/error"
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -25,23 +27,33 @@ func NewAccommodationsHandler(l *log.Logger, r *domain.AccommodationRepo) *Accom
 
 func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *http.Request) {
 	accommodation := h.Context().Value(KeyProduct{}).(*domain.Accommodation)
-	err := s.repo.InsertAccommodation(accommodation)
+	acc, err := s.repo.InsertAccommodation(accommodation)
 	if err != nil {
 		s.logger.Print("Database exception: ", err)
-		rw.WriteHeader(http.StatusBadRequest)
+		errJson.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	rw.WriteHeader(http.StatusCreated)
+	jsonResponse, err1 := json.Marshal(acc)
+	if err1 == nil {
+		rw.Write(jsonResponse)
+	}
 }
 
 func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
 
+	idRegex := regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`)
+	if !idRegex.MatchString(accommodationID) {
+		errJson.ReturnJSONError(rw, "Invalid UUID format.", http.StatusBadRequest)
+		return
+	}
+
 	accommodations, err := s.repo.GetAccommodations(accommodationID)
 	if err != nil {
-		s.logger.Print("Database exception: ", err)
-		rw.WriteHeader(http.StatusInternalServerError)
+		s.logger.Print("Exception: ", err)
+		errJson.ReturnJSONError(rw, err, http.StatusBadRequest)
 		return
 	}
 
@@ -151,7 +163,7 @@ func (s *AccommodationsHandler) SetAccommodationAvailability(rw http.ResponseWri
 func (s *AccommodationsHandler) SetAccommodationPrice(rw http.ResponseWriter, h *http.Request) {
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
-	var price map[time.Time]float32
+	var price map[time.Time]string
 
 	err := json.NewDecoder(h.Body).Decode(&price)
 	if err != nil {
