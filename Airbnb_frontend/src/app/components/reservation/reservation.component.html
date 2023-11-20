@@ -3,35 +3,46 @@
     <h2 class="heading">Reserve accommodation</h2>
 
     <div class="controls">
-      <input type="text" id="name" class="floatLabel" name="name" placeholder="Accommodation name"
-        [(ngModel)]="accommodation_name">
+      <input
+        type="number"
+        id="check_in_time"
+        class="floatLabel"
+        name="name"
+        placeholder="Check in time"
+        [(ngModel)]="check_in_time"
+        max="24"
+        min="1"
+      />
     </div>
-
-    <div class="controls">
-      <input type="text" id="location" class="floatLabel" name="location" placeholder="Accommodation location"
-        [(ngModel)]="accommodation_location">
-    </div>
-
-
-      <div class="controls">
-        <input type="number" id="check_in_time" class="floatLabel" name="name" placeholder="Check in time"
-          [(ngModel)]="check_in_time" max="24" min="1">
-      </div>
 
     <div class="grid">
       <div class="col-1-2">
         <div class="controls">
-          <input type="date" id="arrive" class="floatLabel" name="arrive" placeholder="Check in"
-            [(ngModel)]="check_in_date">
+          <input
+            type="date"
+            id="arrive"
+            class="floatLabel"
+            name="arrive"
+            placeholder="Check in"
+            [(ngModel)]="check_in_date"
+          />
         </div>
       </div>
       <div class="col-1-2">
         <div class="controls">
-          <input type="date" id="depart" class="floatLabel" name="depart" placeholder="Check out"
-            [(ngModel)]="check_out_date" />
+          <input
+            type="date"
+            id="depart"
+            class="floatLabel"
+            name="depart"
+            placeholder="Check out"
+            [(ngModel)]="check_out_date"
+          />
         </div>
       </div>
     </div>
   </div>
-  <button type="submit" value="Submit"  (click)="createReservation()">Reserve</button>
+  <button type="submit" value="Submit" (click)="createReservation()">
+    Reserve
+  </button>
 </form>
