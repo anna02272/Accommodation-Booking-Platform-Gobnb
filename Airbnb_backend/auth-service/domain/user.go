@@ -22,6 +22,7 @@ type Credentials struct {
 	Username string             `bson:"username" json:"username"`
 	Password string             `bson:"password" json:"password"`
 	UserRole UserRole           `bson:"userRole" json:"userRole"`
+	Email    string             `bson:"email" json:"email" validate:"required,email"`
 }
 
 type LoginInput struct {
@@ -31,8 +32,6 @@ type LoginInput struct {
 type UserResponse struct {
 	Username string   `bson:"username" json:"username"`
 	Email    string   `bson:"email" json:"email" validate:"required,email"`
-	Name     string   `bson:"name" json:"name"`
-	Lastname string   `bson:"lastname" json:"lastname"`
 	UserRole UserRole `bson:"userRole" json:"userRole"`
 }
 

@@ -6,10 +6,8 @@ import { HomeComponent } from './components/home/home.component';
 import { AccommodationComponent } from './components/accommodation/accommodation.component';
 import { ProfileComponent } from './components/profile/profile.component';
 import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
-import { ReservationComponent } from './components/reservation/reservation.component';
-import { MobileVerificationComponent } from './components/mobile-verification/mobile-verification.component';
 import { CreateAccommodationComponent } from './components/create-accommodation/create-accommodation.component';
-
+import { AuthGuard } from './services/auth.guard';
 
 const routes: Routes = [
   {
@@ -30,21 +28,22 @@ const routes: Routes = [
   },
   {
     path: 'profile',
-    component: ProfileComponent
+    component: ProfileComponent,
+    canActivate: [AuthGuard] 
   },
   {
     path: 'edit-profile',
-    component: EditProfileComponent
-  },
-  {
-    path: 'verification',
-    component: MobileVerificationComponent
+    component: EditProfileComponent,
+    canActivate: [AuthGuard] 
   },
   {
     path: 'create-accommodation',
-    component: CreateAccommodationComponent
+    component: CreateAccommodationComponent,
+    canActivate: [AuthGuard] ,
+    data: {
+      roles: ['Host']
+    }
   },
-
 
 ];
 

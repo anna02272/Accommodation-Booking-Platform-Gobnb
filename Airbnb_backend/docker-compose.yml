@@ -56,6 +56,24 @@ services:
     networks:
       - network
 
+  profile-server:
+    build:
+      context: ./profile-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${PROFILE_SERVICE_HOST}
+    hostname: ${PROFILE_SERVICE_HOST}
+    ports:
+      - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
+    environment:
+      - PORT=${PROFILE_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - network
+
   api_gateway:
     build:
       context: ./api-gateway/
@@ -68,12 +86,13 @@ services:
       - auth-server
       - res-server
       - acc-server
+      - profile-server
     networks:
       - network
 
-
   cassandra:
     image: cassandra
+    container_name: ${CASS_HOST}
     restart: always
     ports:
       - ${CASS_PORT}:${CASS_PORT}
@@ -89,6 +108,7 @@ services:
 
   mongo:
     image: mongo:4.4.25
+    container_name: ${MONGO_HOST}
     restart: always
     ports:
       - ${MONGO_PORT}:${MONGO_PORT}
@@ -99,7 +119,7 @@ services:
     healthcheck:
       test: ["CMD", "mongo", "--eval", "db.runCommand('ping').ok"]
       interval: 10s
-      timeout: 10s
+      timeout: 20s
       retries: 10
     volumes:
       - mongo_store:/data/db
@@ -108,6 +128,7 @@ services:
 
   mongo-express:
     image: mongo-express
+    container_name: ${MONGO_EX_HOST}
     restart: always
     environment:
       - ME_CONFIG_MONGODB_SERVER=${MONGODB_SERVER}

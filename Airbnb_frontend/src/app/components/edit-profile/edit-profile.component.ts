@@ -6,5 +6,5 @@ import { Component } from '@angular/core';
   styleUrls: ['./edit-profile.component.css']
 })
 export class EditProfileComponent {
-
+  password: string = '';
 }

@@ -28,6 +28,11 @@ import { ApiService, AuthService, ConfigService, UserService } from './services'
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { TokenInterceptor } from './interceptor/TokenInterceptor';
 import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { PasswordStrenghtValidatorComponent } from './components/password-strenght-validator/password-strenght-validator.component';
+import { ReservationService } from './services/reservation.service';
+import { CommonModule, DatePipe } from '@angular/common';
+
 
 @NgModule({
   declarations: [
@@ -44,7 +49,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     SearchComponent,
     EditProfileComponent,
     CreateAccommodationComponent,
-    MobileVerificationComponent
+    MobileVerificationComponent,
+    PasswordStrenghtValidatorComponent,
   ],
   imports: [
     HttpClientModule,
@@ -56,7 +62,10 @@ import { ReactiveFormsModule } from '@angular/forms';
     BrowserAnimationsModule,
     MatFormFieldModule,
     MatDialogModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    FormsModule,
+    CommonModule,
+    DatePipe
 
   ],
   providers: [
@@ -69,6 +78,8 @@ import { ReactiveFormsModule } from '@angular/forms';
     ApiService,
     AuthService,
     UserService,
+    ReservationService,
+    DatePipe
     
   ],
   bootstrap: [AppComponent]

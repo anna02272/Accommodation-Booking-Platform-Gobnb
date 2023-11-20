@@ -53,7 +53,7 @@
     </div>
   </div>
 
-  <div class="enroll">
+  <div class="enroll" *ngIf="getRole() === 'Guest'">
     <app-reservation></app-reservation>
   </div>
 </section>

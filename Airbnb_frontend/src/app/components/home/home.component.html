@@ -1,3 +1,5 @@
 <app-search></app-search>
-<button class="btn" routerLink="/create-accommodation">Create Accommodation</button>
+<button class="btn"
+*ngIf="getRole() === 'Host'"
+ routerLink="/create-accommodation">Create Accommodation</button>
 <app-accommodations></app-accommodations>

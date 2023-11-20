@@ -25,11 +25,11 @@ type ReservationByGuest struct {
 
 type ReservationByGuestCreate struct {
 	//ReservationIdTimeCreated gocql.UUID `json:"reservation_id_time_created"`
-	AccommodationId       gocql.UUID `json:"accommodation_id"`
-	AccommodationName     string     `json:"accommodation_name"`
-	AccommodationLocation string     `json:"accommodation_location"`
-	CheckInDate           time.Time  `json:"check_in_date"`
-	CheckOutDate          time.Time  `json:"check_out_date"`
+	AccommodationId gocql.UUID `json:"accommodation_id"`
+	//AccommodationName     string     `json:"accommodation_name"`
+	//AccommodationLocation string     `json:"accommodation_location"`
+	CheckInDate  time.Time `json:"check_in_date"`
+	CheckOutDate time.Time `json:"check_out_date"`
 }
 
 type ReservationsByGuest []*ReservationByGuest

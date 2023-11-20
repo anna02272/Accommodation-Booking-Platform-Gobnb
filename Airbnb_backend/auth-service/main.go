@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -49,9 +50,9 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
-	authCollection = mongoclient.Database("Airbnb").Collection("users")
+	authCollection = mongoclient.Database("Gobnb").Collection("auth")
 	userService = services.NewUserServiceImpl(authCollection, ctx)
-	authService = services.NewAuthService(authCollection, ctx)
+	authService = services.NewAuthService(authCollection, ctx, userService)
 	AuthHandler = handlers.NewAuthHandler(authService, userService)
 	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler)
 	UserHandler = handlers.NewUserHandler(userService)
@@ -62,6 +63,21 @@ func init() {
 
 func main() {
 	defer mongoclient.Disconnect(ctx)
+
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	profileServerURL := "http://profile-server:8084/api/profile/createUser"
+
+	resp, err := client.Get(profileServerURL)
+	if err != nil {
+		fmt.Println("Could not connect to profile-server:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("Status profile-server:", resp.Status)
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:4200"}
