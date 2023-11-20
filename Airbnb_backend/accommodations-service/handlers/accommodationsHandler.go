@@ -151,7 +151,7 @@ func (s *AccommodationsHandler) SetAccommodationAvailability(rw http.ResponseWri
 func (s *AccommodationsHandler) SetAccommodationPrice(rw http.ResponseWriter, h *http.Request) {
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
-	var price map[time.Time]float32
+	var price map[time.Time]string
 
 	err := json.NewDecoder(h.Body).Decode(&price)
 	if err != nil {

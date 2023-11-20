@@ -74,7 +74,7 @@ func (sr *AccommodationRepo) CreateTable() {
 			accommodation_max_guests int,
 			accommodation_image_url text,
 			accommodation_availability map<timestamp, boolean>,
-			accommodation_price map<timestamp, float>,
+			accommodation_price map<timestamp, text>,
 			PRIMARY KEY (accommodationId))`,
 	).Exec()
 
@@ -143,7 +143,7 @@ func (sr *AccommodationRepo) UpdateAccommodationAvailability(id string, availabi
 	return nil
 }
 
-func (sr *AccommodationRepo) UpdateAccommodationPrice(id string, price map[time.Time]float32) (accommodation *Accommodation) {
+func (sr *AccommodationRepo) UpdateAccommodationPrice(id string, price map[time.Time]string) (accommodation *Accommodation) {
 	err := sr.session.Query(`UPDATE accommodation.accommodations SET 
         accommodation_price = ? WHERE accommodationId = ?`, price, id).Exec()
 
