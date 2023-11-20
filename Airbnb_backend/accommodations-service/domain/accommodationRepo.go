@@ -1,9 +1,13 @@
 package domain
 
 import (
+	"errors"
 	"fmt"
+	"html"
 	"log"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -84,8 +88,38 @@ func (sr *AccommodationRepo) CreateTable() {
 }
 
 // inserting accommodation into table accommodation
-func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) error {
+func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (*Accommodation, error) {
 	accommodationId := gocql.TimeUUID()
+
+	nameRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -][A-Za-z]+)*$`)
+	if !nameRegex.MatchString(accommodation.Name) {
+		return nil, errors.New("Invalid name format")
+	}
+
+	locationRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -']?[A-Za-z]+)*$`)
+	if !locationRegex.MatchString(accommodation.Location) {
+		return nil, errors.New("Invalid location format")
+	}
+
+	amenitiesRegex := regexp.MustCompile(`^[\s\S]+(?:,\s*[\s\S]+)*$`)
+	if !amenitiesRegex.MatchString(accommodation.Amenities) {
+		return nil, errors.New("Invalid amenities format")
+	}
+
+	guestRegex := regexp.MustCompile(`^[+-]?\d+$`)
+	if !guestRegex.MatchString(strconv.Itoa(accommodation.MinGuests)) {
+		return nil, errors.New("Invalid minimum guest format")
+	}
+
+	if !guestRegex.MatchString(strconv.Itoa(accommodation.MaxGuests)) {
+		return nil, errors.New("Invalid maximum guest format")
+	}
+
+	urlRegex := regexp.MustCompile(`^(https?|ftp):\/\/[^\s\/$.?#].[^\s]*$`)
+	accommodation.ImageUrl = html.EscapeString(accommodation.ImageUrl)
+	if !urlRegex.MatchString(accommodation.ImageUrl) {
+		return nil, errors.New("Invalid URl format")
+	}
 
 	err := sr.session.Query(
 		`INSERT INTO accommodations 
@@ -102,10 +136,12 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) e
 
 	if err != nil {
 		sr.logger.Println(err)
-		return err
+		return nil, err
 	}
 
-	return nil
+	accommodation.AccommodationId = accommodationId
+
+	return accommodation, nil
 }
 
 func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error) {
