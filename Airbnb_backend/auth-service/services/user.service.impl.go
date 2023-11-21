@@ -6,7 +6,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -51,6 +53,21 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return &domain.User{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credentials, error) {
+	var user *domain.Credentials
+
+	query := bson.M{"email": strings.ToLower(email)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
 		}
 		return nil, err
 	}
@@ -112,4 +129,40 @@ func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 	}
 
 	return nil
+}
+func (us *UserServiceImpl) FindUserByVerifCode(ctx *gin.Context) (*domain.Credentials, error) {
+	verificationCode := ctx.Params.ByName("verificationCode")
+
+	log.Printf("Received verification code: %s", verificationCode)
+
+	var user *domain.Credentials
+	query := bson.M{"verificationCode": verificationCode}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+func (us *UserServiceImpl) FindUserByResetPassCode(ctx *gin.Context) (*domain.Credentials, error) {
+	passwordResetToken := ctx.Params.ByName("passwordResetToken")
+
+	log.Printf("Received password reset code: %s", passwordResetToken)
+
+	var user *domain.Credentials
+	query := bson.M{"passwordResetToken": passwordResetToken}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
 }

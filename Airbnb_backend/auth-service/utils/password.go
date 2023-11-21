@@ -30,7 +30,6 @@ func VerifyNotHashedPassword(notHashedPassword string, candidatePassword string)
 func CheckBlackList(password string, filepath string) (bool, error) {
 	file, err := os.Open(filepath)
 	if err != nil {
-		fmt.Println("here")
 		fmt.Println(err.Error())
 		return false, err
 	}
@@ -40,8 +39,6 @@ func CheckBlackList(password string, filepath string) (bool, error) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		fmt.Println("Before reading file")
-		fmt.Println("Line from file:", line)
 		blacklist[line] = true
 	}
 	if blacklist[password] {
