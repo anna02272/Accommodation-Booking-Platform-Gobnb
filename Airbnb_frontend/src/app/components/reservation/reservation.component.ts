@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
 })
 export class ReservationComponent {
 
-    accommodation_id!: "ae388d07-87ca-11ee-ba57-0242ac130004";
+    accommodation_id!: "03c84b07-8848-11ee-8ba3-0242ac130006";
     //for now this is hardocded since there are no accommodations on frontend
     //accommodation_name!: string;
     //accommodation_location!: string;
@@ -43,7 +43,7 @@ export class ReservationComponent {
       }
     }
     const reservationCreate: Reservation = {
-      accommodation_id: "eaf1db11-86ef-11ee-98f8-0242ac130008",
+      accommodation_id: "03c84b07-8848-11ee-8ba3-0242ac130006",
       check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
       check_out_date: this.check_out_date+"T15:00:00Z"
     };
