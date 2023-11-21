@@ -13,9 +13,7 @@ export enum RequestMethod {
   Patch = 'PATCH'
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class ApiService {
 
   headers = new HttpHeaders({

@@ -1,38 +1,48 @@
-
-
-
 <form>
   <div class="form-group">
     <h2 class="heading">Reserve accommodation</h2>
 
     <div class="controls">
-      <input type="text" id="name" class="floatLabel" name="name">
-      <label for="name">Accommodation Name</label>
+      <input
+        type="number"
+        id="check_in_time"
+        class="floatLabel"
+        name="name"
+        placeholder="Check in time"
+        [(ngModel)]="check_in_time"
+        max="24"
+        min="1"
+      />
     </div>
 
-    <div class="controls">
-      <input type="text" id="location" class="floatLabel" name="location">
-      <label for="location">Accommodation Location</label>
+    <div class="grid">
+      <div class="col-1-2">
+        <div class="controls">
+          <input
+            type="date"
+            id="arrive"
+            class="floatLabel"
+            name="arrive"
+            placeholder="Check in"
+            [(ngModel)]="check_in_date"
+          />
+        </div>
       </div>
-
-      <div class="grid">
-
-        <div class="col-1-2 ">
-          <div class="controls">
-            <input type="date" id="arrive" class="floatLabel" name="arrive">
-            <label for="arrive" class="label-date">Check in</label>
-          </div> 
+      <div class="col-1-2">
+        <div class="controls">
+          <input
+            type="date"
+            id="depart"
+            class="floatLabel"
+            name="depart"
+            placeholder="Check out"
+            [(ngModel)]="check_out_date"
+          />
         </div>
-
-        <div class="col-1-2 ">
-          <div class="controls">
-            <input type="date" id="depart" class="floatLabel" name="depart" />
-            <label for="depart" class="label-date">Check out</label>
-          </div>      
-        </div>
-
-          </div>
-          
+      </div>
     </div>
-  <button type="submit" value="Submit" >Reserve</button>
+  </div>
+  <button type="submit" value="Submit" (click)="createReservation()">
+    Reserve
+  </button>
 </form>

@@ -5,6 +5,7 @@ import (
 	"auth-service/services"
 	"auth-service/utils"
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/thanhpk/randstr"
 	"go.mongodb.org/mongo-driver/bson"
@@ -47,6 +48,9 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 				return
 			}
 		} else {
+			if err == errors.New("Invalid email format") {
+				ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "Invalid email format": err.Error()})
+			}
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 			return
 		}

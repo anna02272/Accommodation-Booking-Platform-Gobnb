@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/gocql/gocql v1.6.0
+	github.com/google/uuid v1.4.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 )

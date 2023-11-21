@@ -51,12 +51,17 @@ func main() {
 	postReservationForGuest.HandleFunc("/api/reservations/create", reservationsHandler.CreateReservationForGuest)
 	postReservationForGuest.Use(reservationsHandler.MiddlewareReservationForGuestDeserialization)
 
-	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
+	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"http://localhost:4200",
+		"http://localhost:4200/"})
+	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	hanlderForHttp := gorillaHandlers.CORS(originsOk, headersOk, methodsOk)(router)
 
 	//Initialize the server
 	server := http.Server{
 		Addr:         ":" + port,
-		Handler:      cors(router),
+		Handler:      hanlderForHttp,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,

@@ -5,11 +5,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -46,6 +48,11 @@ func (us *UserServiceImpl) FindUserById(id string) (*domain.User, error) {
 
 func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 	var user *domain.User
+
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(email) {
+		return nil, errors.New("Invalid email format")
+	}
 
 	query := bson.M{"email": strings.ToLower(email)}
 	err := us.collection.FindOne(us.ctx, query).Decode(&user)

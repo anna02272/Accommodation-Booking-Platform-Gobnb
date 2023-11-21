@@ -1,20 +1,13 @@
 export class Reservation {
 
-    guestId: string;
-    accommodatioonId: string;
-    accommodationName: string;
-    accommodationLocation: string;
-    checkInDate: Date;
-    CheckOutDate: Date;
+    accommodation_id: string;
+    check_in_date!: string;
+    check_out_date: string;
 
-     constructor(guestId: string, accommodatioonId: string, accommodationName: string,
-         accommodationLocation: string, checkInDate: Date, CheckOutDate: Date) {
-      this.guestId = guestId;
-      this.accommodatioonId = accommodatioonId;
-      this.accommodationName = accommodationName;
-      this.accommodationLocation = accommodationLocation;
-      this.checkInDate = checkInDate,
-      this.CheckOutDate = CheckOutDate
+     constructor(accommodation_id: string,check_in_date: any, check_out_date: any) {
+      this.accommodation_id = accommodation_id;
+      this.check_in_date = check_in_date,
+      this.check_out_date = check_out_date
 
     }
 

@@ -9,15 +9,15 @@ import (
 )
 
 type Accommodation struct {
-	Name            string                `json:"accommodation_name"`
-	Location        string                `json:"accommodation_location"`
-	AccommodationId gocql.UUID            `json:"accommodation_id"`
-	Amenities       string                `json:"accommodation_amenities"`
-	MinGuests       int                   `json:"accommodation_min_guests"`
-	MaxGuests       int                   `json:"accommodation_max_guests"`
-	ImageUrl        string                `json:"accommodation_image_url"`
-	Availability    map[time.Time]bool    `json:"accommodation_availability"`
-	Prices          map[time.Time]float32 `json:"accommodation_prices"`
+	Name            string               `json:"accommodation_name"`
+	Location        string               `json:"accommodation_location"`
+	AccommodationId gocql.UUID           `json:"accommodation_id"`
+	Amenities       string               `json:"accommodation_amenities"`
+	MinGuests       int                  `json:"accommodation_min_guests"`
+	MaxGuests       int                  `json:"accommodation_max_guests"`
+	ImageUrl        string               `json:"accommodation_image_url"`
+	Availability    map[time.Time]bool   `json:"accommodation_availability"`
+	Prices          map[time.Time]string `json:"accommodation_prices"`
 }
 
 type Accommodations []*Accommodation

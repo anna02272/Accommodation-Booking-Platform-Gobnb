@@ -30,6 +30,8 @@ import { TokenInterceptor } from './interceptor/TokenInterceptor';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { PasswordStrenghtValidatorComponent } from './components/password-strenght-validator/password-strenght-validator.component';
+import { ReservationService } from './services/reservation.service';
+import { CommonModule, DatePipe } from '@angular/common';
 
 
 @NgModule({
@@ -62,6 +64,8 @@ import { PasswordStrenghtValidatorComponent } from './components/password-streng
     MatDialogModule,
     ReactiveFormsModule,
     FormsModule,
+    CommonModule,
+    DatePipe
 
   ],
   providers: [
@@ -74,6 +78,8 @@ import { PasswordStrenghtValidatorComponent } from './components/password-streng
     ApiService,
     AuthService,
     UserService,
+    ReservationService,
+    DatePipe
     
   ],
   bootstrap: [AppComponent]
