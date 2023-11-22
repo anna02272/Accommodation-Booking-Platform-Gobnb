@@ -206,6 +206,11 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
+	if !utils.ValidatePassword(payload.Password) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
+		return
+	}
+
 	hashedPassword, _ := utils.HashPassword(payload.Password)
 
 	updatedUser, err := ac.userService.FindUserByResetPassCode(ctx)

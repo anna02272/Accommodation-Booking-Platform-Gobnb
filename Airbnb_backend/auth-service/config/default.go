@@ -1,8 +1,7 @@
 package config
 
 import (
-	"fmt"
-	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"strconv"
 )
@@ -17,14 +16,10 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		fmt.Errorf("couldn't load config")
-	}
 	smtpPortStr := os.Getenv("SMTP_PORT")
 	smtpPort, err := strconv.Atoi(smtpPortStr)
 	if err != nil {
-		fmt.Errorf("couldn't convert SMTP_PORT to int: %v", err)
+		log.Printf("Error converting SMTP_PORT to int: %v", err)
 	}
 	return &Config{
 		SecretKey: os.Getenv("SECRET_KEY"),
