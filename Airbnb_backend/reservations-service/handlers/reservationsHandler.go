@@ -4,13 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"log"
 	"net/http"
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"reservations-service/repository"
+	"strings"
 	"time"
 )
+
+var validateFields = validator.New()
 
 type KeyProduct struct{}
 
@@ -65,6 +69,11 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -85,18 +94,56 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	resp, err = s.performAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			error2.ReturnJSONError(rw, "Accommodation service is not available.", http.StatusBadRequest)
+			errorMsg := map[string]string{"error": "Accommodation service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 			return
 		}
 
-		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
+		errorMsg := map[string]string{"error": "Error performing auth request."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
 
 	statusCodeAccommodation := resp.StatusCode
 	if statusCodeAccommodation != 200 {
-		error2.ReturnJSONError(rw, "Accommodation with that id does not exist", http.StatusBadRequest)
+		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	// Validate empty fields
+	if err := validateFields.Struct(guestReservation); err != nil {
+		validationErrors := make(map[string]string)
+		for _, err := range err.(validator.ValidationErrors) {
+			field := err.Field()
+			validationErrors[field] = fmt.Sprintf("Field %s is required", field)
+		}
+		error2.ReturnJSONError(rw, validationErrors, http.StatusBadRequest)
+		return
+	}
+
+	if guestReservation.CheckInDate.IsZero() || guestReservation.CheckOutDate.IsZero() {
+		errorMsg := map[string]string{"error": "Check-in and check-out dates are required."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	//if !utils.IsValidDateFormat(guestReservation.CheckInDate.String()) ||
+	//	!utils.IsValidDateFormat(guestReservation.CheckOutDate.String()) {
+	//	error2.ReturnJSONError(rw, "Invalid date format. Use '2006-01-02T15:04:05Z'", http.StatusBadRequest)
+	//	return
+	//}
+
+	if guestReservation.CheckInDate.Before(time.Now()) {
+		errorMsg := map[string]string{"error": "Check-in date must be in the future."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	if guestReservation.CheckInDate.After(guestReservation.CheckOutDate) {
+		errorMsg := map[string]string{"error": "Check-in date must be before check out date."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 
@@ -104,22 +151,28 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	// Define a struct to represent the JSON structure
 	var responseAccommodation struct {
-		accommodationName     string `json:"acommodation_name"`
-		accommodationLocation string `json:"accommodation_location"`
+		AccommodationName     string `json:"accommodation_name"`
+		AccommodationLocation string `json:"accommodation_location"`
 	}
 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
-		responseAccommodation.accommodationName, responseAccommodation.accommodationLocation)
+		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
-		error2.ReturnJSONError(rw, "Data validation error. Reservation can't be created.",
-			http.StatusBadRequest)
+		errorMsg := map[string]string{"error": "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 
