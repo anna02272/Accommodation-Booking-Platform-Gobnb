@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -44,11 +43,11 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
 
-	idRegex := regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$`)
-	if !idRegex.MatchString(accommodationID) {
-		errJson.ReturnJSONError(rw, "Invalid UUID format.", http.StatusBadRequest)
-		return
-	}
+	//idRegex := regexp.MustCompile(`^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{4}-[8|9|aA|bB][a-fA-F0-9]{4}-[a-fA-F0-9]{12}$`)
+	//if !idRegex.MatchString(accommodationID) {
+	//	errJson.ReturnJSONError(rw, "Invalid UUID format.", http.StatusBadRequest)
+	//	return
+	//}
 
 	accommodations, err := s.repo.GetAccommodations(accommodationID)
 	if err != nil {

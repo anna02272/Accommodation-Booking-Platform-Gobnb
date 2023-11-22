@@ -8,7 +8,7 @@ import (
 )
 
 func CreateToken(username string) (string, error) {
-	config, _ := config.LoadConfig(".")
+	config := config.LoadConfig()
 	var secretKey = []byte((config.SecretKey))
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
@@ -26,7 +26,7 @@ func CreateToken(username string) (string, error) {
 }
 
 func VerifyToken(tokenString string) error {
-	config, _ := config.LoadConfig(".")
+	config := config.LoadConfig()
 	var secretKey = []byte((config.SecretKey))
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil

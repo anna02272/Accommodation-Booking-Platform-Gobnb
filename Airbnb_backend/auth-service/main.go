@@ -53,8 +53,8 @@ func init() {
 	authCollection = mongoclient.Database("Gobnb").Collection("auth")
 	userService = services.NewUserServiceImpl(authCollection, ctx)
 	authService = services.NewAuthService(authCollection, ctx, userService)
-	AuthHandler = handlers.NewAuthHandler(authService, userService)
-	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler)
+	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection)
+	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler, authService)
 	UserHandler = handlers.NewUserHandler(userService)
 	UserRouteHandler = routes.NewRouteUserHandler(UserHandler)
 
@@ -99,4 +99,5 @@ func main() {
 	}
 
 	log.Fatal(server.Run(":" + port))
+
 }

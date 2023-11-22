@@ -7,14 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"regexp"
-	"strings"
-
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"regexp"
+	"strings"
 )
 
 type UserServiceImpl struct {
@@ -79,6 +80,21 @@ func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, er
 
 	return user, nil
 }
+func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credentials, error) {
+	var user *domain.Credentials
+
+	query := bson.M{"email": strings.ToLower(email)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
 
 //	func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 //		// Slanje HTTP zahteva ka profile-servisu
@@ -119,4 +135,37 @@ func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 	}
 
 	return nil
+}
+func (us *UserServiceImpl) FindUserByVerifCode(ctx *gin.Context) (*domain.Credentials, error) {
+	verificationCode := ctx.Params.ByName("verificationCode")
+
+	var user *domain.Credentials
+	query := bson.M{"verificationCode": verificationCode}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+func (us *UserServiceImpl) FindUserByResetPassCode(ctx *gin.Context) (*domain.Credentials, error) {
+	passwordResetToken := ctx.Params.ByName("passwordResetToken")
+
+	log.Printf("Received password reset code: %s", passwordResetToken)
+
+	var user *domain.Credentials
+	query := bson.M{"passwordResetToken": passwordResetToken}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
+		}
+		return nil, err
+	}
+	return user, nil
 }

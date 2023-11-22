@@ -2,6 +2,7 @@ package domain
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type User struct {
@@ -18,11 +19,15 @@ type User struct {
 }
 
 type Credentials struct {
-	ID       primitive.ObjectID `bson:"_id" json:"id"`
-	Username string             `bson:"username" json:"username"`
-	Password string             `bson:"password" json:"password"`
-	UserRole UserRole           `bson:"userRole" json:"userRole"`
-	Email    string             `bson:"email" json:"email" validate:"required,email"`
+	ID                 primitive.ObjectID `bson:"_id" json:"id"`
+	Username           string             `bson:"username" json:"username"`
+	Password           string             `bson:"password" json:"password"`
+	UserRole           UserRole           `bson:"userRole" json:"userRole"`
+	Email              string             `bson:"email" json:"email" validate:"required,email"`
+	VerificationCode   string             `bson:"verificationCode" json:"verificationCode"`
+	PasswordResetToken string             `bson:"passwordResetToken" json:"passwordResetToken"`
+	PasswordResetAt    time.Time          `bson:"passwordResetAt" json:"passwordResetAt"`
+	Verified           bool               `bson:"verified" json:"verified"`
 }
 
 type LoginInput struct {
@@ -55,3 +60,12 @@ const (
 	Guest = "Guest"
 	Host  = "Host"
 )
+
+type ForgotPasswordInput struct {
+	Email string `bson:"email" json:"email" binding:"required"`
+}
+
+type ResetPasswordInput struct {
+	Password        string `bson:"password" json:"password" binding:"required"`
+	PasswordConfirm string `bson:"passwordConfirm" json:"passwordConfirm" binding:"required"`
+}
