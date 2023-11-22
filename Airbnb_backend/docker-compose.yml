@@ -14,6 +14,11 @@ services:
     environment:
       - PORT=${AUTH_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
+      - SECRET_KEY=${SECRET_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
     depends_on:
       mongo:
         condition: service_healthy
@@ -107,7 +112,8 @@ services:
       - network
 
   mongo:
-    image: mongo
+
+    image: ${MONGO_IMAGE}
     container_name: ${MONGO_HOST}
     restart: always
     ports:

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"auth-service/config"
 	"auth-service/domain"
 	"bytes"
 	"fmt"
@@ -14,18 +15,18 @@ type EmailData struct {
 	Subject  string
 }
 
-func SendEmail(user *domain.Credentials, data *EmailData) error {
+func SendEmail(user *domain.Credentials, data *EmailData, config *config.Config) error {
 	var from = "gobnb@gobnb.com"
 	var to = user.Email
 
-	var smtpPass = "8aa59d58ea56fd"
-	var smtpUser = "86d650c613b23b"
-	var smtpHost = "sandbox.smtp.mailtrap.io"
-	var smtpPort = 587
+	var smtpPass = config.SMTPPass
+	var smtpUser = config.SMTPUser
+	var smtpHost = config.SMTPHost
+	var smtpPort = config.SMTPPort
 
 	var body bytes.Buffer
 	body.WriteString(fmt.Sprintf("Hi %s,\n", data.Username))
-	body.WriteString("Your code is: \n")
+	body.WriteString("your code is: \n")
 	body.WriteString(fmt.Sprintf("%s\n", data.URL))
 
 	m := gomail.NewMessage()

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"auth-service/config"
 	"auth-service/domain"
 	"auth-service/utils"
 	"context"
@@ -77,12 +78,12 @@ func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials
 	}
 
 	emailData := utils.EmailData{
-		URL:      "localhost:8080/api/auth/verifyEmail/" + credentials.VerificationCode,
+		URL:      credentials.VerificationCode,
 		Username: username,
 		Subject:  "Your account verification code",
 	}
-
-	return utils.SendEmail(credentials, &emailData)
+	config := config.LoadConfig()
+	return utils.SendEmail(credentials, &emailData, config)
 }
 
 func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credentials) error {
@@ -92,12 +93,12 @@ func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credential
 	}
 
 	emailData := utils.EmailData{
-		URL:      "localhost:8080/api/auth/resetPassword/" + credentials.PasswordResetToken,
+		URL:      credentials.PasswordResetToken,
 		Username: username,
 		Subject:  "Your account password reset code (valid for 10min)",
 	}
-
-	return utils.SendEmail(credentials, &emailData)
+	config := config.LoadConfig()
+	return utils.SendEmail(credentials, &emailData, config)
 }
 
 func (uc *AuthServiceImpl) ResendVerificationEmail(ctx *gin.Context) {
