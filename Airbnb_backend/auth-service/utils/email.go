@@ -15,19 +15,11 @@ type EmailData struct {
 }
 
 func SendEmail(user *domain.Credentials, data *EmailData) error {
-	//config := config.LoadConfig()
-
-	//var from = config.EmailFrom
-	//var smtpPass = config.SMTPPass
-	//var smtpUser = config.SMTPUser
-	//var to = user.Email
-	//var smtpHost = config.SMTPHost
-	//var smtpPort = config.SMTPPort
-
 	var from = "gobnb@gobnb.com"
+	var to = user.Email
+	
 	var smtpPass = "9915ee4595ade4"
 	var smtpUser = "22d4780d3a377d"
-	var to = user.Email
 	var smtpHost = "sandbox.smtp.mailtrap.io"
 	var smtpPort = 587
 

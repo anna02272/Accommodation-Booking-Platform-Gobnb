@@ -38,24 +38,16 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 	user, err := ac.userService.FindUserByEmail(credentials.Email)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			user, err = ac.userService.FindUserByUsername(credentials.Email)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email or username"})
-					return
-				}
-				ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
-				return
-			}
+			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email"})
+			return
+		} else if err == errors.New("invalid email format") {
+			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email format"})
+			return
 		} else {
-			if err == errors.New("Invalid email format") {
-				ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "Invalid email format": err.Error()})
-			}
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 			return
 		}
 	}
-
 	userVerif, err = ac.userService.FindCredentialsByEmail(credentials.Email)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
@@ -148,14 +140,14 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 	var payload *domain.ForgotPasswordInput
+	var user *domain.Credentials
+	var updatedUser *domain.Credentials
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
 	message := "You will receive a reset email."
-
-	var user *domain.Credentials
 
 	err := ac.DB.FindOne(context.TODO(), bson.M{"email": strings.ToLower(payload.Email)}).Decode(&user)
 	if err != nil {
@@ -166,12 +158,10 @@ func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 		}
 		return
 	}
-
 	if !user.Verified {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "Account not verified"})
 		return
 	}
-
 	// Generate Reset Code
 	resetToken := randstr.String(20)
 	passwordResetToken := utils.Encode(resetToken)
@@ -184,9 +174,17 @@ func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
 		return
 	}
-
+	err = ac.DB.FindOne(context.TODO(), bson.M{"_id": user.ID}).Decode(&updatedUser)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "User doesnt exist"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
+		}
+		return
+	}
 	// Send Password reset Email
-	if err := ac.authService.SendPasswordResetToken(user); err != nil {
+	if err := ac.authService.SendPasswordResetToken(updatedUser); err != nil {
 		log.Printf("Error sending password reset email: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Error sending password reset email"})
 		return
@@ -210,7 +208,7 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 
 	hashedPassword, _ := utils.HashPassword(payload.Password)
 
-	updatedUser, err := ac.userService.FindUserByVerifCode(ctx)
+	updatedUser, err := ac.userService.FindUserByResetPassCode(ctx)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "The reset token is invalid "})
@@ -219,12 +217,10 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 		}
 		return
 	}
-	// Check if the reset token has expired
-	if time.Now().Before(updatedUser.PasswordResetAt) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "The reset token has expired"})
+	if updatedUser.PasswordResetAt.Before(time.Now()) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "The reset token has expired "})
 		return
 	}
-
 	updatedUser.Password = hashedPassword
 	updatedUser.PasswordResetToken = ""
 	updatedUser.PasswordResetAt = time.Time{}

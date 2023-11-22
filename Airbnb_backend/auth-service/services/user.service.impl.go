@@ -8,15 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserServiceImpl struct {
@@ -66,21 +65,6 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 
 	return user, nil
 }
-func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credentials, error) {
-	var user *domain.Credentials
-
-	query := bson.M{"email": strings.ToLower(email)}
-	err := us.collection.FindOne(us.ctx, query).Decode(&user)
-
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return &domain.Credentials{}, err
-		}
-		return nil, err
-	}
-
-	return user, nil
-}
 func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, error) {
 	var user *domain.User
 
@@ -90,6 +74,21 @@ func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, er
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return &domain.User{}, err
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credentials, error) {
+	var user *domain.Credentials
+
+	query := bson.M{"email": strings.ToLower(email)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return &domain.Credentials{}, err
 		}
 		return nil, err
 	}
@@ -140,8 +139,6 @@ func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 func (us *UserServiceImpl) FindUserByVerifCode(ctx *gin.Context) (*domain.Credentials, error) {
 	verificationCode := ctx.Params.ByName("verificationCode")
 
-	log.Printf("Received verification code: %s", verificationCode)
-
 	var user *domain.Credentials
 	query := bson.M{"verificationCode": verificationCode}
 	err := us.collection.FindOne(us.ctx, query).Decode(&user)
@@ -170,6 +167,5 @@ func (us *UserServiceImpl) FindUserByResetPassCode(ctx *gin.Context) (*domain.Cr
 		}
 		return nil, err
 	}
-
 	return user, nil
 }

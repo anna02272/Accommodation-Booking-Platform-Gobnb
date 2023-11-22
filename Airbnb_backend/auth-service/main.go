@@ -99,4 +99,5 @@ func main() {
 	}
 
 	log.Fatal(server.Run(":" + port))
+
 }
