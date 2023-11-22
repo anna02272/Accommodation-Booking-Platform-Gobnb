@@ -169,3 +169,24 @@ func (us *UserServiceImpl) FindUserByResetPassCode(ctx *gin.Context) (*domain.Cr
 	}
 	return user, nil
 }
+
+func (us *UserServiceImpl) UpdateUser(user *domain.User) error {
+	if user.ID.IsZero() {
+		return errors.New("invalid user ID")
+	}
+
+	filter := bson.M{"_id": user.ID}
+
+	update := bson.M{
+		"$set": bson.M{
+			"password": user.Password,
+		},
+	}
+
+	_, err := us.collection.UpdateOne(us.ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("error updating user: %v", err)
+	}
+
+	return nil
+}

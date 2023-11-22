@@ -107,7 +107,7 @@ services:
       - network
 
   mongo:
-    image: mongo:4.4.25
+    image: mongo
     container_name: ${MONGO_HOST}
     restart: always
     ports:

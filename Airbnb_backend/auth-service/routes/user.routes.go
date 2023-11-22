@@ -17,4 +17,7 @@ func (uc *UserRouteHandler) UserRoute(rg *gin.RouterGroup) {
 
 	router := rg.Group("users")
 	router.GET("/currentUser", uc.userHandler.CurrentUser)
+
+	router.PATCH("/changePassword", uc.userHandler.ChangePassword)
+
 }
