@@ -75,6 +75,12 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request body"})
 		return
 	}
+
+	if !utils.ValidatePassword(updatePassword.NewPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
+		return
+	}
+
 	if updatePassword.NewPassword != updatePassword.ConfirmNewPassword {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
 		return

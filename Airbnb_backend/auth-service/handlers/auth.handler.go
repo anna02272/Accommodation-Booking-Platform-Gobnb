@@ -80,6 +80,10 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+	if !utils.ValidatePassword(user.Password) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
+		return
+	}
 
 	passwordExistsBlackList, err := utils.CheckBlackList(user.Password, "blacklist.txt")
 
