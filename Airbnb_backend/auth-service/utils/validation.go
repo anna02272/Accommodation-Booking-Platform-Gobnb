@@ -39,5 +39,5 @@ func containsDigit(s string) bool {
 }
 
 func containsSpecialCharacter(s string) bool {
-	return regexp.MustCompile(`[@$!%*?&]`).MatchString(s)
+	return regexp.MustCompile(`[@$!%*?&.,_]`).MatchString(s)
 }

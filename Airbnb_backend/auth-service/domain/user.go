@@ -34,6 +34,11 @@ type LoginInput struct {
 	Email    string `json:"email" bson:"email" `
 	Password string `json:"password" bson:"password"`
 }
+type PasswordChangeRequest struct {
+	CurrentPassword    string `json:"current_password" bson:"password"`
+	NewPassword        string `json:"new_password" bson:"password" binding:"required"`
+	ConfirmNewPassword string `json:"confirm_new_password" binding:"required"`
+}
 type UserResponse struct {
 	Username string   `bson:"username" json:"username"`
 	Email    string   `bson:"email" json:"email" validate:"required,email"`

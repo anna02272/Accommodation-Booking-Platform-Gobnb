@@ -55,3 +55,52 @@ func GetUserFromToken(tokenString string, userService services.UserService) (*do
 
 	return user, nil
 }
+
+func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
+	var updatePassword *domain.PasswordChangeRequest
+	tokenString := ctx.GetHeader("Authorization")
+	if tokenString == "" {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
+		return
+	}
+	tokenString = tokenString[len("Bearer "):]
+
+	user, err := GetUserFromToken(tokenString, ac.userService)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+
+	if err := ctx.ShouldBindJSON(&updatePassword); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request body"})
+		return
+	}
+
+	if !utils.ValidatePassword(updatePassword.NewPassword) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
+		return
+	}
+
+	if updatePassword.NewPassword != updatePassword.ConfirmNewPassword {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
+		return
+	}
+	if err := utils.VerifyPassword(user.Password, updatePassword.CurrentPassword); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Current password and new password do not match"})
+		return
+	}
+	hashedNewPassword, err := utils.HashPassword(updatePassword.NewPassword)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to hash new password"})
+		return
+	}
+
+	user.Password = hashedNewPassword
+
+	if err := ac.userService.UpdateUser(user); err != nil {
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to update password"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}

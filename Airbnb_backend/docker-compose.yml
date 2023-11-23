@@ -112,6 +112,7 @@ services:
       - network
 
   mongo:
+
     image: ${MONGO_IMAGE}
     container_name: ${MONGO_HOST}
     restart: always

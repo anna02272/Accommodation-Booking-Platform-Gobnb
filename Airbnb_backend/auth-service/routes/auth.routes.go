@@ -26,4 +26,5 @@ func (rc *AuthRouteHandler) AuthRoute(rg *gin.RouterGroup) {
 
 	router.POST("/forgotPassword", rc.authHandler.ForgotPassword)
 	router.PATCH("/resetPassword/:passwordResetToken", rc.authHandler.ResetPassword)
+
 }

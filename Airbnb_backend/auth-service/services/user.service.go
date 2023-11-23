@@ -13,4 +13,5 @@ type UserService interface {
 	SendUserToProfileService(user *domain.User) error
 	FindUserByVerifCode(ctx *gin.Context) (*domain.Credentials, error)
 	FindUserByResetPassCode(ctx *gin.Context) (*domain.Credentials, error)
+	UpdateUser(user *domain.User) error
 }
