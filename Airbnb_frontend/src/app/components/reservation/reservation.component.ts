@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { NgForm } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, NgForm } from '@angular/forms';
 import { ReservationService } from 'src/app/services/reservation.service';
 import { Reservation } from 'src/app/models/reservation';
 import { DatePipe } from '@angular/common';
@@ -10,20 +10,36 @@ import { DatePipe } from '@angular/common';
   templateUrl: './reservation.component.html',
   styleUrls: ['./reservation.component.css']
 })
-export class ReservationComponent {
+export class ReservationComponent implements OnInit  {
 
-
-    accommodation_id!: "03c84b07-8848-11ee-8ba3-0242ac130006";
-    //for now this is hardocded since there are no accommodations on frontend
-    //accommodation_name!: string;
-    //accommodation_location!: string;
+    form!: FormGroup;
+    accommodation_id!: "22151fcf-8aee-11ee-818a-0242ac120007";
+    showDiv: boolean = false;
+    showDivSuccess: boolean = false;
+    //showDivErrorCheckInTime: boolean = false;
     check_in_date?: string;
     check_out_date?: string;
     check_in_time?: number;
+    errorCheck: boolean =  false; 
 
 
-    constructor(private reservationService: ReservationService, private datePipe: DatePipe) {
+    errorMessage?: "";
+    successMessage?: "Reserved successfully!"
+    errorMessage2?: "Please enter your check in time!"
+    
+    constructor(private fb: FormBuilder,private reservationService: ReservationService, 
+       private datePipe: DatePipe) {
+
+        this.showDivSuccess = false;
     }
+
+  ngOnInit(): void {
+  this.form = this.fb.group({
+      check_in_time: [''],
+      check_out_date: [''],
+      check_in_date: ['']
+
+    })   }
 
 
   convertToISOFormat(dateObject?: string): any {
@@ -36,15 +52,17 @@ export class ReservationComponent {
   createReservation(): void {
 
     if (this.check_in_time === undefined){
-      return 
+      this.errorCheck = true;
+      return
     } 
     else {
       if (this.check_in_time > 24 || this.check_in_time < 1){
-        return
+              this.errorCheck = true;
+              return
       }
     }
     const reservationCreate: Reservation = {
-      accommodation_id: "562a302d-8845-11ee-8386-0242ac150007",
+      accommodation_id: "22151fcf-8aee-11ee-818a-0242ac120007",
       check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
       check_out_date: this.check_out_date+"T15:00:00Z"
     };
@@ -53,9 +71,19 @@ export class ReservationComponent {
     {
       next: (response) => {
         console.log('Reservation created successfully', response);
+        this.showDivSuccess = true;
+         setTimeout(() => {
+        this.showDivSuccess = false;
+      }, 5000);
+
       },
       error: (error) => {
-        console.error('Error creating reservation', error);
+           this.showDiv = true;
+           this.errorMessage = error.error.error;
+            setTimeout(() => {
+        this.showDiv = false;
+      }, 5000);
+           
       }
     }
   );
@@ -66,4 +94,3 @@ export class ReservationComponent {
 //    { static: boolean; }): (target: ReservationComponent, propertyKey: "reservationForm") => void {
 //   throw new Error('Function not implemented.');
 // }
-
