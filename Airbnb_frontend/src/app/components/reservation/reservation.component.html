@@ -1,24 +1,26 @@
-<form>
+<form [formGroup]="form">
   <div class="form-group">
     <h2 class="heading">Reserve accommodation</h2>
 
     <div class="controls">
       <input
+        formControlName="check_in_time"
         type="number"
         id="check_in_time"
         class="floatLabel"
         name="name"
+        required
         placeholder="Check in time"
         [(ngModel)]="check_in_time"
         max="24"
-        min="1"
-      />
+        min="1"/>
     </div>
 
     <div class="grid">
       <div class="col-1-2">
         <div class="controls">
           <input
+            formControlName="check_in_date"
             type="date"
             id="arrive"
             class="floatLabel"
@@ -31,6 +33,7 @@
       <div class="col-1-2">
         <div class="controls">
           <input
+            formControlName="check_out_date"
             type="date"
             id="depart"
             class="floatLabel"
@@ -46,3 +49,15 @@
     Reserve
   </button>
 </form>
+
+<div class="alert alert-danger" role="alert" *ngIf="showDiv">
+  {{ errorMessage }}
+</div>
+
+<div class="alert alert-success" role="alert" *ngIf="showDivSuccess">
+  Reserved successfully!
+</div>
+
+<div class="alert alert-success" role="alert" *ngIf="errorCheck">
+  Please enter valid check in time!
+</div>
