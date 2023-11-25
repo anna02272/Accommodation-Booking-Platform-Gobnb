@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"log"
 	"net/http"
 	"os"
 	"profile-service/handlers"
@@ -56,6 +55,7 @@ func init() {
 }
 
 func main() {
+
 	defer mongoclient.Disconnect(ctx)
 
 	corsConfig := cors.DefaultConfig()
@@ -69,15 +69,14 @@ func main() {
 	router.GET("/healthchecker", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Message"})
 	})
+
 	router.GET("/profile/createUser", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "hej", "hej": "hej"})
 	})
 
-	ProfileRouteHandler.ProfileRoute(router)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8084"
+	err = server.RunTLS(":8084", "/app/profile-service.crt", "/app/profile-service.key")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	log.Fatal(server.Run(":" + port))
 }

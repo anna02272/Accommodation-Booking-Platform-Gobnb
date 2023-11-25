@@ -113,7 +113,7 @@ func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credent
 //	}
 func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 	// Slanje HTTP zahteva ka profile-servisu
-	url := "http://profile-server:8084/api/profile/createUser"
+	url := "https://profile-server:8084/api/profile/createUser"
 	reqBody, err := json.Marshal(user)
 	if err != nil {
 		return fmt.Errorf("error marshaling user JSON: %v", err)

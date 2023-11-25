@@ -68,7 +68,7 @@ func main() {
 		Timeout: 5 * time.Second,
 	}
 
-	profileServerURL := "http://profile-server:8084/api/profile/createUser"
+	profileServerURL := "https://profile-server:8084/api/profile/createUser"
 
 	resp, err := client.Get(profileServerURL)
 	if err != nil {

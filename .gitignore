@@ -18,6 +18,11 @@
 #Env file
 *.env
 
+*.crt
+*.csr
+*.key
+*.ext
+
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
