@@ -16,6 +16,11 @@ export class ConfigService {
 
   private _auth_url = this._auth_api_url + '/auth';
   private _login_url = this._auth_url + '/login';
+  private _register_url = this._auth_url + '/register';
+  private _verifyEmail_url = this._auth_url + '/verifyEmail';
+  private _forgotPassword_url = this._auth_url + '/forgotPassword';
+  private _resetPassword_url = this._auth_url + '/resetPassword';
+
   private _user_url = this._auth_api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
   private _create_resv_url = this._create_resv_api_url + '/reservations/create';
@@ -24,7 +29,18 @@ export class ConfigService {
   get login_url(): string {
     return this._login_url;
   }
-
+  get register_url(): string {
+    return this._register_url;
+  }
+  get verifyEmail_url(): string {
+    return this._verifyEmail_url;
+  }
+  get forgotPassword_url(): string {
+    return this._forgotPassword_url;
+  }
+  get resetPassword_url(): string {
+    return this._resetPassword_url;
+  }
   get currentUser_url(): string {
     return this._current_user_url;
   }

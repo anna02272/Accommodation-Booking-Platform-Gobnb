@@ -22,7 +22,7 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { SearchComponent } from './components/search/search.component';
 import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
 import { CreateAccommodationComponent } from './components/create-accommodation/create-accommodation.component';
-import { MobileVerificationComponent } from './components/mobile-verification/mobile-verification.component';
+import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
 import { MatDialogModule } from '@angular/material/dialog';
 import { ApiService, AuthService, ConfigService, UserService } from './services';
 import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
@@ -32,6 +32,8 @@ import { FormsModule } from '@angular/forms';
 import { PasswordStrenghtValidatorComponent } from './components/password-strenght-validator/password-strenght-validator.component';
 import { ReservationService } from './services/reservation.service';
 import { CommonModule, DatePipe } from '@angular/common';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 
 
 @NgModule({
@@ -49,8 +51,10 @@ import { CommonModule, DatePipe } from '@angular/common';
     SearchComponent,
     EditProfileComponent,
     CreateAccommodationComponent,
-    MobileVerificationComponent,
+    EmailVerificationComponent,
     PasswordStrenghtValidatorComponent,
+    ForgotPasswordComponent,
+    ResetPasswordComponent,
   ],
   imports: [
     HttpClientModule,
