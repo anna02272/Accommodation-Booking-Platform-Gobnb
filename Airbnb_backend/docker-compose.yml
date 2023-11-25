@@ -11,7 +11,7 @@ services:
     hostname: ${AUTH_SERVICE_HOST}
     ports:
       -  ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
-      - "443:443"
+      - "446:446"
     environment:
       - PORT=${AUTH_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -96,6 +96,7 @@ services:
     restart: on-failure
     ports:
       - ${GATEWAY_PORT}:${GATEWAY_PORT}
+      - "443:443"
     depends_on:
       - auth-server
       - res-server
