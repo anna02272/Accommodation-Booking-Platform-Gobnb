@@ -5,10 +5,10 @@ import {Injectable} from '@angular/core';
 })
 export class ConfigService {
 
-  private _auth_api_url = 'http://localhost:8080/api';
+  private _auth_api_url = 'https://localhost:8080/api';
   private _res_api_url = 'http://localhost:8082/api';
   private _acc_api_url = 'http://localhost:8083/api';
-  private _profile_api_url = 'http://localhost:8084/api';
+  private _profile_api_url = 'https://localhost:8084/api';
   private _rec_api_url = 'http://localhost:8085/api';
   private _notif_api_url = 'http://localhost:8086/api';
   private _create_resv_api_url = 'http://localhost:8082/api';
