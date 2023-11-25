@@ -75,6 +75,7 @@ services:
     hostname: ${PROFILE_SERVICE_HOST}
     ports:
       - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
+      - "443:443"
     environment:
       - PORT=${PROFILE_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -83,6 +84,9 @@ services:
         condition: service_healthy
     networks:
       - network
+    volumes:
+      - ./profile-service/profile-service.crt:/app/profile-service.crt
+      - ./profile-service/profile-service.key:/app/profile-service.key
 
   api_gateway:
     build:
