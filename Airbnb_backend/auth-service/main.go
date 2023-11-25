@@ -5,6 +5,7 @@ import (
 	"auth-service/routes"
 	"auth-service/services"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -65,6 +66,9 @@ func main() {
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // Skip certificate verification (not recommended for production)
+		},
 	}
 
 	profileServerURL := "https://profile-server:8084/api/profile/createUser"

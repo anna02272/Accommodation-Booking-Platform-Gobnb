@@ -75,7 +75,7 @@ services:
     hostname: ${PROFILE_SERVICE_HOST}
     ports:
       - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
-      - "443:443"
+      - "444:444"
     environment:
       - PORT=${PROFILE_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}

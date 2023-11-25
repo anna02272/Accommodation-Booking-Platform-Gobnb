@@ -11,4 +11,4 @@ COPY --from=build_container /app/server /usr/bin
 COPY profile-service.crt /app/
 COPY profile-service.key /app/
 EXPOSE 8084
-ENTRYPOINT ["server"]
+ENTRYPOINT ["server", "https"]
