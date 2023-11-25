@@ -41,6 +41,34 @@ export class AuthService {
       }));
   }
 
+  register(user: any) {
+    const signupHeaders = new HttpHeaders({
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    });
+    const body = {
+      'username': user.username,
+      'password': user.password,
+      'email' : user.email,
+      'name' : user.name,
+      'lastname' : user.lastname,
+      'address' : {  
+        'street' : user.address?.street,
+        'city' : user.address?.city,
+        'country' : user.address?.country,
+      },
+      'age' : user.age,
+      'gender' : user.gender,
+      'userRole' : user.userRole,
+     
+    };
+    return this.apiService.post(this.config.register_url, JSON.stringify(body), signupHeaders)
+      .pipe(map(() => {
+        console.log('Register success');
+      }));
+  }
+
+
   logout() {
     this.userService.currentUser = null;
     this.access_token = null;

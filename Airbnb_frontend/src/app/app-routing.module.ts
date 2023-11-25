@@ -8,6 +8,9 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { EditProfileComponent } from './components/edit-profile/edit-profile.component';
 import { CreateAccommodationComponent } from './components/create-accommodation/create-accommodation.component';
 import { AuthGuard } from './services/auth.guard';
+import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 
 const routes: Routes = [
   {
@@ -43,6 +46,18 @@ const routes: Routes = [
     data: {
       roles: ['Host']
     }
+  },
+  {
+    path: 'email-verification',
+    component: EmailVerificationComponent ,
+  },
+  {
+    path: 'forgot-password',
+    component: ForgotPasswordComponent ,
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordComponent ,
   },
 
 ];

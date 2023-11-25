@@ -1,4 +1,14 @@
 import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, Validators ,AbstractControl} from '@angular/forms';
+import { ActivatedRoute, Router, Params } from '@angular/router';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { AuthService } from 'src/app/services';
+
+interface DisplayMessage {
+  msgType: string;
+  msgBody: string;
+}
 
 @Component({
   selector: 'app-register',
@@ -7,4 +17,78 @@ import { Component } from '@angular/core';
 })
 export class RegisterComponent {
   password: string = '';
+  personalInfoForm: FormGroup = new FormGroup({});
+  submitted = false;
+
+  notification: DisplayMessage = {} as DisplayMessage;
+  returnUrl = '';
+  private ngUnsubscribe: Subject<void> = new Subject<void>();
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private formBuilder: FormBuilder
+  ) {
+
+  }
+
+  ngOnInit() {
+    this.route.params
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((params: Params) => {
+        this.notification = params as DisplayMessage || { msgType: '', msgBody: '' };
+      });
+
+      const passwordPatternValidator = (control: AbstractControl): { [key: string]: boolean } | null => {
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        const valid = passwordPattern.test(control.value);
+        return valid ? null : { 'invalidPassword': true };
+      };
+
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
+      this.personalInfoForm = this.formBuilder.group({
+        username: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(32)])],
+        password: ['',Validators.compose([Validators.required,Validators.minLength(8),Validators.maxLength(32),passwordPatternValidator ])], 
+        email: ['', Validators.compose([Validators.required, Validators.email, Validators.minLength(6), Validators.maxLength(64)])],
+        name: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
+        lastname: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
+        // address: this.formBuilder.group({
+          street: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
+          city: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
+          country: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
+        // }), 
+        age: ['', Validators.compose([Validators.maxLength(3)])],
+        gender: [''],
+        userRole: ['', Validators.compose([Validators.required])]
+        
+      });
+  
+  }
+  get passwordControl() {
+    return this.personalInfoForm.get('password');
+  }
+  
+  ngOnDestroy() {
+    this.ngUnsubscribe.next();
+    this.ngUnsubscribe.complete();
+  }
+
+  onSubmit() {
+    this.notification = { msgType: '', msgBody: '' };
+    this.submitted = true;
+
+    this.authService.register(this.personalInfoForm.value).subscribe(
+      (data) => {
+        console.log("register")
+        this.router.navigate(['/email-verification']);
+      },
+      (error) => {
+        // Handle  error
+      }
+    );
+  
+  }
+
 }
+

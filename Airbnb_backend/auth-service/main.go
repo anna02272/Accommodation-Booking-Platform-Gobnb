@@ -6,16 +6,13 @@ import (
 	"auth-service/services"
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"time"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"net/http"
+	"os"
 )
 
 var (
@@ -64,21 +61,6 @@ func init() {
 func main() {
 	defer mongoclient.Disconnect(ctx)
 
-	client := &http.Client{
-		Timeout: 5 * time.Second,
-	}
-
-	profileServerURL := "http://profile-server:8084/api/profile/createUser"
-
-	resp, err := client.Get(profileServerURL)
-	if err != nil {
-		fmt.Println("Could not connect to profile-server:", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("Status profile-server:", resp.Status)
-
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"http://localhost:4200"}
 	corsConfig.AllowCredentials = true
@@ -93,11 +75,10 @@ func main() {
 
 	AuthRouteHandler.AuthRoute(router)
 	UserRouteHandler.UserRoute(router)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+
+	err := server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	log.Fatal(server.Run(":" + port))
-
 }

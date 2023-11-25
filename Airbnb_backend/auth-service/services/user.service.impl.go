@@ -4,6 +4,7 @@ import (
 	"auth-service/domain"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -95,33 +96,22 @@ func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credent
 
 	return user, nil
 }
-
-//	func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
-//		// Slanje HTTP zahteva ka profile-servisu
-//		url := "http://localhost:8084/api/profile/createUser"
-//		reqBody, err := json.Marshal(user)
-//		if err != nil {
-//			return err
-//		}
-//
-//		_, err = http.Post(url, "application/json", bytes.NewBuffer(reqBody))
-//		if err != nil {
-//			return err
-//		}
-//
-//		return nil
-//	}
 func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
-	// Slanje HTTP zahteva ka profile-servisu
-	url := "http://profile-server:8084/api/profile/createUser"
+	url := "https://profile-server:8084/api/profile/createUser"
+
 	reqBody, err := json.Marshal(user)
 	if err != nil {
 		return fmt.Errorf("error marshaling user JSON: %v", err)
 	}
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(reqBody))
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		return fmt.Errorf("error making HTTP request: %v", err)
+		return fmt.Errorf("error making HTTPS request: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -129,13 +119,13 @@ func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
 		if resp.StatusCode == http.StatusServiceUnavailable {
 			return fmt.Errorf("service unavailable: %s", resp.Status)
 		}
-
 		body, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("unexpected response status: %s, body: %s", resp.Status, body)
 	}
 
 	return nil
 }
+
 func (us *UserServiceImpl) FindUserByVerifCode(ctx *gin.Context) (*domain.Credentials, error) {
 	verificationCode := ctx.Params.ByName("verificationCode")
 
