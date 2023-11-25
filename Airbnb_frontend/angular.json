@@ -28,6 +28,7 @@
               "src/styles.css"
             ],
             "scripts": []
+            
           },
           "configurations": {
             "production": {
@@ -63,7 +64,10 @@
               "browserTarget": "Airbnb_frontend:build:production"
             },
             "development": {
-              "browserTarget": "Airbnb_frontend:build:development"
+              "browserTarget": "Airbnb_frontend:build:development",
+              "ssl": true,
+              "sslKey": "../Airbnb_backend/api-gateway/api-gateway.key",
+              "sslCert": "../Airbnb_backend/api-gateway/api-gateway.crt"
             }
           },
           "defaultConfiguration": "development"
