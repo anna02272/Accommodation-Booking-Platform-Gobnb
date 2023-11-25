@@ -50,7 +50,8 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		error2.ReturnJSONError(rw, "Unauthorized", http.StatusUnauthorized)
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
 		return
 	}
 
