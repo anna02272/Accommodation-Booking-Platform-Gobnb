@@ -11,6 +11,7 @@ services:
     hostname: ${AUTH_SERVICE_HOST}
     ports:
       -  ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
+      - "443:443"
     environment:
       - PORT=${AUTH_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -24,6 +25,10 @@ services:
         condition: service_healthy
     networks:
       - network
+    volumes:
+      - ./auth-service/auth-service.crt:/app/auth-service.crt
+      - ./auth-service/auth-service.key:/app/auth-service.key
+
 
   res-server:
     build:

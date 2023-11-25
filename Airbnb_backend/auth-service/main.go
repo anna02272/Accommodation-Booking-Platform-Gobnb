@@ -6,7 +6,6 @@ import (
 	"auth-service/services"
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -68,7 +67,7 @@ func main() {
 		Timeout: 5 * time.Second,
 	}
 
-	profileServerURL := "http://profile-server:8084/api/profile/createUser"
+	profileServerURL := "https://profile-server:8084/api/profile/createUser"
 
 	resp, err := client.Get(profileServerURL)
 	if err != nil {
@@ -93,11 +92,10 @@ func main() {
 
 	AuthRouteHandler.AuthRoute(router)
 	UserRouteHandler.UserRoute(router)
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+
+	err = server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-
-	log.Fatal(server.Run(":" + port))
-
 }
