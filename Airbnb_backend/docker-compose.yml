@@ -39,7 +39,7 @@ services:
     hostname: ${RES_SERVICE_HOST}
     ports:
       - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
-      - "443:443"
+      - "448:448"
     environment:
       - PORT=${RES_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
