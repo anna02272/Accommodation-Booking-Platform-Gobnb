@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
@@ -58,8 +59,8 @@ func main() {
 
 	hanlderForHttp := gorillaHandlers.CORS(originsOk, headersOk, methodsOk)(router)
 
-	//Initialize the server
-	server := http.Server{
+	// Serve over HTTPS
+	server := &http.Server{
 		Addr:         ":" + port,
 		Handler:      hanlderForHttp,
 		IdleTimeout:  120 * time.Second,
@@ -68,13 +69,12 @@ func main() {
 	}
 
 	logger.Println("Server listening on port", port)
-	//Distribute all the connections to goroutines
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			logger.Fatal(err)
-		}
-	}()
+
+	err = server.ListenAndServeTLS("/app/reservations.crt", "/app/decrypted_key.pem")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt)

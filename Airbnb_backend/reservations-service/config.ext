@@ -1,0 +1,24 @@
+[req]
+default_bits = 4096
+default_md = sha512
+default_keyfile = key.pem
+prompt = no
+encrypt_key = no
+distinguished_name = dn
+req_extensions = req_ext
+
+[dn]
+countryName = RS
+stateOrProvinceName = Vojvodina
+localityName = Novi Sad
+organizationName = FTN
+organizationalUnitName = IT
+commonName = Airbnb
+emailAddress = anastasija.cukelj@gmail.com
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = https-server
