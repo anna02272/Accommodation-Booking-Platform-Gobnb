@@ -74,6 +74,8 @@ func main() {
 		ctx.JSON(http.StatusOK, gin.H{"status": "hej", "hej": "hej"})
 	})
 
+	ProfileRouteHandler.ProfileRoute(router)
+
 	err = server.RunTLS(":8084", "/app/profile-service.crt", "/app/profile-service.key")
 	if err != nil {
 		fmt.Println(err)
