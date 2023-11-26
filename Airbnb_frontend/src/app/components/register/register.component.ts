@@ -49,7 +49,7 @@ export class RegisterComponent {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
       this.personalInfoForm = this.formBuilder.group({
         username: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(32)])],
-        password: ['',Validators.compose([Validators.required,Validators.minLength(8),Validators.maxLength(32),passwordPatternValidator ])], 
+        password: ['',Validators.compose([Validators.required,Validators.minLength(8),Validators.maxLength(32),passwordPatternValidator ])],
         email: ['', Validators.compose([Validators.required, Validators.email, Validators.minLength(6), Validators.maxLength(64)])],
         name: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
         lastname: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
@@ -57,18 +57,18 @@ export class RegisterComponent {
           street: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
           city: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
           country: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-        // }), 
+        // }),
         age: ['', Validators.compose([Validators.maxLength(3)])],
         gender: [''],
         userRole: ['', Validators.compose([Validators.required])],
         captcha: [null, Validators.required]
       });
-  
+
   }
   get passwordControl() {
     return this.personalInfoForm.get('password');
   }
-  
+
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
@@ -95,17 +95,23 @@ export class RegisterComponent {
     this.notification = { msgType: '', msgBody: '' };
     this.submitted = true;
 
+    const emailControl = this.personalInfoForm.get('email');
+
     this.authService.register(this.personalInfoForm.value).subscribe(
       (data) => {
         console.log("register")
-        this.router.navigate(['/email-verification']);
+        const email = emailControl?.value;
+          this.notification = { msgType: 'success', msgBody: `You are registered! Check your email (${email}) for verification.` };
+          this.router.navigate(['/email-verification'],  { queryParams: { email: email }});
       },
       (error) => {
+        console.error('Registration error', error);
+        this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
         this.submitted = false;
         // Handle  error
       }
     );
-  
+
   }
 
 }
