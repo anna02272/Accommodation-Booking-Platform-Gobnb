@@ -18,6 +18,7 @@ export class ConfigService {
   private _login_url = this._auth_url + '/login';
   private _register_url = this._auth_url + '/register';
   private _verifyEmail_url = this._auth_url + '/verifyEmail';
+  private _resendVerification_url = this._auth_url + '/resendVerification';
   private _forgotPassword_url = this._auth_url + '/forgotPassword';
   private _resetPassword_url = this._auth_url + '/resetPassword';
 
@@ -35,6 +36,9 @@ export class ConfigService {
   }
   get verifyEmail_url(): string {
     return this._verifyEmail_url;
+  }
+  get resendVerification_url(): string {
+    return this._resendVerification_url;
   }
   get forgotPassword_url(): string {
     return this._forgotPassword_url;

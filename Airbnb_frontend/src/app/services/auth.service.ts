@@ -68,6 +68,29 @@ export class AuthService {
       }));
   }
 
+  verifyEmail(verificationCode: string) {
+    return this.apiService.get(this.config.verifyEmail_url + `/${verificationCode}`);
+  }
+
+  resendVerificationEmail(email: string) {
+    return this.apiService.get(this.config.resendVerification_url + `/${email}`);
+  }
+
+  forgotPassword(email: string) {
+    const body = {
+      'email': email
+    };
+    return this.apiService.post(this.config.forgotPassword_url, JSON.stringify(body));
+  }
+
+  resetPassword(passwordResetToken: string, password: string, passwordConfirm: string) {
+    const body = {
+      'passwordResetToken' : passwordResetToken,
+      'password': password,
+      'passwordConfirm': passwordConfirm
+    };
+    return this.apiService.patch(this.config.resetPassword_url + `/${passwordResetToken}`, JSON.stringify(body));
+  }
 
   logout() {
     this.userService.currentUser = null;

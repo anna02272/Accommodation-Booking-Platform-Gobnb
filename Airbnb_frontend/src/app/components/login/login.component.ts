@@ -5,6 +5,7 @@ import { AuthService, UserService } from '../../services';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
+
 interface DisplayMessage {
   msgType: string;
   msgBody: string;
@@ -21,6 +22,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   notification: DisplayMessage = {} as DisplayMessage;
   returnUrl = '';
   private ngUnsubscribe: Subject<void> = new Subject<void>();
+  recaptchaSiteKey = "6Lcm8hwpAAAAAK-MQIOvQQNNUdTPNzjI2PCZMVKs";
+
 
   constructor(
     private userService: UserService,
@@ -56,7 +59,8 @@ export class LoginComponent implements OnInit, OnDestroy {
           Validators.minLength(8),
           Validators.maxLength(32)
         ])
-      ]
+      ],
+      captcha: [null, Validators.required]
     });
   }
 
@@ -64,6 +68,24 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
   }
+
+   //recaptcha
+   handleSuccess(event: any): void {
+    console.log('reCAPTCHA success:', event);
+  }
+
+  handleReset(): void {
+    console.log('reCAPTCHA reset');
+  }
+
+  handleExpire(): void {
+    console.log('reCAPTCHA expired');
+  }
+
+  handleLoad(): void {
+    console.log('reCAPTCHA loaded');
+  }
+
 
   onSubmit() {
     this.notification = { msgType: '', msgBody: '' };

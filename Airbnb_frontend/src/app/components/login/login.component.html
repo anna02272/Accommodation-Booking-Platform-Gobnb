@@ -14,11 +14,12 @@
             [formGroup]="form"
           >
 
+      
 
             <div class="d-flex flex-row align-items-center justify-content-center justify-content-lg-start">
               <p class="title">Log in</p>
             </div>
-  
+
   
             <!-- Email input -->
             <div class="form-outline mb-4">
@@ -43,9 +44,21 @@
                 required />
               <label class="form-label" for="password">Password</label>
             </div>
+
+            <!-- Captcha -->
+              <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
+                (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
+              </ngx-recaptcha2>
+
             <p class="error" *ngIf="notification" [class]="notification.msgType">
               {{ notification.msgBody }}
             </p>
+           
+          <div *ngIf="!form.get('captcha')!.value || form.get('captcha')!.touched" class="text-danger">
+            Please check the reCAPTCHA.
+          </div>
+
+           
             <div class="d-flex justify-content-between align-items-center">
               <!-- Checkbox -->
               <a class="text-body" routerLink="/forgot-password">Forgot password?</a>

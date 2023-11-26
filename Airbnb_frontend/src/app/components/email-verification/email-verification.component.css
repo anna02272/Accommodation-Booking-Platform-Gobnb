@@ -39,3 +39,22 @@
   .text{
     color: #72A0C1;
   }
+  .btn{
+    width: 300px;
+    height: 40px;
+    border: 1px solid #72A0C1;
+    margin: 3 0 3px 0;
+    background-color: #72A0C1;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+.btn:hover{
+    background-color: #5D8AA8;
+    cursor: pointer;
+}
+.notif {
+  color: red;
+}
