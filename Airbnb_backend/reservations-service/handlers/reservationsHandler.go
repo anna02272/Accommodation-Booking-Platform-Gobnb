@@ -97,9 +97,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	guestReservation := h.Context().Value(KeyProduct{}).(*data.ReservationByGuestCreate)
 
 	accId := guestReservation.AccommodationId.String()
-	urlAccommodationCheck := "http://acc-server:8083/api/accommodations/get/" + accId
+	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accId
 
-	resp, err = s.performAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}

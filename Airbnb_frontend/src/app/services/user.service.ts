@@ -4,6 +4,8 @@ import {ConfigService} from './config.service';
 import {map} from 'rxjs/operators';
 import { User } from '../models/user';
 import { BehaviorSubject } from 'rxjs';
+import { Observable } from 'rxjs';
+
 
 @Injectable({
   providedIn: 'root'
@@ -29,6 +31,14 @@ export class UserService {
    
   setCurrentUser(user: User | null) {
     this.currentUserSubject.next(user);
+  }
+  changePassword(current_password: string, new_password: string, confirm_new_password:string): Observable<any> {
+    const changePasswordData = {
+      current_password,
+      new_password,
+      confirm_new_password
+    };
+    return this.apiService.patch(this.config.changePassword_url, changePasswordData);
   }
 
 }
