@@ -34,6 +34,7 @@ import { ReservationService } from './services/reservation.service';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
+import { NgxCaptchaModule } from 'ngx-captcha';
 
 
 @NgModule({
@@ -69,7 +70,10 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
     ReactiveFormsModule,
     FormsModule,
     CommonModule,
-    DatePipe
+    DatePipe,
+    NgxCaptchaModule
+    // RecaptchaModule,
+    // RecaptchaFormsModule
 
   ],
   providers: [
@@ -78,6 +82,13 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
       useClass: TokenInterceptor,
       multi: true,
     },
+
+  //    {
+  //   provide: RECAPTCHA_SETTINGS,
+  //   useValue: {
+  //     siteKey: '6Lcm8hwpAAAAAK-MQIOvQQNNUdTPNzjI2PCZMVKs',
+  //   } as RecaptchaSettings,
+  // },
     ConfigService,
     ApiService,
     AuthService,
