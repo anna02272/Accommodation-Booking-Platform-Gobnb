@@ -101,6 +101,7 @@ export class RegisterComponent {
         this.router.navigate(['/email-verification']);
       },
       (error) => {
+        this.submitted = false;
         // Handle  error
       }
     );

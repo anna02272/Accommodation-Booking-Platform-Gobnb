@@ -45,6 +45,7 @@
               <label class="form-label" for="password">Password</label>
             </div>
 
+            <!-- Captcha -->
               <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
                 (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
               </ngx-recaptcha2>
@@ -53,7 +54,7 @@
               {{ notification.msgBody }}
             </p>
            
-  <div *ngIf="!form.get('captcha')!.value || form.get('captcha')!.touched" class="text-danger">
+          <div *ngIf="!form.get('captcha')!.value || form.get('captcha')!.touched" class="text-danger">
             Please check the reCAPTCHA.
           </div>
 
