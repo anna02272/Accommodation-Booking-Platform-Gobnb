@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
 	//"reservations-service/data"
 	"strings"
 	"time"
@@ -29,21 +30,7 @@ func NewAccommodationsHandler(l *log.Logger, r *domain.AccommodationRepo) *Accom
 }
 
 func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *http.Request) {
-	accommodation := h.Context().Value(KeyProduct{}).(*domain.Accommodation)
-	acc, err := s.repo.InsertAccommodation(accommodation)
-	if err != nil {
-		s.logger.Print("Database exception: ", err)
-		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	rw.WriteHeader(http.StatusCreated)
-	jsonResponse, err1 := json.Marshal(acc)
-	if err1 == nil {
-		rw.Write(jsonResponse)
-	}
-}
 
-func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
 
@@ -101,6 +88,22 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create accommodations.", http.StatusForbidden)
 		return
 	}
+
+	accommodation := h.Context().Value(KeyProduct{}).(*domain.Accommodation)
+	acc, err := s.repo.InsertAccommodation(accommodation)
+	if err != nil {
+		s.logger.Print("Database exception: ", err)
+		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	rw.WriteHeader(http.StatusCreated)
+	jsonResponse, err1 := json.Marshal(acc)
+	if err1 == nil {
+		rw.Write(jsonResponse)
+	}
+}
+
+func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
 
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
