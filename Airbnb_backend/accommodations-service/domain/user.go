@@ -8,6 +8,7 @@ type User struct {
 	Id       uuid.UUID
 	UserRole UserRole
 }
+
 type UserRole string
 
 const (

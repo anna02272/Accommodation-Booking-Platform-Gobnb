@@ -61,6 +61,7 @@ services:
     hostname: ${ACC_SERVICE_HOST}
     ports:
       - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
+      - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
@@ -69,6 +70,9 @@ services:
         condition: service_healthy
     networks:
       - network
+    volumes:
+      - ./accommodations-service/server.crt:/app/server.crt
+      - ./accommodations-service/server.key:/app/server.key
 
   profile-server:
     build:

@@ -4,6 +4,7 @@ import (
 	"accomodations-service/domain"
 	"accomodations-service/handlers"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -58,25 +59,29 @@ func main() {
 	setAccommodationPrice := router.Methods(http.MethodPost).Subrouter()
 	setAccommodationPrice.HandleFunc("/api/accommodations/price/{id:[a-zA-Z0-9-]+}", accommodationsHandler.SetAccommodationPrice)
 
-	cors := gorillaHandlers.CORS(gorillaHandlers.AllowedOrigins([]string{"*"}))
+	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
+		"https://localhost:4200/"})
+	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	handlerForHttp := gorillaHandlers.CORS(originsOk, headersOk, methodsOk)(router)
 
 	//Initialize the server
 	server := http.Server{
 		Addr:         ":" + port,
-		Handler:      cors(router),
+		Handler:      handlerForHttp,
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
 	}
 
 	logger.Println("Server listening on port", port)
-	//Distribute all the connections to goroutines
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil {
-			logger.Fatal(err)
-		}
-	}()
+
+	err = server.ListenAndServeTLS("/app/server.crt", "/app/server.key")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt)
