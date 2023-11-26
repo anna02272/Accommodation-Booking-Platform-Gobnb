@@ -12,9 +12,7 @@
         >
           <p class="title">Register</p>
         </div>
-        <p *ngIf="notification" [class]="notification.msgType">
-          {{ notification.msgBody }}
-        </p>
+       
         <!-- Username input -->
         <div class="form-outline mb-0">
           <p
@@ -274,5 +272,8 @@
 
     <div class="col-xl-1">
       <img src="assets/images/hola.jpg" class="image" />
+      <p class="notif" *ngIf="notification" [class]="notification.msgType">
+        {{ notification.msgBody }}
+      </p>
     </div>
   </div>
