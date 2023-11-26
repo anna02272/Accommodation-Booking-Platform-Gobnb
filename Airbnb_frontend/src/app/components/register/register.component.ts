@@ -95,13 +95,18 @@ export class RegisterComponent {
     this.notification = { msgType: '', msgBody: '' };
     this.submitted = true;
 
+    const emailControl = this.personalInfoForm.get('email');
+
     this.authService.register(this.personalInfoForm.value).subscribe(
       (data) => {
         console.log("register")
-        this.router.navigate(['/email-verification']);
+        const email = emailControl?.value;
+          this.notification = { msgType: 'success', msgBody: `You are registered! Check your email (${email}) for verification.` };
+          this.router.navigate(['/email-verification'],  { queryParams: { email: email }});
       },
       (error) => {
-        // Handle  error
+        console.error('Registration error', error);
+        this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
       }
     );
   
