@@ -53,8 +53,8 @@ func main() {
 	postReservationForGuest.Use(reservationsHandler.MiddlewareReservationForGuestDeserialization)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
-	originsOk := gorillaHandlers.AllowedOrigins([]string{"http://localhost:4200",
-		"http://localhost:4200/"})
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
+		"https://localhost:4200/"})
 	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
 	hanlderForHttp := gorillaHandlers.CORS(originsOk, headersOk, methodsOk)(router)
