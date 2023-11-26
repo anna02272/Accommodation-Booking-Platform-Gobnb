@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"html"
 	"net/http"
 	"profile-service/domain"
 	"profile-service/services"
@@ -19,6 +20,14 @@ func NewProfileHandler(profileService services.ProfileService) ProfileHandler {
 
 func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 	var user *domain.User
+
+	user.Name = html.EscapeString(user.Name)
+	user.Email = html.EscapeString(user.Email)
+	user.Username = html.EscapeString(user.Username)
+	user.Lastname = html.EscapeString(user.Lastname)
+	user.Address.Country = html.EscapeString(user.Address.Country)
+	user.Address.City = html.EscapeString(user.Address.City)
+	user.Address.Street = html.EscapeString(user.Address.Street)
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})

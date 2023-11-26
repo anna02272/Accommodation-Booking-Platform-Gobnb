@@ -2,11 +2,15 @@ package handlers
 
 import (
 	"accomodations-service/domain"
-	errJson "accomodations-service/error"
+	error2 "accomodations-service/error"
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	//"reservations-service/data"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -29,7 +33,7 @@ func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *
 	acc, err := s.repo.InsertAccommodation(accommodation)
 	if err != nil {
 		s.logger.Print("Database exception: ", err)
-		errJson.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	rw.WriteHeader(http.StatusCreated)
@@ -40,6 +44,64 @@ func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *
 }
 
 func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
+	token := h.Header.Get("Authorization")
+	url := "https://auth-server:8080/api/users/currentUser"
+
+	timeout := 5 * time.Second // Adjust the timeout duration as needed
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
+	// Read the response body
+	// Create a JSON decoder for the response body
+	decoder := json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var response struct {
+		LoggedInUser struct {
+			ID       string          `json:"id"`
+			UserRole domain.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Access the 'id' from the decoded struct
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != domain.Host {
+		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create accommodations.", http.StatusForbidden)
+		return
+	}
+
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
 
@@ -52,7 +114,7 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 	accommodations, err := s.repo.GetAccommodations(accommodationID)
 	if err != nil {
 		s.logger.Print("Exception: ", err)
-		errJson.ReturnJSONError(rw, err, http.StatusBadRequest)
+		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
 		return
 	}
 
@@ -177,4 +239,41 @@ func (s *AccommodationsHandler) SetAccommodationPrice(rw http.ResponseWriter, h 
 		return
 	}
 	rw.WriteHeader(http.StatusCreated)
+}
+
+func (s *AccommodationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *AccommodationsHandler) performAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
+	// Perform the request with the provided context
+	client := &http.Client{}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
