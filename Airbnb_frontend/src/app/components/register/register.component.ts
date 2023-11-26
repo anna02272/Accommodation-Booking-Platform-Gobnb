@@ -23,6 +23,7 @@ export class RegisterComponent {
   notification: DisplayMessage = {} as DisplayMessage;
   returnUrl = '';
   private ngUnsubscribe: Subject<void> = new Subject<void>();
+  recaptchaSiteKey = "6Lcm8hwpAAAAAK-MQIOvQQNNUdTPNzjI2PCZMVKs";
 
   constructor(
     private authService: AuthService,
@@ -32,7 +33,6 @@ export class RegisterComponent {
   ) {
 
   }
-
   ngOnInit() {
     this.route.params
       .pipe(takeUntil(this.ngUnsubscribe))
@@ -60,8 +60,8 @@ export class RegisterComponent {
         // }), 
         age: ['', Validators.compose([Validators.maxLength(3)])],
         gender: [''],
-        userRole: ['', Validators.compose([Validators.required])]
-        
+        userRole: ['', Validators.compose([Validators.required])],
+        captcha: [null, Validators.required]
       });
   
   }
@@ -72,6 +72,23 @@ export class RegisterComponent {
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
+  }
+
+//recaptcha
+   handleSuccess(event: any): void {
+    console.log('reCAPTCHA success:', event);
+  }
+
+  handleReset(): void {
+    console.log('reCAPTCHA reset');
+  }
+
+  handleExpire(): void {
+    console.log('reCAPTCHA expired');
+  }
+
+  handleLoad(): void {
+    console.log('reCAPTCHA loaded');
   }
 
   onSubmit() {

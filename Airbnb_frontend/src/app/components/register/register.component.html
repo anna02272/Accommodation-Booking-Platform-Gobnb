@@ -256,6 +256,16 @@
               <label for="other">Other</label>
             </div>
             <div class="text-center text-lg-start mt-2 pt-0">
+
+                  <!-- Captcha -->
+                  <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
+                    (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
+                  </ngx-recaptcha2>
+
+                    <div *ngIf="!personalInfoForm.get('captcha')!.value || personalInfoForm.get('captcha')!.touched" class="text-danger">
+                      Please check the reCAPTCHA.
+                    </div>
+
               <button
                 class="login-btn"
                 type="submit"
