@@ -67,26 +67,26 @@ func GetUserFromToken(tokenString string, userService services.UserService) (*do
 		return nil, err
 	}
 
-	user.Name = html.EscapeString(user.Name)
-	user.Password = html.EscapeString(user.Password)
-	user.Email = html.EscapeString(user.Email)
-	user.Username = html.EscapeString(user.Username)
-	user.Lastname = html.EscapeString(user.Lastname)
-	user.Address.Country = html.EscapeString(user.Address.Country)
-	user.Address.City = html.EscapeString(user.Address.City)
-	user.Address.Street = html.EscapeString(user.Address.Street)
+	//user.Name = html.EscapeString(user.Name)
+	//user.Password = html.EscapeString(user.Password)
+	//user.Email = html.EscapeString(user.Email)
+	//user.Username = html.EscapeString(user.Username)
+	//user.Lastname = html.EscapeString(user.Lastname)
+	//user.Address.Country = html.EscapeString(user.Address.Country)
+	//user.Address.City = html.EscapeString(user.Address.City)
+	//user.Address.Street = html.EscapeString(user.Address.Street)
 
 	return user, nil
 }
 
 func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	var updatePassword *domain.PasswordChangeRequest
-	updatePassword.CurrentPassword = html.EscapeString(updatePassword.CurrentPassword)
-	updatePassword.NewPassword = html.EscapeString(updatePassword.NewPassword)
-	updatePassword.ConfirmNewPassword = html.EscapeString(updatePassword.ConfirmNewPassword)
+	//updatePassword.CurrentPassword = html.EscapeString(updatePassword.CurrentPassword)
+	//updatePassword.NewPassword = html.EscapeString(updatePassword.NewPassword)
+	//updatePassword.ConfirmNewPassword = html.EscapeString(updatePassword.ConfirmNewPassword)
 
 	tokenString := ctx.GetHeader("Authorization")
-	tokenString = html.EscapeString(tokenString)
+	//tokenString = html.EscapeString(tokenString)
 
 	if tokenString == "" {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
@@ -95,14 +95,14 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	tokenString = tokenString[len("Bearer "):]
 
 	user, err := GetUserFromToken(tokenString, ac.userService)
-	user.Name = html.EscapeString(user.Name)
-	user.Password = html.EscapeString(user.Password)
-	user.Email = html.EscapeString(user.Email)
-	user.Username = html.EscapeString(user.Username)
-	user.Lastname = html.EscapeString(user.Lastname)
-	user.Address.Country = html.EscapeString(user.Address.Country)
-	user.Address.City = html.EscapeString(user.Address.City)
-	user.Address.Street = html.EscapeString(user.Address.Street)
+	//user.Name = html.EscapeString(user.Name)
+	//user.Password = html.EscapeString(user.Password)
+	//user.Email = html.EscapeString(user.Email)
+	//user.Username = html.EscapeString(user.Username)
+	//user.Lastname = html.EscapeString(user.Lastname)
+	//user.Address.Country = html.EscapeString(user.Address.Country)
+	//user.Address.City = html.EscapeString(user.Address.City)
+	//user.Address.Street = html.EscapeString(user.Address.Street)
 
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})

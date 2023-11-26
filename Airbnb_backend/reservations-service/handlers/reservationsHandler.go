@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
-	"html"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -32,7 +31,7 @@ func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *Reser
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
-	token = html.EscapeString(token)
+	//token = html.EscapeString(token)
 
 	url := "https://auth-server:8080/api/users/currentUser"
 
@@ -85,7 +84,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	// Access the 'id' from the decoded struct
 	guestId := response.LoggedInUser.ID
-	guestId = html.EscapeString(guestId)
+	//guestId = html.EscapeString(guestId)
 
 	userRole := response.LoggedInUser.UserRole
 
@@ -174,9 +173,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
-
-	responseAccommodation.AccommodationName = html.EscapeString(responseAccommodation.AccommodationName)
-	responseAccommodation.AccommodationLocation = html.EscapeString(responseAccommodation.AccommodationLocation)
+	//
+	//responseAccommodation.AccommodationName = html.EscapeString(responseAccommodation.AccommodationName)
+	//responseAccommodation.AccommodationLocation = html.EscapeString(responseAccommodation.AccommodationLocation)
 
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
 		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation)

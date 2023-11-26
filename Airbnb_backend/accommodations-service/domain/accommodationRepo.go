@@ -3,7 +3,6 @@ package domain
 import (
 	"errors"
 	"fmt"
-	"html"
 	"log"
 	"os"
 	"regexp"
@@ -92,19 +91,19 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 	accommodationId := gocql.TimeUUID()
 
 	nameRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -][A-Za-z]+)*$`)
-	accommodation.Name = html.EscapeString(accommodation.Name)
+	//accommodation.Name = html.EscapeString(accommodation.Name)
 	if !nameRegex.MatchString(accommodation.Name) {
 		return nil, errors.New("Invalid name format")
 	}
 
 	locationRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -']?[A-Za-z]+)*$`)
-	accommodation.Location = html.EscapeString(accommodation.Location)
+	//accommodation.Location = html.EscapeString(accommodation.Location)
 	if !locationRegex.MatchString(accommodation.Location) {
 		return nil, errors.New("Invalid location format")
 	}
 
 	amenitiesRegex := regexp.MustCompile(`^[\s\S]+(?:,\s*[\s\S]+)*$`)
-	accommodation.Amenities = html.EscapeString(accommodation.Amenities)
+	//accommodation.Amenities = html.EscapeString(accommodation.Amenities)
 	if !amenitiesRegex.MatchString(accommodation.Amenities) {
 		return nil, errors.New("Invalid amenities format")
 	}
@@ -119,7 +118,7 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 	}
 
 	urlRegex := regexp.MustCompile(`^(https?|ftp):\/\/[^\s\/$.?#].[^\s]*$`)
-	accommodation.ImageUrl = html.EscapeString(accommodation.ImageUrl)
+	//accommodation.ImageUrl = html.EscapeString(accommodation.ImageUrl)
 	if !urlRegex.MatchString(accommodation.ImageUrl) {
 		return nil, errors.New("Invalid URl format")
 	}

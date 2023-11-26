@@ -10,7 +10,6 @@ import (
 	"github.com/thanhpk/randstr"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"html"
 	"log"
 	"net/http"
 	"strings"
@@ -29,8 +28,8 @@ func NewAuthHandler(authService services.AuthService, userService services.UserS
 
 func (ac *AuthHandler) Login(ctx *gin.Context) {
 	var credentials *domain.LoginInput
-	credentials.Email = html.EscapeString(credentials.Email)
-	credentials.Password = html.EscapeString(credentials.Password)
+	//credentials.Email = html.EscapeString(credentials.Email)
+	//credentials.Password = html.EscapeString(credentials.Password)
 
 	var userVerif *domain.Credentials
 
@@ -79,17 +78,28 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 
 func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	var user *domain.User
-	user.Name = html.EscapeString(user.Name)
-	user.Password = html.EscapeString(user.Password)
-	user.Email = html.EscapeString(user.Email)
-	user.Username = html.EscapeString(user.Username)
-	user.Lastname = html.EscapeString(user.Lastname)
-	user.Address.Country = html.EscapeString(user.Address.Country)
-	user.Address.City = html.EscapeString(user.Address.City)
-	user.Address.Street = html.EscapeString(user.Address.Street)
+	//user.Name = html.EscapeString(user.Name)
+	//user.Password = html.EscapeString(user.Password)
+	//user.Email = html.EscapeString(user.Email)
+	//user.Username = html.EscapeString(user.Username)
+	//user.Lastname = html.EscapeString(user.Lastname)
+	//user.Address.Country = html.EscapeString(user.Address.Country)
+	//user.Address.City = html.EscapeString(user.Address.City)
+	//user.Address.Street = html.EscapeString(user.Address.Street)
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	existingEmailUser, err := ac.userService.FindUserByEmail(user.Email)
+	if existingEmailUser != nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Email already exists"})
+		return
+	}
+
+	existingUsernameUser, err := ac.userService.FindUserByUsername(user.Username)
+	if existingUsernameUser != nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Username already exists"})
 		return
 	}
 	if !utils.ValidatePassword(user.Password) {
@@ -156,21 +166,21 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 	var payload *domain.ForgotPasswordInput
-	payload.Email = html.EscapeString(payload.Email)
-
+	//payload.Email = html.EscapeString(payload.Email)
+	//
 	var user *domain.Credentials
-	user.Username = html.EscapeString(user.Username)
-	user.Password = html.EscapeString(user.Password)
-	user.Email = html.EscapeString(user.Email)
-	user.VerificationCode = html.EscapeString(user.VerificationCode)
-	user.PasswordResetToken = html.EscapeString(user.PasswordResetToken)
+	//user.Username = html.EscapeString(user.Username)
+	//user.Password = html.EscapeString(user.Password)
+	//user.Email = html.EscapeString(user.Email)
+	//user.VerificationCode = html.EscapeString(user.VerificationCode)
+	//user.PasswordResetToken = html.EscapeString(user.PasswordResetToken)
 
 	var updatedUser *domain.Credentials
-	updatedUser.Username = html.EscapeString(updatedUser.Username)
-	updatedUser.Password = html.EscapeString(updatedUser.Password)
-	updatedUser.Email = html.EscapeString(updatedUser.Email)
-	updatedUser.VerificationCode = html.EscapeString(updatedUser.VerificationCode)
-	updatedUser.PasswordResetToken = html.EscapeString(updatedUser.PasswordResetToken)
+	//updatedUser.Username = html.EscapeString(updatedUser.Username)
+	//updatedUser.Password = html.EscapeString(updatedUser.Password)
+	//updatedUser.Email = html.EscapeString(updatedUser.Email)
+	//updatedUser.VerificationCode = html.EscapeString(updatedUser.VerificationCode)
+	//updatedUser.PasswordResetToken = html.EscapeString(updatedUser.PasswordResetToken)
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -224,8 +234,8 @@ func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 
 func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 	var payload *domain.ResetPasswordInput
-	payload.Password = html.EscapeString(payload.Password)
-	payload.PasswordConfirm = html.EscapeString(payload.PasswordConfirm)
+	//payload.Password = html.EscapeString(payload.Password)
+	//payload.PasswordConfirm = html.EscapeString(payload.PasswordConfirm)
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
