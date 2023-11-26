@@ -24,6 +24,7 @@ export class ConfigService {
   private _user_url = this._auth_api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
   private _create_resv_url = this._create_resv_api_url + '/reservations/create';
+  private _changePassword_url = this._user_url + '/changePassword';
 
 
   get login_url(): string {
@@ -47,6 +48,10 @@ export class ConfigService {
 
   get createReservation_url(): string {
     return this._create_resv_url;
+  }
+  
+  get changePassword_url(): string {
+    return this._changePassword_url;
   }
 
   }

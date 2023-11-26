@@ -33,64 +33,42 @@
 
         <div class="align-items-center card mt-3">
           <div class="mb-2"><b>Change Password</b></div>
-          <form>
+          <form #changePasswordForm="ngForm" (ngSubmit)="changePassword()">
             <div class="row">
               <div class="col">
                 <div class="form-group">
-                  <label>Current Password</label>
-                  <input
-                    class="form-control"
-                    type="password"
-                    placeholder="Current Password"
-                  />
+                  <label for="currentPassword">Current Password</label>
+                  <input type="password" id="currentPassword" name="currentPassword" class="form-control" required [(ngModel)]="currentPassword">
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col">
                 <div class="form-group">
-                  <label>New Password</label>
-                  <input
-                    class="form-control"
-                    type="password"
-                    placeholder="New Password"
-                    name="password"
-                    id="password"
-                    [(ngModel)]="password"
-                  />
+                  <label for="newPassword">New Password</label>
+                  <input type="password" id="newPassword" name="newPassword" class="form-control" required [(ngModel)]="newPassword">
+
                   <app-password-strenght-validator
-                    [password]="password"
-                  ></app-password-strenght-validator>
+                  [password]="newPassword"
+                ></app-password-strenght-validator>
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col">
                 <div class="form-group">
-                  <label>Confirm Password</label>
-                  <input
-                    class="form-control"
-                    type="password"
-                    placeholder="Confirm Password"
-                  />
+                  <label for="confirmNewPassword">Confirm New Password</label>
+                  <input type="password" id="confirmNewPassword" name="confirmNewPassword" class="form-control" required [(ngModel)]="confirmNewPassword">
                 </div>
               </div>
             </div>
             <div class="form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="showPassword"
-              />
-              <label class="form-check-label" for="showPassword"
-                >Show Password</label
-              >
+              <input class="form-check-input" type="checkbox" id="showPassword" />
+              <label class="form-check-label" for="showPassword">Show Password</label>
             </div>
             <div class="row">
               <div class="col d-flex justify-content-start mt-3">
-                <button class="btn btn-warning" type="button">
-                  Change password
-                </button>
+                <button class="btn btn-warning" type="submit">Change password</button>
               </div>
             </div>
           </form>
