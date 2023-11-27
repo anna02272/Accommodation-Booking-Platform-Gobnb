@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type AuthServiceImpl struct {
@@ -43,6 +44,7 @@ func (uc *AuthServiceImpl) Registration(user *domain.User) (*domain.UserResponse
 		Email:            user.Email,
 		Verified:         false,
 		VerificationCode: verificationCode,
+		VerifyAt:         time.Now().Add(time.Minute * 10),
 	}
 	res, err := uc.collection.InsertOne(uc.ctx, credentials)
 	if err != nil {
@@ -117,12 +119,12 @@ func (uc *AuthServiceImpl) ResendVerificationEmail(ctx *gin.Context) {
 	// Generate a new verification code
 	code := randstr.String(20)
 	verificationCode := utils.Encode(code)
-
+	verifyAt := time.Now().Add(time.Minute * 10)
 	// Update the user in the database with the new verification code
 	_, err = uc.collection.UpdateOne(
 		context.TODO(),
 		bson.M{"_id": user.ID},
-		bson.M{"$set": bson.M{"verificationCode": verificationCode, "verified": false}},
+		bson.M{"$set": bson.M{"verificationCode": verificationCode, "verifyAt": verifyAt, "verified": false}},
 	)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})

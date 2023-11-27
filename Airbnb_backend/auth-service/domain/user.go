@@ -25,6 +25,7 @@ type Credentials struct {
 	UserRole           UserRole           `bson:"userRole" json:"userRole"`
 	Email              string             `bson:"email" json:"email" validate:"required,email"`
 	VerificationCode   string             `bson:"verificationCode" json:"verificationCode"`
+	VerifyAt           time.Time          `bson:"verifyAt" json:"verifyAt"`
 	PasswordResetToken string             `bson:"passwordResetToken" json:"passwordResetToken"`
 	PasswordResetAt    time.Time          `bson:"passwordResetAt" json:"passwordResetAt"`
 	Verified           bool               `bson:"verified" json:"verified"`
