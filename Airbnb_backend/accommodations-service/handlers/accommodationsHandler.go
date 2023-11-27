@@ -9,9 +9,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	//"reservations-service/data"
 	"strings"
+
 	"time"
 
 	"github.com/gorilla/mux"
@@ -134,6 +133,31 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 	rw.WriteHeader(http.StatusOK)
 	if err := accommodation.ToJSON(rw); err != nil {
 		s.logger.Println("Error encoding JSON:", err)
+	}
+}
+
+func (ah *AccommodationsHandler) GetAllAccommodations(w http.ResponseWriter, r *http.Request) {
+	ah.logger.Println("Handle GET All Accommodations")
+
+	// Retrieve all accommodations from the store
+	accommodations, err := ah.repo.GetAllAccommodations()
+	if err != nil {
+		ah.logger.Print("Exception: ", err)
+		error2.ReturnJSONError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	if len(accommodations) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	// Respond with the list of accommodations
+	//w.respondWithJSON(w, http.StatusOK, accommodations)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := accommodations.ToJSON(w); err != nil {
+		ah.logger.Println("Error encoding JSON:", err)
 	}
 }
 

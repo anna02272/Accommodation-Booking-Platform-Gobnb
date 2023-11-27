@@ -29,14 +29,14 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 	tokenString = tokenString[len("Bearer "):]
 
 	user, err := GetUserFromToken(tokenString, ac.userService)
-	user.Name = html.EscapeString(user.Name)
-	user.Password = html.EscapeString(user.Password)
-	user.Email = html.EscapeString(user.Email)
-	user.Username = html.EscapeString(user.Username)
-	user.Lastname = html.EscapeString(user.Lastname)
-	user.Address.Country = html.EscapeString(user.Address.Country)
-	user.Address.City = html.EscapeString(user.Address.City)
-	user.Address.Street = html.EscapeString(user.Address.Street)
+	//user.Name = html.EscapeString(user.Name)
+	//user.Password = html.EscapeString(user.Password)
+	//user.Email = html.EscapeString(user.Email)
+	//user.Username = html.EscapeString(user.Username)
+	//user.Lastname = html.EscapeString(user.Lastname)
+	//user.Address.Country = html.EscapeString(user.Address.Country)
+	//user.Address.City = html.EscapeString(user.Address.City)
+	//user.Address.Street = html.EscapeString(user.Address.Street)
 
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
