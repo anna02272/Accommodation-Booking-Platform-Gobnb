@@ -13,5 +13,8 @@ export class AccommodationService {
   getAll() {
     return this.apiService.get(this.config.acc_url + "/get");
    }
+   getById(id : string) {
+    return this.apiService.get(this.config.acc_url + "/get/" + id );
+   }
 
 }

@@ -29,6 +29,8 @@ const routes: Routes = [
     path: 'accommodation',
     component: AccommodationComponent
   },
+  { path: 'accommodation/:id',
+  component: AccommodationComponent  },
   {
     path: 'profile',
     component: ProfileComponent,

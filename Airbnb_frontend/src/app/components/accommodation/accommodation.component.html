@@ -3,8 +3,8 @@
     <img class="img" src="assets/images/car.jpg" />
     <div class="head">
       <div class="name">
-        <h2>Accommodation name</h2>
-        <p>Location</p>
+        <h2>{{ accommodation?.accommodation_name }}</h2>
+        <p>{{ accommodation?.accommodation_location }}</p>
       </div>
       <span>Price</span>
     </div>
@@ -54,6 +54,6 @@
   </div>
 
   <div class="enroll" *ngIf="getRole() === 'Guest'">
-    <app-reservation></app-reservation>
+    <app-reservation [accommodationId]="accId"></app-reservation>
   </div>
 </section>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, NgForm } from '@angular/forms';
 import { ReservationService } from 'src/app/services/reservation.service';
 import { Reservation } from 'src/app/models/reservation';
@@ -11,9 +11,8 @@ import { DatePipe } from '@angular/common';
   styleUrls: ['./reservation.component.css']
 })
 export class ReservationComponent implements OnInit  {
-
+  @Input() accommodationId!: string; 
     form!: FormGroup;
-    accommodation_id!: "22151fcf-8aee-11ee-818a-0242ac120007";
     showDiv: boolean = false;
     showDivSuccess: boolean = false;
     //showDivErrorCheckInTime: boolean = false;
@@ -62,7 +61,7 @@ export class ReservationComponent implements OnInit  {
       }
     }
     const reservationCreate: Reservation = {
-      accommodation_id: "22151fcf-8aee-11ee-818a-0242ac120007",
+      accommodation_id: this.accommodationId,
       check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
       check_out_date: this.check_out_date+"T15:00:00Z"
     };
