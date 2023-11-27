@@ -11,6 +11,7 @@ import { AuthGuard } from './services/auth.guard';
 import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
+import { RedirectGuard } from './services/redirect.guard';
 
 const routes: Routes = [
   {
@@ -50,7 +51,7 @@ const routes: Routes = [
   {
     path: 'email-verification',
     component: EmailVerificationComponent ,
-    //auth guard
+    canActivate: [RedirectGuard],
   },
   {
     path: 'forgot-password',
@@ -59,7 +60,7 @@ const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent ,
-     //auth guard
+    canActivate: [RedirectGuard],
   },
 
 ];

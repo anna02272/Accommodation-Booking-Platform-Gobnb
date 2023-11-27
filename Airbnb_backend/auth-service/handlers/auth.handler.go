@@ -91,17 +91,6 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-	existingEmailUser, err := ac.userService.FindUserByEmail(user.Email)
-	if existingEmailUser != nil {
-		ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Email already exists"})
-		return
-	}
-
-	existingUsernameUser, err := ac.userService.FindUserByUsername(user.Username)
-	if existingUsernameUser != nil {
-		ctx.JSON(http.StatusConflict, gin.H{"status": "error", "message": "Username already exists"})
-		return
-	}
 	if !utils.ValidatePassword(user.Password) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
 		return
