@@ -84,17 +84,6 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 
 func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	var user *domain.User
-	//user.Name = html.EscapeString(user.Name)
-	//user.Password = html.EscapeString(user.Password)
-	//user.Email = html.EscapeString(user.Email)
-	//user.Username = html.EscapeString(user.Username)
-	//user.Lastname = html.EscapeString(user.Lastname)
-	//user.Address.Country = html.EscapeString(user.Address.Country)
-	//user.Address.City = html.EscapeString(user.Address.City)
-	//user.Address.Street = html.EscapeString(user.Address.Street)
-	//user.Name = strings.ReplaceAll(user.Name, "<", "")
-	//user.Name = strings.ReplaceAll(user.Name, ">", "")
-	//user.Name = strings.ReplaceAll(user.Name, "/>", "")
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})

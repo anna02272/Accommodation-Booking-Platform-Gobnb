@@ -128,6 +128,7 @@ export class RegisterComponent {
       this.submitted = false;
       }
     );
+    
 
   }
 
