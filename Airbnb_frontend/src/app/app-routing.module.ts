@@ -50,7 +50,6 @@ const routes: Routes = [
   {
     path: 'email-verification',
     component: EmailVerificationComponent ,
-    //auth guard
   },
   {
     path: 'forgot-password',
@@ -59,7 +58,6 @@ const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent ,
-     //auth guard
   },
 
 ];

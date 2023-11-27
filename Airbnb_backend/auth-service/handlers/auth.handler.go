@@ -6,14 +6,15 @@ import (
 	"auth-service/utils"
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/thanhpk/randstr"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/thanhpk/randstr"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type AuthHandler struct {
@@ -37,6 +38,11 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+
+	credentials.Email = strings.ReplaceAll(credentials.Email, "<", "")
+	credentials.Email = strings.ReplaceAll(credentials.Email, ">", "")
+	credentials.Password = strings.ReplaceAll(credentials.Password, "<", "")
+	credentials.Password = strings.ReplaceAll(credentials.Password, ">", "")
 
 	user, err := ac.userService.FindUserByEmail(credentials.Email)
 	if err != nil {
@@ -86,6 +92,9 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	//user.Address.Country = html.EscapeString(user.Address.Country)
 	//user.Address.City = html.EscapeString(user.Address.City)
 	//user.Address.Street = html.EscapeString(user.Address.Street)
+	//user.Name = strings.ReplaceAll(user.Name, "<", "")
+	//user.Name = strings.ReplaceAll(user.Name, ">", "")
+	//user.Name = strings.ReplaceAll(user.Name, "/>", "")
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -110,6 +119,22 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 		ctx.JSON(http.StatusConflict, gin.H{"status": "fail", "message": "Email already exists"})
 		return
 	}
+
+	user.Name = strings.ReplaceAll(user.Name, "<", "")
+	user.Name = strings.ReplaceAll(user.Name, ">", "")
+	user.Password = strings.ReplaceAll(user.Password, "<", "")
+	user.Password = strings.ReplaceAll(user.Password, ">", "")
+	user.Email = strings.ReplaceAll(user.Email, "<", "")
+	user.Email = strings.ReplaceAll(user.Email, ">", "")
+	user.Lastname = strings.ReplaceAll(user.Lastname, "<", "")
+	user.Lastname = strings.ReplaceAll(user.Lastname, ">", "")
+	user.Address.Country = strings.ReplaceAll(user.Address.Country, "<", "")
+	user.Address.Country = strings.ReplaceAll(user.Address.Country, ">", "")
+	user.Address.City = strings.ReplaceAll(user.Address.City, "<", "")
+	user.Address.City = strings.ReplaceAll(user.Address.City, ">", "")
+	user.Address.Street = strings.ReplaceAll(user.Address.Street, "<", "")
+	user.Address.Street = strings.ReplaceAll(user.Address.Street, ">", "")
+
 	if !utils.ValidatePassword(user.Password) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
 		return
@@ -149,6 +174,10 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 		}
 		return
 	}
+	if updatedUser.VerifyAt.Before(time.Now()) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "The verify token has expired "})
+		return
+	}
 
 	if updatedUser.Verified {
 		log.Printf("User already verified: %s", updatedUser.Email)
@@ -158,10 +187,11 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 	updatedUser.VerificationCode = ""
 	updatedUser.Verified = true
+	updatedUser.VerifyAt = time.Time{}
 
 	_, err = ac.DB.UpdateOne(context.TODO(),
 		bson.M{"_id": updatedUser.ID},
-		bson.M{"$set": bson.M{"verificationCode": "", "verified": true}})
+		bson.M{"$set": bson.M{"verificationCode": "", "verifyAt": time.Time{}, "verified": true}})
 	if err != nil {
 		log.Printf("Error updating user record: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
@@ -194,6 +224,10 @@ func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+
+	payload.Email = strings.ReplaceAll(payload.Email, "<", "")
+	payload.Email = strings.ReplaceAll(payload.Email, ">", "")
+
 	message := "You will receive a reset email."
 
 	err := ac.DB.FindOne(context.TODO(), bson.M{"email": strings.ToLower(payload.Email)}).Decode(&user)
@@ -249,6 +283,11 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+
+	payload.Password = strings.ReplaceAll(payload.Password, "<", "")
+	payload.Password = strings.ReplaceAll(payload.Password, ">", "")
+	payload.PasswordConfirm = strings.ReplaceAll(payload.PasswordConfirm, "<", "")
+	payload.PasswordConfirm = strings.ReplaceAll(payload.PasswordConfirm, ">", "")
 
 	if payload.Password != payload.PasswordConfirm {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})

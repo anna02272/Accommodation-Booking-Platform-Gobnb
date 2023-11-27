@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
@@ -92,18 +93,27 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 
 	nameRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -][A-Za-z]+)*$`)
 	//accommodation.Name = html.EscapeString(accommodation.Name)
+	accommodation.Name = strings.ReplaceAll(accommodation.Name, "<", "")
+	accommodation.Name = strings.ReplaceAll(accommodation.Name, ">", "")
+	accommodation.Name = strings.ReplaceAll(accommodation.Name, "/>", "")
 	if !nameRegex.MatchString(accommodation.Name) {
 		return nil, errors.New("Invalid name format")
 	}
 
 	locationRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -']?[A-Za-z]+)*$`)
 	//accommodation.Location = html.EscapeString(accommodation.Location)
+	accommodation.Location = strings.ReplaceAll(accommodation.Location, "<", "")
+	accommodation.Location = strings.ReplaceAll(accommodation.Location, ">", "")
+	accommodation.Location = strings.ReplaceAll(accommodation.Location, "/>", "")
 	if !locationRegex.MatchString(accommodation.Location) {
 		return nil, errors.New("Invalid location format")
 	}
 
 	amenitiesRegex := regexp.MustCompile(`^[\s\S]+(?:,\s*[\s\S]+)*$`)
 	//accommodation.Amenities = html.EscapeString(accommodation.Amenities)
+	accommodation.Amenities = strings.ReplaceAll(accommodation.Amenities, "<", "")
+	accommodation.Amenities = strings.ReplaceAll(accommodation.Amenities, ">", "")
+	accommodation.Amenities = strings.ReplaceAll(accommodation.Amenities, "/>", "")
 	if !amenitiesRegex.MatchString(accommodation.Amenities) {
 		return nil, errors.New("Invalid amenities format")
 	}
@@ -119,6 +129,9 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 
 	urlRegex := regexp.MustCompile(`^(https?|ftp):\/\/[^\s\/$.?#].[^\s]*$`)
 	//accommodation.ImageUrl = html.EscapeString(accommodation.ImageUrl)
+	accommodation.ImageUrl = strings.ReplaceAll(accommodation.ImageUrl, "<", "")
+	accommodation.ImageUrl = strings.ReplaceAll(accommodation.ImageUrl, ">", "")
+	accommodation.ImageUrl = strings.ReplaceAll(accommodation.ImageUrl, "/>", "")
 	if !urlRegex.MatchString(accommodation.ImageUrl) {
 		return nil, errors.New("Invalid URl format")
 	}
@@ -179,6 +192,28 @@ func (sr *AccommodationRepo) UpdateAccommodationAvailability(id string, availabi
 	}
 
 	return nil
+}
+
+func (sr *AccommodationRepo) GetAllAccommodations() (Accommodations, error) {
+	scanner := sr.session.Query(`SELECT accommodationId, 
+        accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url
+        FROM accommodation.accommodations`).Iter().Scanner()
+
+	var accommodations Accommodations
+	for scanner.Next() {
+		var acm Accommodation
+		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
+		if err != nil {
+			sr.logger.Println(err)
+			return nil, err
+		}
+		accommodations = append(accommodations, &acm)
+	}
+	if err := scanner.Err(); err != nil {
+		sr.logger.Println(err)
+		return nil, err
+	}
+	return accommodations, nil
 }
 
 func (sr *AccommodationRepo) UpdateAccommodationPrice(id string, price map[time.Time]string) (accommodation *Accommodation) {

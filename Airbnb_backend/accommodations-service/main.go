@@ -53,6 +53,9 @@ func main() {
 	getAccommodationById := router.Methods(http.MethodGet).Subrouter()
 	getAccommodationById.HandleFunc("/api/accommodations/get/{id:[a-zA-Z0-9-]+}", accommodationsHandler.GetAccommodationById)
 
+	getAccommodations := router.Methods(http.MethodGet).Subrouter()
+	getAccommodations.HandleFunc("/api/accommodations/get", accommodationsHandler.GetAllAccommodations)
+
 	setAccommodationAvailabilty := router.Methods(http.MethodPost).Subrouter()
 	setAccommodationAvailabilty.HandleFunc("/api/accommodations/availability/{id:[a-zA-Z0-9-]+}", accommodationsHandler.SetAccommodationAvailability)
 
