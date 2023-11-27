@@ -27,6 +27,11 @@ func (o *Accommodation) ToJSON(w io.Writer) error {
 	return e.Encode(o)
 }
 
+func (o *Accommodations) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(o)
+}
+
 func (o *Accommodation) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(o)
