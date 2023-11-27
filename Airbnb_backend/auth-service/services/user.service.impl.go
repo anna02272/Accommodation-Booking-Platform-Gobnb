@@ -49,6 +49,7 @@ func (us *UserServiceImpl) FindUserById(id string) (*domain.User, error) {
 func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 	var user *domain.User
 
+	// Improved email format validation using regular expression
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(email) {
 		return nil, errors.New("Invalid email format")
@@ -59,14 +60,28 @@ func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return &domain.User{}, err
+			return nil, nil // No user found, return nil user and nil error
 		}
-		return nil, err
+		return nil, err // Return other errors
 	}
 
 	return user, nil
 }
+
 func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, error) {
+	//var user *domain.User
+	//
+	//query := bson.M{"username": strings.ToLower(username)}
+	//err := us.collection.FindOne(us.ctx, query).Decode(&user)
+	//
+	//if err != nil {
+	//	if err == mongo.ErrNoDocuments {
+	//		return &domain.User{}, err
+	//	}
+	//	return nil, err
+	//}
+	//
+	//return user, nil
 	var user *domain.User
 
 	query := bson.M{"username": strings.ToLower(username)}
@@ -74,9 +89,9 @@ func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, er
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return &domain.User{}, err
+			return nil, nil // No user found, return nil user and nil error
 		}
-		return nil, err
+		return nil, err // Return other errors
 	}
 
 	return user, nil

@@ -100,6 +100,25 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
+	existingUser, err := ac.userService.FindUserByUsername(user.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
+		return
+	}
+	if existingUser != nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": "fail", "message": "Username already exists"})
+		return
+	}
+
+	existingUser1, err := ac.userService.FindUserByEmail(user.Email)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
+		return
+	}
+	if existingUser1 != nil {
+		ctx.JSON(http.StatusConflict, gin.H{"status": "fail", "message": "Email already exists"})
+		return
+	}
 
 	user.Name = strings.ReplaceAll(user.Name, "<", "")
 	user.Name = strings.ReplaceAll(user.Name, ">", "")
