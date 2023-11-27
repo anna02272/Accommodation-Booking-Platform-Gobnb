@@ -121,10 +121,13 @@ export class RegisterComponent {
           // Ako je bilo koja druga greška, koristite generičku poruku
           this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
         }
-      } else {
-        // Ako je bilo koja druga greška, koristite generičku poruku
+      } else if (error.status === 400) {
+        this.notification = { msgType: 'error', msgBody: 'Password is in blacklist. Use other password' };
+       }
+       else {
         this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
       }
+    
       this.submitted = false;
       }
     );
