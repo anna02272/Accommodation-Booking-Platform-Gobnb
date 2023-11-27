@@ -155,6 +155,10 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 		}
 		return
 	}
+	if updatedUser.VerifyAt.Before(time.Now()) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "The verify token has expired "})
+		return
+	}
 
 	if updatedUser.Verified {
 		log.Printf("User already verified: %s", updatedUser.Email)
@@ -164,10 +168,11 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 	updatedUser.VerificationCode = ""
 	updatedUser.Verified = true
+	updatedUser.VerifyAt = time.Time{}
 
 	_, err = ac.DB.UpdateOne(context.TODO(),
 		bson.M{"_id": updatedUser.ID},
-		bson.M{"$set": bson.M{"verificationCode": "", "verified": true}})
+		bson.M{"$set": bson.M{"verificationCode": "", "verifyAt": time.Time{}, "verified": true}})
 	if err != nil {
 		log.Printf("Error updating user record: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
