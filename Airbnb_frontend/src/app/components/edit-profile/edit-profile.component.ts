@@ -11,12 +11,13 @@ export class EditProfileComponent {
   newPassword = '';
   confirmNewPassword = '';
   currentUsername = '';
+  notification = { msgType: '', msgBody: '' };
 
   constructor(private userService: UserService) {}
 
   changePassword() {
     if (this.newPassword !== this.confirmNewPassword) {
-      alert('New passwords do not match.');
+      this.notification = { msgType: 'error', msgBody: `New passwords do not match.` };
       return;
     }
     const user = this.userService.currentUser;
@@ -26,11 +27,19 @@ export class EditProfileComponent {
     this.userService.changePassword(this.currentPassword, this.newPassword, this.confirmNewPassword)
       .subscribe(
        () => {
-          alert('Password changed successfully.');
+        this.notification = { msgType: 'success', msgBody: `Password changed successfully.` };
+        this.resetForm();
         },
         (_:any) => {
-          alert('Failed to change password.');
+          this.notification = { msgType: 'error', msgBody: `Failed to change password.` };
         }
       );
+      
+  }
+  resetForm() {
+    this.currentPassword = '';
+    this.newPassword = '';
+    this.confirmNewPassword = '';
+    this.currentUsername = '';
   }
 }

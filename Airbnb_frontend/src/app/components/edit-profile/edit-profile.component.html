@@ -33,6 +33,9 @@
 
         <div class="align-items-center card mt-3">
           <div class="mb-2"><b>Change Password</b></div>
+          <p class="notif" *ngIf="notification" [class]="notification.msgType">
+            {{ notification.msgBody }}
+          </p>
           <form #changePasswordForm="ngForm" (ngSubmit)="changePassword()">
             <div class="row">
               <div class="col">

@@ -2,6 +2,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { AccommodationService } from 'src/app/services/accommodation.service';
 import { AccDataService } from 'src/app/services/acc-data-service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { UserService } from 'src/app/services';
 
 @Component({
   selector: 'app-create-accommodation',
@@ -9,6 +11,7 @@ import { AccDataService } from 'src/app/services/acc-data-service';
   styleUrls: ['./create-accommodation.component.css']
 })
 export class CreateAccommodationComponent {
+  notification = { msgType: '', msgBody: '' };
 
   //@ViewChild('fileInput') fileInput: ElementRef; // Access the file input element
 
@@ -16,11 +19,13 @@ export class CreateAccommodationComponent {
   //   private accService: AccommodationService
   // ) {
   // }
-  constructor(private dataService: AccDataService) {}
+  constructor(private dataService: AccDataService,
+    private router: Router,
+    private userService: UserService
+    ) {}
 
 
   onSubmit() {
-
     const name = (document.getElementById('name') as HTMLInputElement).value;
     const location = (document.getElementById('location') as HTMLInputElement).value;
     const amenities = (document.getElementById('amenities') as HTMLTextAreaElement).value;
@@ -48,16 +53,18 @@ export class CreateAccommodationComponent {
 
     this.dataService.sendData(accommodationData).subscribe(
       (response:any) => {
+        this.notification = { msgType: 'success', msgBody: `Successfully created accommodation;` };
         console.log('Response from server:', response);
+        this.router.navigate(['/home']);
       },
       (error:any) => {
+        this.notification = { msgType: 'error', msgBody: `Creating accommodation failed` };
         console.error('Error:', error);
       }
     );
 
     this.resetForm();
   }
-
 
   resetForm() {
     (document.getElementById('name') as HTMLInputElement).value = '';
@@ -68,5 +75,8 @@ export class CreateAccommodationComponent {
 
     //this.fileInput.nativeElement.value = '';
   
+  }
+  getUsername() {
+    return this.userService.currentUser.user.username;
   }
 }
