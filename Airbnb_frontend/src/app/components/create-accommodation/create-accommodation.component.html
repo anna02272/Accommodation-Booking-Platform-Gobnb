@@ -6,7 +6,11 @@
           <h5 class="text-center w-100" id="exampleModalLabel">
             Create Accommodation
           </h5>
+       
         </div>
+        <p class="notif" *ngIf="notification" [class]="notification.msgType">
+          {{ notification.msgBody }}
+        </p>
         <div class="modal-body">
           <div class="my-1 p-1">
             <div class="d-flex flex-column">
@@ -19,7 +23,7 @@
                   />
                 </div>
                 <div>
-                  <p class="m-0 fw-bold">username</p>
+                  <p class="m-0 fw-bold">{{ getUsername() }}</p>
                 </div>
               </div>
 
