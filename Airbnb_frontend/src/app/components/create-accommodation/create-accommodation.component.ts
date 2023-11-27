@@ -23,18 +23,21 @@ export class CreateAccommodationComponent {
 
     const name = (document.getElementById('name') as HTMLInputElement).value;
     const location = (document.getElementById('location') as HTMLInputElement).value;
-    const amenities = (document.getElementById('description') as HTMLTextAreaElement).value;
-    const minGuests = (document.getElementById('minGuests') as HTMLInputElement).value;
-    const maxGuests = (document.getElementById('maxGuests') as HTMLInputElement).value;
+    const amenities = (document.getElementById('amenities') as HTMLTextAreaElement).value;
+    const minGuests = parseInt((document.getElementById('minGuests') as HTMLInputElement).value, 10);
+    const maxGuests = parseInt((document.getElementById('maxGuests') as HTMLInputElement).value, 10);
+
+    
     //const files: FileList = this.fileInput.nativeElement.files;
 
-    const formData = new FormData();
-    formData.append('accommodation_name', name);
-    formData.append('accommodation_location', location);
-    formData.append('accommodation_amenities', amenities);
-    formData.append('accommodation_min_guests', minGuests);
-    formData.append('accommodation_max_guests', maxGuests);
-    formData.append('accommodation_image_url', 'https://www.google.com/')
+    const accommodationData = {
+      accommodation_name: name,
+      accommodation_location: location,
+      accommodation_amenities: amenities,
+      accommodation_min_guests: minGuests,
+      accommodation_max_guests: maxGuests,
+      accommodation_image_url: 'https://www.google.com/' 
+    };
 
     // for (let i = 0; i < files.length; i++) {
     //   formData.append('images', files[i], files[i].name);
@@ -43,7 +46,7 @@ export class CreateAccommodationComponent {
     //TODO:
 
 
-    this.dataService.sendData(formData).subscribe(
+    this.dataService.sendData(accommodationData).subscribe(
       (response:any) => {
         console.log('Response from server:', response);
       },
