@@ -5,9 +5,9 @@
       <div *ngFor="let accommodation of accommodations; let i = index" class="img" [ngClass]="{'new-row': i % 3 === 0}">
       <div class="img">
         <img src="assets/images/car.jpg"/>
-        <div class="price-stamp">{{ accommodation.accommodation_prices }}</div>
+        <div class="price-stamp">100$</div>
         <div class="description">
-          <h4><a routerLink="/accommodation">{{ accommodation.accommodation_name }}</a></h4>
+          <h4><a [routerLink]="['/accommodation', accommodation.accommodation_id]">{{ accommodation.accommodation_name }}</a></h4>
           <p>{{ accommodation.accommodation_location }}</p>
         </div>
       </div>
