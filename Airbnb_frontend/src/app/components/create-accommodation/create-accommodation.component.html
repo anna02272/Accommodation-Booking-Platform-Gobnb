@@ -1,6 +1,6 @@
 <div class="container-fluid">
   <div class="modal-content">
-    <form enctype="multipart/form-data">
+    <form (ngSubmit)="onSubmit()" enctype="multipart/form-data">
       <div class="modal-content">
         <div class="modal-header align-items-center">
           <h5 class="text-center w-100" id="exampleModalLabel">
@@ -29,35 +29,35 @@
                     <h6 class="mb-2">Name</h6>
                   </div>
                   <div class="col-sm-4 text-secondary">
-                    <input type="text" class="form-control" />
+                    <input type="text" class="form-control" id="name" />
                   </div>
 
                   <div class="col-sm-2">
                     <h6 class="mb-2">Location</h6>
                   </div>
                   <div class="col-sm-4 text-secondary">
-                    <input type="text" class="form-control" />
+                    <input type="text" class="form-control" id="location" />
                   </div>
                 </div>
 
                 <div class="row mb-3">
                   <div class="col-sm-2">
-                    <h6 class="mb-2">Description</h6>
+                    <h6 class="mb-2">Amenities</h6>
                   </div>
                   <div class="col-sm-9 text-secondary">
                     <textarea
-                      id="description"
                       name="description"
-                      placeholder="Write a description"
+                      placeholder="Write available amenities"
                       required
                       cols="30"
                       rows="5"
                       class="form-control border-0"
+                      id="amenities"
                     ></textarea>
                   </div>
                 </div>
 
-                <div class="row mb-3">
+                <!-- <div class="row mb-3">
                   <div class="col-sm-2">
                     <h6 class="mb-2">Benefits</h6>
                   </div>
@@ -91,25 +91,25 @@
                   <div class="col-sm-4 text-secondary">
                     <input type="text" class="form-control" />
                   </div>
-                </div>
+                </div> -->
 
                 <div class="row mb-3">
                   <div class="col-sm-2">
                     <h6 class="mb-2">Minimum guests</h6>
                   </div>
                   <div class="col-sm-4 text-secondary">
-                    <input type="number" class="form-control" />
+                    <input type="number" class="form-control" id="minGuests" />
                   </div>
                   <div class="col-sm-2">
                     <h6 class="mb-2">Maximum guests</h6>
                   </div>
                   <div class="col-sm-4 text-secondary">
-                    <input type="number" class="form-control" />
+                    <input type="number" class="form-control" id="maxGuests" />
                   </div>
                 </div>
 
                 <h6 class="mb-2">Add images:</h6>
-                <div class="image-pair-container">
+                <!-- <div class="image-pair-container">
                   <div class="small-image-container">
                     <button
                       type="button"
@@ -118,9 +118,9 @@
                     ></button>
                     <img src="assets/images/car.jpg" />
                   </div>
-                </div>
+                </div> -->
               </ng-container>
-              <div
+              <!-- <div
                 class="d-flex justify-content-between border border-1 border-light rounded p-3 mt-3"
               >
                 <div>
@@ -135,7 +135,7 @@
                     multiple
                   />
                 </div>
-              </div>
+              </div> -->
             </div>
           </div>
         </div>
