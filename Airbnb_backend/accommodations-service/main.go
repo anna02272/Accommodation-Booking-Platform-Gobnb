@@ -63,8 +63,7 @@ func main() {
 	setAccommodationPrice.HandleFunc("/api/accommodations/price/{id:[a-zA-Z0-9-]+}", accommodationsHandler.SetAccommodationPrice)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
-	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
-		"https://localhost:4200/"})
+	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200"})
 	methodsOk := gorillaHandlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
 	handlerForHttp := gorillaHandlers.CORS(originsOk, headersOk, methodsOk)(router)
@@ -80,7 +79,7 @@ func main() {
 
 	logger.Println("Server listening on port", port)
 
-	err = server.ListenAndServeTLS("/app/server.crt", "/app/decrypted_server.key")
+	err = server.ListenAndServeTLS("/app/server.crt", "/app/decrypted_server.pem")
 	if err != nil {
 		fmt.Println(err)
 		return

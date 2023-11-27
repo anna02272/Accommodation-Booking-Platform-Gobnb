@@ -72,7 +72,7 @@ services:
       - network
     volumes:
       - ./accommodations-service/server.crt:/app/server.crt
-      - ./accommodations-service/decrypted_server.key:/app/decrypted_server.key
+      - ./accommodations-service/decrypted_server.pem:/app/decrypted_server.pem
 
   profile-server:
     build:

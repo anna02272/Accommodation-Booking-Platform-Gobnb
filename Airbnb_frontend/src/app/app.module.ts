@@ -35,6 +35,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { NgxCaptchaModule } from 'ngx-captcha';
+import { AccommodationService } from './services/accommodation.service';
+import { RefreshService } from './services/refresh.service';
 
 
 @NgModule({
@@ -94,7 +96,9 @@ import { NgxCaptchaModule } from 'ngx-captcha';
     AuthService,
     UserService,
     ReservationService,
-    DatePipe
+    DatePipe,
+    AccommodationService,
+    RefreshService
     
   ],
   bootstrap: [AppComponent]
