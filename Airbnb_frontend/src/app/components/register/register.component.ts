@@ -105,10 +105,27 @@ export class RegisterComponent {
           this.router.navigate(['/email-verification'],  { queryParams: { email: email }});
       },
       (error) => {
+        // console.error('Registration error', error);
+        // this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again./Username alredy exists' };
+        // this.submitted = false;
+        // // Handle  error
         console.error('Registration error', error);
+
+      if (error.status === 409) {
+        // Ako je status 409 (Conflict), korisničko ime ili email već postoje
+        if (error.error.message === 'Username already exists') {
+          this.notification = { msgType: 'error', msgBody: 'Registration failed. Username already exists' };
+        } else if (error.error.message === 'Email already exists') {
+          this.notification = { msgType: 'error', msgBody: 'Registration failed. Email already exists' };
+        } else {
+          // Ako je bilo koja druga greška, koristite generičku poruku
+          this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
+        }
+      } else {
+        // Ako je bilo koja druga greška, koristite generičku poruku
         this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
-        this.submitted = false;
-        // Handle  error
+      }
+      this.submitted = false;
       }
     );
 
