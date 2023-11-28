@@ -35,18 +35,18 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	url := "https://auth-server:8080/api/users/currentUser"
 
-	timeout := 500 * time.Second // Adjust the timeout duration as needed
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusInternalServerError)
 			return
 		}
 
-		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
+		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
