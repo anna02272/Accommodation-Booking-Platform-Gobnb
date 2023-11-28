@@ -35,7 +35,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	url := "https://auth-server:8080/api/users/currentUser"
 
-	timeout := 5 * time.Second // Adjust the timeout duration as needed
+	timeout := 500 * time.Second // Adjust the timeout duration as needed
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
