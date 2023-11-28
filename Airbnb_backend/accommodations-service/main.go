@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// Initialize context
-	timeoutContext, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	timeoutContext, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
 	defer cancel()
 
 	//Initialize the logger we are going to use, with prefix and datetime for every log
@@ -72,9 +72,9 @@ func main() {
 	server := http.Server{
 		Addr:         ":" + port,
 		Handler:      handlerForHttp,
-		IdleTimeout:  120 * time.Second,
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 1 * time.Second,
+		IdleTimeout:  1000 * time.Second,
+		ReadTimeout:  1000 * time.Second,
+		WriteTimeout: 1000 * time.Second,
 	}
 
 	logger.Println("Server listening on port", port)
