@@ -8,7 +8,7 @@ RUN go build -o server
 
 FROM alpine
 COPY --from=build_container /app/server /usr/bin
-COPY server.crt /app/
-COPY decrypted_server.key /app/
+COPY accomm-service.crt /app/
+COPY accomm_decrypted_key.pem /app/
 EXPOSE 8080
 ENTRYPOINT ["server", "https"]

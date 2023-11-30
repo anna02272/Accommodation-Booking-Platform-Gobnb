@@ -49,8 +49,8 @@ services:
     networks:
       - network
     volumes:
-      - ./reservations-service/reservations.crt:/app/reservations.crt
-      - ./reservations-service/decrypted_key.pem:/app/decrypted_key.pem
+      - ./reservations-service/reservation-service.crt:/app/reservation-service.crt
+      - ./reservations-service/reservation_decrypted_key.pem:/app/reservation_decrypted_key.pem
 
   acc-server:
     build:
@@ -71,8 +71,8 @@ services:
     networks:
       - network
     volumes:
-      - ./accommodations-service/server.crt:/app/server.crt
-      - ./accommodations-service/decrypted_server.key:/app/decrypted_server.key
+      - ./accommodations-service/accomm-service.crt:/app/accomm-service.crt
+      - ./accommodations-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
 
   profile-server:
     build:
