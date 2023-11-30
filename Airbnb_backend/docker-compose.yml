@@ -50,7 +50,7 @@ services:
       - network
     volumes:
       - ./reservations-service/reservations.crt:/app/reservations.crt
-      - ./reservations-service/decrypted_key.pem/app/decrypted_key.pem
+      - ./reservations-service/decrypted_key.pem:/app/decrypted_key.pem
 
   acc-server:
     build:

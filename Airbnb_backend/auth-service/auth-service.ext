@@ -13,12 +13,13 @@ stateOrProvinceName = Vojvodina
 localityName = Novi Sad
 organizationName = FTN
 organizationalUnitName = IT
-commonName = GoBnb
-emailAddress = domonjianna@gmail.com
+commonName = Gobnb
+emailAddress = gobnb@gmail.com
 
 [req_ext]
 subjectAltName = @alt_names
 
 [alt_names]
 DNS.1 = localhost
-DNS.2 = https-server
+DNS.2 = *.localhost
+DNS.3 = https-server
