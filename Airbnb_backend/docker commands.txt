@@ -20,3 +20,4 @@ go mod tidy - skida sve dependecy-je,i brise visak
 
 docker-compose up --build --remove-orphans (sa ovom komandom nema potrebe raditi prune, i svi logovi
 su odmah ispisani u terminalu, ovako je najbolje pokretati)
+docker container prune
