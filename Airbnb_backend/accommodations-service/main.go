@@ -79,7 +79,7 @@ func main() {
 
 	logger.Println("Server listening on port", port)
 
-	err = server.ListenAndServeTLS("/app/server.crt", "/app/decrypted_server.key")
+	err = server.ListenAndServeTLS("/app/accomm-service.crt", "/app/accomm_decrypted_key.pem")
 	if err != nil {
 		fmt.Println(err)
 		return
