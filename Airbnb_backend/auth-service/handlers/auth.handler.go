@@ -59,7 +59,7 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 	}
 	userVerif, err = ac.userService.FindCredentialsByEmail(credentials.Email)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Wrong credentials"})
 		return
 	}
 

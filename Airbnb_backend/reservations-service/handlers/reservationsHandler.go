@@ -42,11 +42,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusInternalServerError)
+			errorMsg := map[string]string{"error": "Authorization service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 			return
 		}
 
-		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusInternalServerError)
+		errorMsg := map[string]string{"error": "Authorization service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()
@@ -89,7 +91,8 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Guest {
-		error2.ReturnJSONError(rw, "Permission denied. Only guests can create reservations.", http.StatusForbidden)
+		errorMsg := map[string]string{"error": "Permission denied. Only guests can create reservations"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
 		return
 	}
 
