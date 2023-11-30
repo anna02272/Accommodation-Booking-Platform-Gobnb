@@ -19,7 +19,9 @@ export class ReservationComponent implements OnInit  {
     check_in_date?: string;
     check_out_date?: string;
     check_in_time?: number;
+    number_of_guests?: number;
     errorCheck: boolean =  false; 
+    errorCheckGuests: boolean = false;
 
 
     errorMessage?: "";
@@ -36,7 +38,8 @@ export class ReservationComponent implements OnInit  {
   this.form = this.fb.group({
       check_in_time: [''],
       check_out_date: [''],
-      check_in_date: ['']
+      check_in_date: [''],
+      number_of_guests: ['']
 
     })   }
 
@@ -60,6 +63,21 @@ export class ReservationComponent implements OnInit  {
               return
       }
     }
+
+    if (this.number_of_guests === undefined){
+      this.errorCheckGuests = true;
+      return
+    } 
+    else {
+      if (this.number_of_guests < 1){
+              this.errorCheckGuests = true;
+              return
+      }
+    }
+
+    this.errorCheckGuests = false;
+    this.errorCheck = false;
+
     const reservationCreate: Reservation = {
       accommodation_id: this.accommodationId,
       check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,

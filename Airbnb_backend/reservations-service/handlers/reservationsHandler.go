@@ -11,6 +11,7 @@ import (
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"reservations-service/repository"
+	"reservations-service/utils"
 	"strings"
 	"time"
 )
@@ -99,18 +100,17 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	guestReservation := h.Context().Value(KeyProduct{}).(*data.ReservationByGuestCreate)
 
 	accId := guestReservation.AccommodationId.String()
-	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accId
+	urlAccommodationCheck := "https://acc-server:8089/api/accommodations/get/" + accId
 
 	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
-			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-
-		errorMsg := map[string]string{"error": "Error performing auth request."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		errorMsg := map[string]string{"error": "Accommodation service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 	defer resp.Body.Close()
@@ -153,6 +153,12 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	if guestReservation.CheckInDate.After(guestReservation.CheckOutDate) {
 		errorMsg := map[string]string{"error": "Check-in date must be before check out date."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	if !utils.IsValidInteger(guestReservation.NumberOfGuests) {
+		errorMsg := map[string]string{"error": "Invalid field number_of_guests. It's a whole number."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}

@@ -16,6 +16,12 @@
         min="1"/>
     </div>
 
+
+    <div class="controls">
+      <input formControlName="number_of_guests" type="number" id="number_of_guests" class="floatLabel" name="name" required
+        placeholder="Number of guests" [(ngModel)]="number_of_guests" min="1" />
+    </div>
+
     <div class="grid">
       <div class="col-1-2">
         <div class="controls">
@@ -58,6 +64,10 @@
   Reserved successfully!
 </div>
 
-<div class="alert alert-success" role="alert" *ngIf="errorCheck">
+<div class="alert alert-danger" role="alert" *ngIf="errorCheck">
   Please enter valid check in time!
+</div>
+
+<div class="alert alert-danger" role="alert" *ngIf="errorCheckGuests">
+  Please enter valid number of guests!
 </div>
