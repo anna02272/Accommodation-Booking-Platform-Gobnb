@@ -20,12 +20,13 @@ import (
 )
 
 type UserServiceImpl struct {
-	collection *mongo.Collection
-	ctx        context.Context
+	profileCollection *mongo.Collection
+	collection        *mongo.Collection
+	ctx               context.Context
 }
 
-func NewUserServiceImpl(collection *mongo.Collection, ctx context.Context) UserService {
-	return &UserServiceImpl{collection, ctx}
+func NewUserServiceImpl(collection *mongo.Collection, profileCollection *mongo.Collection, ctx context.Context) UserService {
+	return &UserServiceImpl{profileCollection, collection, ctx}
 }
 
 func (us *UserServiceImpl) FindUserById(id string) (*domain.User, error) {
@@ -191,6 +192,23 @@ func (us *UserServiceImpl) UpdateUser(user *domain.User) error {
 	_, err := us.collection.UpdateOne(us.ctx, filter, update)
 	if err != nil {
 		return fmt.Errorf("error updating user: %v", err)
+	}
+
+	return nil
+}
+func (us *UserServiceImpl) DeleteCredentials(user *domain.User) error {
+	if user.ID.IsZero() {
+		return errors.New("invalid user ID")
+	}
+	filter := bson.M{"email": user.Email}
+	_, err := us.collection.DeleteOne(us.ctx, filter)
+	if err != nil {
+		return fmt.Errorf("error deleting user credentials: %v", err)
+	}
+
+	_, err = us.profileCollection.DeleteOne(us.ctx, filter)
+	if err != nil {
+		return fmt.Errorf("error deleting user credentials: %v", err)
 	}
 
 	return nil

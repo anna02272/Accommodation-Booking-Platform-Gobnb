@@ -4,6 +4,8 @@ import (
 	"auth-service/domain"
 	"auth-service/services"
 	"auth-service/utils"
+	"context"
+	"crypto/tls"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"html"
@@ -141,4 +143,60 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
+}
+
+func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
+	tokenString := ctx.GetHeader("Authorization")
+	tokenString = html.EscapeString(tokenString)
+
+	if tokenString == "" {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
+		return
+	}
+	tokenString = tokenString[len("Bearer "):]
+	user, err := GetUserFromToken(tokenString, ac.userService)
+
+	//urlProfile := "https://profile-service:8084/api/profile/delete/account"
+	//
+	//timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	//ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	//defer cancel()
+	//
+	//resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenString, urlProfile, "POST")
+	//if err != nil {
+	//	if ctx.Err() == context.DeadlineExceeded {
+	//		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+	//		return
+	//	}
+	//	ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+	//	return
+	//}
+	//defer resp.Body.Close()
+
+	err = ac.userService.DeleteCredentials(user)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+
+func (s *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string, method string) (*http.Response, error) {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
