@@ -1,81 +1,60 @@
 <section class="vh-100">
-    <div class="container-fluid h-custom">
-      <div class="row d-flex justify-content-center align-items-center h-100">
-        <div class="col-md-9 col-lg-6 col-xl-5">
-          <img src="assets/images/selfie.jpg"
-            class="img-fluid">
-        </div>
-        <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+  <div class="container-fluid h-custom">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+      <div class="col-md-9 col-lg-6 col-xl-5">
+        <img src="assets/images/selfie.jpg" class="img-fluid">
+      </div>
+      <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
 
-            <form
-            #loginForm="ngForm"
-            (ngSubmit)="onSubmit()"
-            *ngIf="!submitted"
-            [formGroup]="form"
-          >
+        <form #loginForm="ngForm" (ngSubmit)="onSubmit()" *ngIf="!submitted" [formGroup]="form">
 
-      
 
-            <div class="d-flex flex-row align-items-center justify-content-center justify-content-lg-start">
-              <p class="title">Log in</p>
-            </div>
 
-  
-            <!-- Email input -->
-            <div class="form-outline mb-4">
-              <input type="email" id="email" 
-              class="form-control form-control-lg"
-              placeholder="Enter valid email"
-              formControlName="email"
-              name="email "
-              required />
-
-              <label class="form-label" for="email">Email</label>
-            </div>
-  
-            <!-- Password input -->
-            <div class="form-outline mb-3">
-              <input type="password"
-               id="password"
-                class="form-control form-control-lg"
-                placeholder="Enter password"
-                formControlName="password"
-                name="password"
-                required />
-              <label class="form-label" for="password">Password</label>
-            </div>
-
-            <!-- Captcha -->
-              <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
-                (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
-              </ngx-recaptcha2>
-
-            <p class="error" *ngIf="notification" [class]="notification.msgType">
-              {{ notification.msgBody }}
-            </p>
-           
-          <div *ngIf="!form.get('captcha')!.value || form.get('captcha')!.touched" class="text-danger">
-            Please check the reCAPTCHA.
+          <div class="d-flex flex-row align-items-center justify-content-center justify-content-lg-start">
+            <p class="title">Log in</p>
           </div>
 
-           
-            <div class="d-flex justify-content-between align-items-center">
-              <!-- Checkbox -->
-              <a class="text-body" routerLink="/forgot-password">Forgot password?</a>
-            </div>
-  
-            <div class="text-center text-lg-start mt-4 pt-2">
-                <button 
-                class="login-btn"
-                type="submit"
-                [disabled]="!loginForm.form.valid"
-                >Login</button>
-              <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account? <a routerLink="/register"
-                >Register</a></p>
-            </div>
-  
-          </form>
-        </div>
+
+          <!-- Email input -->
+          <div class="form-outline mb-4">
+            <input type="email" id="email" class="form-control form-control-lg" placeholder="Enter valid email"
+              formControlName="email" name="email " required />
+
+            <label class="form-label" for="email">Email</label>
+          </div>
+
+          <!-- Password input -->
+          <div class="form-outline mb-3">
+            <input type="password" id="password" class="form-control form-control-lg" placeholder="Enter password"
+              formControlName="password" name="password" required />
+            <label class="form-label" for="password">Password</label>
+          </div>
+
+          <!-- Captcha -->
+          <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
+            (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
+          </ngx-recaptcha2>
+
+          <p class="error" *ngIf="notification" [class]="notification.msgType">
+            {{ notification.msgBody }}
+          </p>
+
+      <!-- Display reCAPTCHA error message only if the form is submitted and the reCAPTCHA field is untouched and invalid -->
+      <div *ngIf="submitted && form.get('captcha')?.untouched && form.get('captcha')?.invalid" class="text-danger">
+        Please check the reCAPTCHA.
+      </div>
+
+          <div class="d-flex justify-content-between align-items-center">
+            <!-- Checkbox -->
+            <a class="text-body" routerLink="/forgot-password">Forgot password?</a>
+          </div>
+
+          <div class="text-center text-lg-start mt-4 pt-2">
+            <button class="login-btn" type="submit">Login</button>
+            <p class="small fw-bold mt-2 pt-1 mb-0">Don't have an account? <a routerLink="/register">Register</a></p>
+          </div>
+
+        </form>
       </div>
     </div>
-   
+  </div>

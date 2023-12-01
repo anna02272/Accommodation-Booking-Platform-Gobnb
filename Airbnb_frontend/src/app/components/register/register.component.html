@@ -264,14 +264,13 @@
                     (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
                   </ngx-recaptcha2>
 
-                    <div *ngIf="!personalInfoForm.get('captcha')!.value || personalInfoForm.get('captcha')!.touched" class="text-danger">
-                      Please check the reCAPTCHA.
-                    </div>
+          <!-- <div *ngIf="submitted && personalInfoForm.get('captcha')?.untouched && personalInfoForm.get('captcha')?.invalid" class="text-danger">
+                    Please check the reCAPTCHA.
+                </div> -->
 
               <button
                 class="login-btn"
                 type="submit"
-                [disabled]="!personalInfoForm.valid"
               >
                 Register
               </button>

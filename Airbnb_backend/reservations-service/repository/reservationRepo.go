@@ -73,6 +73,7 @@ func (sr *ReservationRepo) CreateTable() {
         accommodation_location text,
         check_in_date timestamp,
         check_out_date timestamp,
+        number_of_guests int,
         PRIMARY KEY ((guest_id, reservation_id_time_created),check_in_date)
     ) WITH CLUSTERING ORDER BY (check_in_date ASC);`,
 	).Exec()
@@ -116,8 +117,9 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
-         (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, check_in_date, check_out_date) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location,
+          check_in_date, check_out_date,number_of_guests) 
+         VALUES (?, ?, ?, ?, ?, ?, ?,?)`,
 		reservationIdTimeCreated,
 		guestId,
 		guestReservation.AccommodationId,
@@ -125,6 +127,7 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 		accommodationLocation,
 		guestReservation.CheckInDate,
 		guestReservation.CheckOutDate,
+		guestReservation.NumberOfGuests,
 	).Exec()
 
 	if err != nil {
@@ -138,7 +141,7 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 func (sr *ReservationRepo) GetReservationsByGuest(id string) (data.ReservationsByGuest, error) {
 	scanner := sr.session.Query(`SELECT reservation_id_time_created, guest_id, accommodation_id, 
        accommodation_name, accommodation_location,
-      check_in_date, check_out_date
+      check_in_date, check_out_date,number_of_guests
 FROM reservations_by_guest WHERE guest_id = ?`,
 		id).Iter().Scanner()
 
@@ -148,7 +151,7 @@ FROM reservations_by_guest WHERE guest_id = ?`,
 		err := scanner.Scan(&rsv.ReservationIdTimeCreated, &rsv.GuestId,
 			&rsv.AccommodationId,
 			&rsv.AccommodationName, &rsv.AccommodationLocation,
-			&rsv.CheckInDate, &rsv.CheckOutDate)
+			&rsv.CheckInDate, &rsv.CheckOutDate, &rsv.NumberOfGuests)
 		if err != nil {
 			sr.logger.Println(err)
 			return nil, err

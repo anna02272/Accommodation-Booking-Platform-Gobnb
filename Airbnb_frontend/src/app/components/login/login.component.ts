@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, Params } from '@angular/router';
 import { AuthService, UserService } from '../../services';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { NgZone } from '@angular/core';
+
 
 
 interface DisplayMessage {
@@ -30,7 +32,9 @@ export class LoginComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private zone: NgZone 
+
   ) {}
 
   ngOnInit() {
@@ -87,7 +91,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
 
-  onSubmit() {
+ onSubmit() {
     this.notification = { msgType: '', msgBody: '' };
     this.submitted = true;
   
@@ -97,13 +101,18 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.router.navigate(["/home"]);
       },
       (error) => {
+
         this.submitted = false;
         this.notification = {
           msgType: 'error',
           msgBody: 'Incorrect username or password.'
         };
+        if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
+        this.notification.msgBody += 'Please check the reCAPTCHA. ';
+  }
       }
     );
   }
-  
+
+
 }
