@@ -29,9 +29,6 @@ func NewAuthHandler(authService services.AuthService, userService services.UserS
 
 func (ac *AuthHandler) Login(ctx *gin.Context) {
 	var credentials *domain.LoginInput
-	//credentials.Email = html.EscapeString(credentials.Email)
-	//credentials.Password = html.EscapeString(credentials.Password)
-
 	var userVerif *domain.Credentials
 
 	if err := ctx.ShouldBindJSON(&credentials); err != nil {
@@ -193,21 +190,8 @@ func (ac *AuthHandler) VerifyEmail(ctx *gin.Context) {
 
 func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 	var payload *domain.ForgotPasswordInput
-	//payload.Email = html.EscapeString(payload.Email)
-	//
 	var user *domain.Credentials
-	//user.Username = html.EscapeString(user.Username)
-	//user.Password = html.EscapeString(user.Password)
-	//user.Email = html.EscapeString(user.Email)
-	//user.VerificationCode = html.EscapeString(user.VerificationCode)
-	//user.PasswordResetToken = html.EscapeString(user.PasswordResetToken)
-
 	var updatedUser *domain.Credentials
-	//updatedUser.Username = html.EscapeString(updatedUser.Username)
-	//updatedUser.Password = html.EscapeString(updatedUser.Password)
-	//updatedUser.Email = html.EscapeString(updatedUser.Email)
-	//updatedUser.VerificationCode = html.EscapeString(updatedUser.VerificationCode)
-	//updatedUser.PasswordResetToken = html.EscapeString(updatedUser.PasswordResetToken)
 
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -265,14 +249,10 @@ func (ac *AuthHandler) ForgotPassword(ctx *gin.Context) {
 
 func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 	var payload *domain.ResetPasswordInput
-	//payload.Password = html.EscapeString(payload.Password)
-	//payload.PasswordConfirm = html.EscapeString(payload.PasswordConfirm)
-
 	if err := ctx.ShouldBindJSON(&payload); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-
 	payload.Password = strings.ReplaceAll(payload.Password, "<", "")
 	payload.Password = strings.ReplaceAll(payload.Password, ">", "")
 	payload.PasswordConfirm = strings.ReplaceAll(payload.PasswordConfirm, "<", "")
@@ -280,6 +260,13 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 
 	if payload.Password != payload.PasswordConfirm {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
+		return
+	}
+
+	passwordExistsBlackList, err := utils.CheckBlackList(payload.Password, "blacklist.txt")
+
+	if passwordExistsBlackList {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Password is in blacklist!"})
 		return
 	}
 
