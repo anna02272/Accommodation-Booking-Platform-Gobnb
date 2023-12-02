@@ -168,8 +168,10 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	// Define a struct to represent the JSON structure
 	var responseAccommodation struct {
-		AccommodationName     string `json:"accommodation_name"`
-		AccommodationLocation string `json:"accommodation_location"`
+		AccommodationName      string `json:"accommodation_name"`
+		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationMinGuests int    `json:"accommodation_min_guests"`
+		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
 	}
 
 	// Decode the JSON response into the struct
@@ -181,6 +183,12 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		}
 
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if responseAccommodation.AccommodationMaxGuests < guestReservation.NumberOfGuests {
+		errorMsg := map[string]string{"error": "Too much guests.Double check the capacity of accommodation."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 
