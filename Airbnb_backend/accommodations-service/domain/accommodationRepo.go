@@ -71,6 +71,7 @@ func (sr *AccommodationRepo) CreateTable() {
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS accommodation.accommodations
 			(accommodationId UUID,
+			host_id text,
 			accommodation_name text,
 			accommodation_location text,
 			accommodation_amenities text,
@@ -88,7 +89,7 @@ func (sr *AccommodationRepo) CreateTable() {
 }
 
 // inserting accommodation into table accommodation
-func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (*Accommodation, error) {
+func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation, hostId string) (*Accommodation, error) {
 	accommodationId := gocql.TimeUUID()
 
 	nameRegex := regexp.MustCompile(`^[A-Za-z]+(?:[ -][A-Za-z]+)*$`)
@@ -138,9 +139,10 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 
 	err := sr.session.Query(
 		`INSERT INTO accommodations 
-         (accommodationId, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url, accommodation_availability, accommodation_price) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, null, null)`,
+         (accommodationId,host_id, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url, accommodation_availability, accommodation_price) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, null, null)`,
 		accommodationId,
+		hostId,
 		accommodation.Name,
 		accommodation.Location,
 		accommodation.Amenities,
@@ -160,7 +162,7 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation) (
 }
 
 func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error) {
-	scanner := sr.session.Query(`SELECT accommodationId, 
+	scanner := sr.session.Query(`SELECT accommodationId, host_id,
         accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url
         FROM accommodation.accommodations WHERE accommodationId = ?`,
 		id).Iter().Scanner()
@@ -195,7 +197,7 @@ func (sr *AccommodationRepo) UpdateAccommodationAvailability(id string, availabi
 }
 
 func (sr *AccommodationRepo) GetAllAccommodations() (Accommodations, error) {
-	scanner := sr.session.Query(`SELECT accommodationId, 
+	scanner := sr.session.Query(`SELECT accommodationId, host_id,
         accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url
         FROM accommodation.accommodations`).Iter().Scanner()
 
@@ -227,3 +229,28 @@ func (sr *AccommodationRepo) UpdateAccommodationPrice(id string, price map[time.
 
 	return nil
 }
+
+//func (sr *ReservationRepo) GetAllAccommodations(hostID string) (*Accommodation, error) {
+//	scanner := sr.session.Query(`SELECT * FROM accommodation.accommodations WHERE guest_id = ? ALLOW FILTERING`, hostID).
+//		Iter().Scanner()
+//	var accommodations *Accommodation
+//
+//	for scanner.Next() {
+//		var res *Accommodation
+//		err := scanner.Scan(&res., &res.ReservationIdTimeCreated,
+//			&res.AccommodationId, &res.AccommodationLocation, &res.AccommodationName,
+//			&res.CheckInDate, &res.CheckOutDate, &res.NumberOfGuests)
+//
+//		if err != nil {
+//			sr.logger.Println(err)
+//			return nil, err
+//		}
+//
+//		reservations = append(reservations, &res)
+//	}
+//	if err := scanner.Err(); err != nil {
+//		sr.logger.Println(err)
+//		return nil, err
+//	}
+//	return reservations, nil
+//}

@@ -118,8 +118,8 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 }
 
 func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
-	tokenString := ctx.GetHeader("Authorization")
-	tokenString = html.EscapeString(tokenString)
+	tokenStringHeader := ctx.GetHeader("Authorization")
+	tokenString := html.EscapeString(tokenStringHeader)
 
 	if tokenString == "" {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
@@ -128,15 +128,46 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	tokenString = tokenString[len("Bearer "):]
 	user, err := GetUserFromToken(tokenString, ac.userService)
 
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+
 	if user == nil {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
 
-	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
-		return
+	fmt.Println(user.UserRole)
+	if user.UserRole == "Guest" {
+		fmt.Println("here")
+
+		urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
+		fmt.Println(urlCheckReservations)
+
+		timeout := 2000 * time.Second // Adjust the timeout duration as needed
+		ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+		if errRes != nil {
+			fmt.Println(err)
+			if ctx.Err() == context.DeadlineExceeded {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
+				return
+			}
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
+			return
+		}
+		defer respRes.Body.Close()
+
+		fmt.Println(respRes.StatusCode)
+		if respRes.StatusCode != 404 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have active reservations"})
+			return
+		}
 	}
+
 	urlProfile := "https://profile-server:8084/api/profile/delete/" + user.Email
 	fmt.Println(urlProfile)
 
@@ -144,7 +175,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenString, urlProfile, "DELETE")
+	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlProfile, "DELETE")
 	if err != nil {
 		fmt.Println(err)
 		if ctx.Err() == context.DeadlineExceeded {
@@ -155,6 +186,11 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+		return
+	}
 
 	err = ac.userService.DeleteCredentials(user)
 	if err != nil {

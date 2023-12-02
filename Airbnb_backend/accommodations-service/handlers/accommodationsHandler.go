@@ -89,7 +89,7 @@ func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *
 	}
 
 	accommodation := h.Context().Value(KeyProduct{}).(*domain.Accommodation)
-	acc, err := s.repo.InsertAccommodation(accommodation)
+	acc, err := s.repo.InsertAccommodation(accommodation, response.LoggedInUser.ID)
 	if err != nil {
 		s.logger.Print("Database exception: ", err)
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
