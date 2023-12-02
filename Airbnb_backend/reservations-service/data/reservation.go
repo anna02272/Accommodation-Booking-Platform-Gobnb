@@ -42,3 +42,7 @@ func (o *ReservationByGuestCreate) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(o)
 }
+func (reservations ReservationsByGuest) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(reservations)
+}
