@@ -215,13 +215,13 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			errorMsg := map[string]string{"error": "Authorization service not available.."}
-			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+			errorMsg := map[string]string{"error": "Authorization service not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
 
-		errorMsg := map[string]string{"error": "Authorization service not available.."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		errorMsg := map[string]string{"error": "Authorization service not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 	defer resp.Body.Close()
@@ -289,13 +289,13 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			errorMsg := map[string]string{"error": "Authorization service not available.."}
-			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+			errorMsg := map[string]string{"error": "Authorization service not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
 
-		errorMsg := map[string]string{"error": "Authorization service not available.."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		errorMsg := map[string]string{"error": "Authorization service not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
 	defer resp.Body.Close()

@@ -1,1 +1,24 @@
-<p>reservations works!</p>
+<h2 class="reservations">
+    <span>Your reservations</span>
+  </h2>
+  <p class="notif" *ngIf="notification" [class]="notification.msgType">
+    {{ notification.msgBody }}
+  </p>
+  <div *ngFor="let reservation of reservations; let i = index">
+<ul>
+    <li class="card" style="--color:#ececec; --bg-color:#5D8AA8">
+      <div class="icon"><i class="fa-solid fa-house"></i></div>
+      <div class="title" [routerLink]="['/accommodation', reservation.AccommodationId]"> {{ reservation.AccommodationName }} </div>
+      <div class="content">
+        <p><strong>Location:</strong> {{ reservation.AccommodationLocation }}</p>
+        <p><strong>Check-in Date:</strong> {{ reservation.CheckInDate }}</p>
+        <p><strong>Check-out Date:</strong> {{ reservation.CheckOutDate }}</p>
+        <p><strong>Number of Guests:</strong> {{ reservation.NumberOfGuests }}</p>
+      </div>
+      <div class="button">
+      <button class="btn" type="submit" (click)="cancelReservation(reservation.ReservationIdTimeCreated)"
+      >Cancel reservation </button>
+      </div>
+ </li>
+  </ul>
+  </div>
