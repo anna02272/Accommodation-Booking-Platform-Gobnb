@@ -41,4 +41,8 @@ export class UserService {
     return this.apiService.patch(this.config.changePassword_url, changePasswordData);
   }
 
+  deleteProfile() {
+  return this.apiService.delete(this.config.deleteProfile_url)
+  }
+
 }

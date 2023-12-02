@@ -116,6 +116,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	defer resp.Body.Close()
 
 	statusCodeAccommodation := resp.StatusCode
+	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)

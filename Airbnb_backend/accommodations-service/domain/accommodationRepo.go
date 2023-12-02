@@ -139,7 +139,8 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation, h
 
 	err := sr.session.Query(
 		`INSERT INTO accommodations 
-         (accommodationId,host_id, accommodation_name, accommodation_location, accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url, accommodation_availability, accommodation_price) 
+         (accommodationId,host_id, accommodation_name, accommodation_location,
+          accommodation_amenities, accommodation_min_guests, accommodation_max_guests, accommodation_image_url, accommodation_availability, accommodation_price) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, null, null)`,
 		accommodationId,
 		hostId,
@@ -157,6 +158,7 @@ func (sr *AccommodationRepo) InsertAccommodation(accommodation *Accommodation, h
 	}
 
 	accommodation.AccommodationId = accommodationId
+	accommodation.HostId = hostId
 
 	return accommodation, nil
 }
@@ -170,7 +172,7 @@ func (sr *AccommodationRepo) GetAccommodations(id string) (Accommodations, error
 	var accommodations Accommodations
 	for scanner.Next() {
 		var acm Accommodation
-		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
+		err := scanner.Scan(&acm.AccommodationId, &acm.HostId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
 		if err != nil {
 			sr.logger.Println(err)
 			return nil, err
@@ -204,7 +206,7 @@ func (sr *AccommodationRepo) GetAllAccommodations() (Accommodations, error) {
 	var accommodations Accommodations
 	for scanner.Next() {
 		var acm Accommodation
-		err := scanner.Scan(&acm.AccommodationId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
+		err := scanner.Scan(&acm.AccommodationId, &acm.HostId, &acm.Name, &acm.Location, &acm.Amenities, &acm.MinGuests, &acm.MaxGuests, &acm.ImageUrl)
 		if err != nil {
 			sr.logger.Println(err)
 			return nil, err

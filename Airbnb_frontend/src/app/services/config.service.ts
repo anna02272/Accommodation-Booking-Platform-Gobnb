@@ -24,6 +24,7 @@ export class ConfigService {
   private _user_url = this._auth_api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
   private _changePassword_url = this._user_url + '/changePassword';
+  private _deleteProfile_url = this._user_url + '/delete';
 
   private _acc_url = this._acc_api_url + '/accommodations';
 
@@ -64,6 +65,9 @@ export class ConfigService {
   }
   get resv_url(): string {
     return this._resv_url;
+  }
+  get deleteProfile_url(): string {
+    return this._deleteProfile_url;
   }
   }
 

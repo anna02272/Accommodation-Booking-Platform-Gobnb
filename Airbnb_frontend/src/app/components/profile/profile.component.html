@@ -107,8 +107,20 @@
             <div class="row">
               <div class="col-sm-12">
                 <button class="btn" routerLink="/edit-profile">Edit Profile</button>
+              <button class="btn" (click)="deleteProfile()">Delete Profile</button>
+
               </div>
+
+            
             </div>
+
+            <!-- Error handling-->
+            <div *ngIf="errorMessage" class="error">
+              You have active reservations. If you want to delete profile, please cancel reservations!
+            </div>
+            
+
+
           </div>
         </div>
       </div>

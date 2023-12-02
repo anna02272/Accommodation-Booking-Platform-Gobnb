@@ -9,6 +9,7 @@ import (
 )
 
 type Accommodation struct {
+	HostId          string               `json:"host_id"`
 	Name            string               `json:"accommodation_name"`
 	Location        string               `json:"accommodation_location"`
 	AccommodationId gocql.UUID           `json:"accommodation_id"`
