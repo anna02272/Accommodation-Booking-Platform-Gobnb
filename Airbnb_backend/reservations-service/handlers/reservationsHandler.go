@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -32,7 +33,6 @@ func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *Reser
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
-	//token = html.EscapeString(token)
 
 	url := "https://auth-server:8080/api/users/currentUser"
 
@@ -182,9 +182,6 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
-	//
-	//responseAccommodation.AccommodationName = html.EscapeString(responseAccommodation.AccommodationName)
-	//responseAccommodation.AccommodationLocation = html.EscapeString(responseAccommodation.AccommodationLocation)
 
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
 		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation)
@@ -206,26 +203,153 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	rw.Write(responseJSON)
 }
 
-//func (s *ReservationsHandler) GetReservationsByGuest(rw http.ResponseWriter, h *http.Request) {
-//	vars := mux.Vars(h)
-//	guestId := vars["id"]
-//
-//	reservationsByGuest, err := s.repo.GetReservationsByGuest(guestId)
-//	if err != nil {
-//		s.logger.Print("Database exception: ", err)
-//	}
-//
-//	if reservationsByGuest == nil {
-//		return
-//	}
-//
-//	err = reservationsByGuest.ToJSON(rw)
-//	if err != nil {
-//		http.Error(rw, "Unable to convert to json", http.StatusInternalServerError)
-//		s.logger.Fatal("Unable to convert to json :", err)
-//		return
-//	}
-//}
+func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http.Request) {
+	token := h.Header.Get("Authorization")
+
+	url := "https://auth-server:8080/api/users/currentUser"
+
+	timeout := 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+			return
+		}
+
+		errorMsg := map[string]string{"error": "Authorization service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	var response struct {
+		LoggedInUser struct {
+			ID       string        `json:"id"`
+			UserRole data.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+	guestID := response.LoggedInUser.ID
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != data.Guest {
+		errorMsg := map[string]string{"error": "Permission denied. Only guests can get reservations"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
+		return
+	}
+
+	reservations, err := s.repo.GetAllReservations(guestID)
+	if err != nil {
+		s.logger.Print("Error getting reservations: ", err)
+		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
+		return
+	}
+	if len(reservations) == 0 {
+		rw.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	if err := reservations.ToJSON(rw); err != nil {
+		s.logger.Println("Error encoding JSON:", err)
+	}
+}
+
+func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.Request) {
+	token := h.Header.Get("Authorization")
+	url := "https://auth-server:8080/api/users/currentUser"
+
+	timeout := 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+			return
+		}
+
+		errorMsg := map[string]string{"error": "Authorization service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	var response struct {
+		LoggedInUser struct {
+			ID       string        `json:"id"`
+			UserRole data.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+	guestID := response.LoggedInUser.ID
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != data.Guest {
+		errorMsg := map[string]string{"error": "Permission denied. Only guests can delete reservations"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
+		return
+	}
+	vars := mux.Vars(h)
+	reservationIDString := vars["id"]
+
+	if err := s.repo.CancelReservationByID(guestID, reservationIDString); err != nil {
+		s.logger.Println("Error canceling reservation:", err)
+		if strings.Contains(err.Error(), "cannot cancel reservation, check-in date has already started") {
+			rw.WriteHeader(http.StatusBadRequest)
+			rw.Write([]byte(`{"error":"cannot cancel reservation, check-in date has already started"}`))
+			return
+		}
+		errorMsg := map[string]string{"error": err.Error()}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	rw.WriteHeader(http.StatusNoContent)
+}
 
 func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
