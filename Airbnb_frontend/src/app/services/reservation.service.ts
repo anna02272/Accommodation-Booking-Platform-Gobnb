@@ -1,4 +1,3 @@
-import { HttpClient } from "@angular/common/http";
 import { ConfigService } from "./config.service";
 import { Observable } from "rxjs";
 import { Reservation } from "../models/reservation";
@@ -9,7 +8,8 @@ import { map } from 'rxjs/operators';
 @Injectable()
 export class ReservationService {
   reservationCreated!: Reservation;
-  constructor(private http: HttpClient, private configService: ConfigService,     
+  constructor(
+    private configService: ConfigService,     
     private apiService: ApiService
 ) {}
 
@@ -20,7 +20,11 @@ export class ReservationService {
         return reservationCreatedDb;
       }));
   }
-
-
+  getAll() {
+    return this.apiService.get(this.configService.resv_url + "/getAll");
+   }
+   cancelReservation(id: string): Observable<void> {
+    return this.apiService.delete(`${this.configService.resv_url}/cancel/${id}`);
+  }
 }
 

@@ -1,0 +1,105 @@
+@import url('https://pro.fontawesome.com/releases/v6.0.0-beta1/css/all.css');
+
+* { margin: 0; padding: 0; box-sizing: border-box }
+body {
+  padding: 2rem;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background-color: #060606;
+}
+ul{
+  margin-top: 40px;
+  width: min(100%, 60rem);
+  overflow: hidden;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 5vw, 4rem);
+  list-style: none;
+  perspective: 1000px;
+  display: grid;
+  row-gap: 0.5rem;
+}
+ul li.card{
+  position: relative;
+  padding-block: 1.5rem;
+  padding-inline: 2rem;
+  background-color: var(--bg-color);
+  background-image: linear-gradient(to right, rgb(0 0 0 / .15), transparent);
+  transform-style: preserve-3d;
+  color: var(--color);
+  
+  display: grid;
+  grid-template: 'icon' 'title' 'content' 'button';
+  row-gap: 0.5rem;
+  column-gap: 2rem;
+}
+ul li.card::before, ul li.card::after {
+  --side-rotate: 60deg;
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  transform-origin: calc(50% - (50% * var(--ry))) 50%  ;
+  transform: rotateY(calc(var(--side-rotate) * var(--ry)));
+  background-color: inherit;
+  background-image: linear-gradient(calc(90deg * var(--ry)), rgb(0 0 0 / .25), rgb(0 0 0 / .5));  
+}
+ul li.card::before {--ry: -1; right: 100% }
+ul li.card::after {--ry: 1; left: 100% }
+
+ul li.card .icon {
+  grid-area: icon;
+  display: grid;
+  place-items: center;
+}
+ul li.card .icon i {
+  font-size: 2rem;
+}
+ul li.card .title{
+  grid-area: title;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+}
+ul li.card .content{
+  grid-area: content;
+}
+
+@media (min-width: 30rem){
+  ul li.card {
+    grid-template: 'icon title' 'icon content' 'icon button';
+    text-align: left;
+  }
+  ul li.card .title { text-align: left }
+}
+.reservations{
+    font-size: 36px;
+    font-weight: 800;
+    color: #72A0C1;
+    margin-top: 70px;
+    text-align: center;
+}
+
+.btn{
+    float: left;
+    width: 150px;
+    height: 40px;
+    border: 1px solid #72A0C1;
+    margin: 3 30 3px 0;
+    background-color: #72A0C1;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+.btn:hover{
+    background-color: #5D8AA8;
+    cursor: pointer;
+}
+.notif {
+  color: red;
+  text-align: center;
+  
+}

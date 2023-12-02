@@ -81,7 +81,8 @@ export class ReservationComponent implements OnInit  {
     const reservationCreate: Reservation = {
       accommodation_id: this.accommodationId,
       check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
-      check_out_date: this.check_out_date+"T15:00:00Z"
+      check_out_date: this.check_out_date+"T15:00:00Z",
+      number_of_guests: this.number_of_guests
     };
 
   this.reservationService.createReservation(reservationCreate).subscribe(

@@ -18,11 +18,12 @@
         </button>
        
         <div class="dropdown-content">
-          <a routerLink="/profile">Profile</a>
+          <a routerLink="/profile">Profile </a>
           <a (click)="logout()">Logout</a>
         </div>
       </div>
     </li>
-    <li *ngIf="hasSignedIn()">{{ getUsername() }}</li>
+    <li *ngIf="hasSignedIn()" routerLink="/reservations">Reservations</li>
+    <li *ngIf="hasSignedIn()" routerLink="/profile">{{ getUsername() }}</li>
   </ul>
 </header>

@@ -11,6 +11,7 @@ import { AuthGuard } from './services/auth.guard';
 import { EmailVerificationComponent } from './components/email-verification/email-verification.component';
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
+import { ReservationsComponent } from './components/reservations/reservations.component';
 
 const routes: Routes = [
   {
@@ -61,7 +62,14 @@ const routes: Routes = [
     path: 'reset-password',
     component: ResetPasswordComponent ,
   },
-
+  {
+    path: 'reservations',
+    component: ReservationsComponent,
+    canActivate: [AuthGuard] ,
+    data: {
+      roles: ['Guest']
+    }
+  },
 ];
 
 @NgModule({

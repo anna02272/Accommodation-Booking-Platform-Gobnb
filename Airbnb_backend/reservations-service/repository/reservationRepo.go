@@ -139,29 +139,37 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 
 	return nil
 }
-
 func (sr *ReservationRepo) GetAllReservations(guestID string) (data.ReservationsByGuest, error) {
-	scanner := sr.session.Query(`SELECT * FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`, guestID).Iter().Scanner()
+	query := `SELECT  reservation_id_time_created, guest_id, accommodation_id,
+        accommodation_location, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`
+
+	iterable := sr.session.Query(query, guestID).Iter()
 
 	var reservations data.ReservationsByGuest
+	m := map[string]interface{}{}
 
-	for scanner.Next() {
-		var res data.ReservationByGuest
-		err := scanner.Scan(&res.GuestId, &res.ReservationIdTimeCreated,
-			&res.AccommodationId, &res.AccommodationLocation, &res.AccommodationName,
-			&res.CheckInDate, &res.CheckOutDate, &res.NumberOfGuests)
-	
-		if err != nil {
-			sr.logger.Println(err)
-			return nil, err
+	for iterable.MapScan(m) {
+		res := data.ReservationByGuest{
+
+			ReservationIdTimeCreated: data.TimeUUID(m["reservation_id_time_created"].(gocql.UUID)),
+			GuestId:                  m["guest_id"].(string),
+			AccommodationId:          m["accommodation_id"].(gocql.UUID),
+			AccommodationLocation:    m["accommodation_location"].(string),
+			AccommodationName:        m["accommodation_name"].(string),
+			CheckInDate:              m["check_in_date"].(time.Time),
+			CheckOutDate:             m["check_out_date"].(time.Time),
+			NumberOfGuests:           m["number_of_guests"].(int),
 		}
 
 		reservations = append(reservations, &res)
+		m = map[string]interface{}{}
 	}
-	if err := scanner.Err(); err != nil {
+
+	if err := iterable.Close(); err != nil {
 		sr.logger.Println(err)
 		return nil, err
 	}
+
 	return reservations, nil
 }
 
