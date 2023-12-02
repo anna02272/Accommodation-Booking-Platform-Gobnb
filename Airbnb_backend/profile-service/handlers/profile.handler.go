@@ -40,3 +40,21 @@ func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile created successfully"})
 }
+
+func (ph *ProfileHandler) DeleteProfile(ctx *gin.Context) {
+	email := ctx.Params.ByName("email")
+	errP := ph.profileService.FindUserByEmail(email)
+	if errP != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": errP.Error()})
+		return
+	}
+
+	err := ph.profileService.DeleteUserProfile(email)
+
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile deleted successfully"})
+}

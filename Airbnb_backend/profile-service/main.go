@@ -70,6 +70,10 @@ func main() {
 		ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Message"})
 	})
 
+	router.GET("/profile/delete/:email", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"status": "OK", "message": "message"})
+	})
+
 	router.GET("/profile/createUser", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"status": "hej", "hej": "hej"})
 	})

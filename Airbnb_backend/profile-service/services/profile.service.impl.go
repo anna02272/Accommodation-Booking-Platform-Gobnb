@@ -2,9 +2,13 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"profile-service/domain"
+	"regexp"
+	"strings"
 )
 
 type UserServiceImpl struct {
@@ -31,6 +35,38 @@ func (uc *UserServiceImpl) Registration(user *domain.User) error {
 
 	err = uc.collection.FindOne(uc.ctx, query).Decode(&responseUser)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UserServiceImpl) DeleteUserProfile(email string) error {
+	filter := bson.M{"email": email}
+	_, err := uc.collection.DeleteOne(uc.ctx, filter)
+	if err != nil {
+		return fmt.Errorf("error deleting user: %v", err)
+	}
+
+	return nil
+}
+
+func (us *UserServiceImpl) FindUserByEmail(email string) error {
+	var user *domain.User
+
+	// Improved email format validation using regular expression
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(email) {
+		return errors.New("Invalid email format")
+	}
+
+	query := bson.M{"email": strings.ToLower(email)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return errors.New("User does not exist") // No user found, return nil user and nil error
+		}
 		return err
 	}
 

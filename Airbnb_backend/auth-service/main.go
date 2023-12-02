@@ -24,11 +24,10 @@ var (
 	UserHandler      handlers.UserHandler
 	UserRouteHandler routes.UserRouteHandler
 
-	authCollection    *mongo.Collection
-	profileCollection *mongo.Collection
-	authService       services.AuthService
-	AuthHandler       handlers.AuthHandler
-	AuthRouteHandler  routes.AuthRouteHandler
+	authCollection   *mongo.Collection
+	authService      services.AuthService
+	AuthHandler      handlers.AuthHandler
+	AuthRouteHandler routes.AuthRouteHandler
 )
 
 func init() {
@@ -48,10 +47,8 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
-	profileCollection = mongoclient.Database("Gobnb").Collection("profile")
-
 	authCollection = mongoclient.Database("Gobnb").Collection("auth")
-	userService = services.NewUserServiceImpl(authCollection, profileCollection, ctx)
+	userService = services.NewUserServiceImpl(authCollection, ctx)
 	authService = services.NewAuthService(authCollection, ctx, userService)
 	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection)
 	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler, authService)

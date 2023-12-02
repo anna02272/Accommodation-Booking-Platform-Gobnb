@@ -7,9 +7,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"html"
 	"net/http"
+	"time"
 )
 
 type UserHandler struct {
@@ -156,22 +158,33 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	tokenString = tokenString[len("Bearer "):]
 	user, err := GetUserFromToken(tokenString, ac.userService)
 
-	//urlProfile := "https://profile-service:8084/api/profile/delete/account"
-	//
-	//timeout := 2000 * time.Second // Adjust the timeout duration as needed
-	//ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
-	//defer cancel()
-	//
-	//resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenString, urlProfile, "POST")
-	//if err != nil {
-	//	if ctx.Err() == context.DeadlineExceeded {
-	//		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
-	//		return
-	//	}
-	//	ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
-	//	return
-	//}
-	//defer resp.Body.Close()
+	if user == nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+	urlProfile := "https://profile-server:8084/api/profile/delete/" + user.Email
+	fmt.Println(urlProfile)
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenString, urlProfile, "DELETE")
+	if err != nil {
+		fmt.Println(err)
+		if ctx.Err() == context.DeadlineExceeded {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+			return
+		}
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
+		return
+	}
+	defer resp.Body.Close()
 
 	err = ac.userService.DeleteCredentials(user)
 	if err != nil {
