@@ -37,7 +37,7 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
 import { NgxCaptchaModule } from 'ngx-captcha';
 import { AccommodationService } from './services/accommodation.service';
 import { RefreshService } from './services/refresh.service';
-
+import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 
 @NgModule({
   declarations: [
@@ -58,6 +58,7 @@ import { RefreshService } from './services/refresh.service';
     PasswordStrenghtValidatorComponent,
     ForgotPasswordComponent,
     ResetPasswordComponent,
+    DeleteAccountComponent,
   ],
   imports: [
     HttpClientModule,

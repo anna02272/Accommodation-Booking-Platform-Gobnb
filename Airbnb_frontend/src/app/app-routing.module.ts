@@ -12,6 +12,7 @@ import { EmailVerificationComponent } from './components/email-verification/emai
 import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { ReservationsComponent } from './components/reservations/reservations.component';
+import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 
 const routes: Routes = [
   {
@@ -61,6 +62,11 @@ const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordComponent ,
+  },
+
+    {
+    path: 'delete-account',
+    component: DeleteAccountComponent ,
   },
   {
     path: 'reservations',

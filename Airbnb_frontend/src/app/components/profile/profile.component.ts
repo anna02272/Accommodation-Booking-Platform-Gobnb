@@ -21,7 +21,7 @@ deleteProfile() {
       console.log("here")
       this.errorMessage = null;
       this.authService.logout();
-      this.router.navigate(['/register']);
+      this.router.navigate(['/delete-account']);
 
     },
     error => {

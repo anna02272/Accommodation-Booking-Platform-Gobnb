@@ -96,15 +96,25 @@ export class RegisterComponent {
     this.submitted = true;
 
     const emailControl = this.personalInfoForm.get('email');
-
+    console.log("here")
+    if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
+    this.notification.msgBody += 'Please check the reCAPTCHA. ';
+    this.submitted = false;
+    console.log("captcha failed")
+    return
+    }
     this.authService.register(this.personalInfoForm.value).subscribe(
       (data) => {
         console.log("register")
+        this.submitted = true;
         const email = emailControl?.value;
           this.notification = { msgType: 'success', msgBody: `You are registered! Check your email (${email}) for verification.` };
           this.router.navigate(['/email-verification'],  { queryParams: { email: email }});
-      },
+      
+    },
       (error) => {
+              console.log(this.personalInfoForm.value)
+
         // console.error('Registration error', error);
         // this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again./Username alredy exists' };
         // this.submitted = false;
@@ -126,9 +136,10 @@ export class RegisterComponent {
        else {
         this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
 
-          if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
-         this.notification.msgBody += 'Please check the reCAPTCHA. ';
-  }  
+  //         if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
+  //        this.notification.msgBody += 'Please check the reCAPTCHA. ';
+  // }  
+  
       }
 
 
@@ -140,5 +151,5 @@ export class RegisterComponent {
 
   }
 
-}
+  }
 

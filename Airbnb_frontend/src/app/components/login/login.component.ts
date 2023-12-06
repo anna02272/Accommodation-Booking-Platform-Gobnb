@@ -91,28 +91,34 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
 
- onSubmit() {
-    this.notification = { msgType: '', msgBody: '' };
-    this.submitted = true;
-  
-    this.authService.login(this.form.value).subscribe(
-      () => {
-        this.userService.getMyInfo().subscribe();
-        this.router.navigate(["/home"]);
-      },
-      (error) => {
+onSubmit() {
+  this.notification = { msgType: '', msgBody: '' };
+  this.submitted = true;
 
-        this.submitted = false;
-        this.notification = {
-          msgType: 'error',
-          msgBody: 'Incorrect username or password.'
-        };
-        if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
-        this.notification.msgBody += 'Please check the reCAPTCHA. ';
-  }
-      }
-    );
-  }
+  if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
+      this.notification = {
+        msgType: 'error',
+        msgBody: 'Please check the reCAPTCHA.'
+      };
+      this.submitted = false; 
+      return
+   }
+  this.authService.login(this.form.value).subscribe(
+    () => {
+      this.userService.getMyInfo().subscribe();
+      this.router.navigate(['/home']);
+      
+    },
+    (error) => {
+      this.submitted = false;
+      this.notification = {
+        msgType: 'error',
+        msgBody: 'Incorrect username or password.'
+      };
+    }
+  );
+}
+
 
 
 }
