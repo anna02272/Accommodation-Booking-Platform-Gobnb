@@ -3,22 +3,21 @@ package domain
 import (
 	"encoding/json"
 	"io"
-	"time"
 
-	"github.com/gocql/gocql"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Accommodation struct {
-	HostId          string               `json:"host_id"`
-	Name            string               `json:"accommodation_name"`
-	Location        string               `json:"accommodation_location"`
-	AccommodationId gocql.UUID           `json:"accommodation_id"`
-	Amenities       string               `json:"accommodation_amenities"`
-	MinGuests       int                  `json:"accommodation_min_guests"`
-	MaxGuests       int                  `json:"accommodation_max_guests"`
-	ImageUrl        string               `json:"accommodation_image_url"`
-	Availability    map[time.Time]bool   `json:"accommodation_availability"`
-	Prices          map[time.Time]string `json:"accommodation_prices"`
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	HostId   string             `bson:"hostId" json:"host_id"`
+	Name     string             `bson:"name" json:"accommodation_name"`
+	Location string             `bson:"location" json:"accommodation_location"`
+	//AccommodationId gocql.UUID         `bson:"accommodationId" json:"accommodation_id"`
+	Amenities map[string]bool `bson:"amenities" json:"accommodation_amenities"`
+	MinGuests int             `bson:"minGuests" json:"accommodation_min_guests"`
+	MaxGuests int             `bson:"maxGuests" json:"accommodation_max_guests"`
+	Images    []string        `bson:"images" json:"accommodation_images"`
+	Active    bool            `bson:"active" json:"accommodation_active"`
 }
 
 type Accommodations []*Accommodation

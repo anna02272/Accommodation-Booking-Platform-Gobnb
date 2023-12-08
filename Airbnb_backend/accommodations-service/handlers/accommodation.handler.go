@@ -10,25 +10,25 @@ import (
 	"log"
 	"net/http"
 	"strings"
-
 	"time"
+
+	"accomodations-service/services"
 
 	"github.com/gorilla/mux"
 )
 
 type KeyProduct struct{}
 
-type AccommodationsHandler struct {
+type AccommodationHandler struct {
 	logger *log.Logger
-	// NoSQL: injecting student repository
-	repo *domain.AccommodationRepo
+	repo   services.AccommodationService
 }
 
-func NewAccommodationsHandler(l *log.Logger, r *domain.AccommodationRepo) *AccommodationsHandler {
-	return &AccommodationsHandler{l, r}
+func NewAccommodationHandler(l *log.Logger, r services.AccommodationService) AccommodationHandler {
+	return AccommodationHandler{l, r}
 }
 
-func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *http.Request) {
+func (s *AccommodationHandler) CreateAccommodations(rw http.ResponseWriter, h *http.Request) {
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
@@ -102,7 +102,7 @@ func (s *AccommodationsHandler) CreateAccommodations(rw http.ResponseWriter, h *
 	}
 }
 
-func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
+func (s *AccommodationHandler) GetAccommodationById(rw http.ResponseWriter, h *http.Request) {
 
 	vars := mux.Vars(h)
 	accommodationID := vars["id"]
@@ -113,20 +113,20 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 	//	return
 	//}
 
-	accommodations, err := s.repo.GetAccommodations(accommodationID)
+	accommodation, err := s.repo.GetAccommodations(accommodationID)
 	if err != nil {
 		s.logger.Print("Exception: ", err)
 		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
 		return
 	}
 
-	if len(accommodations) == 0 {
+	if accommodation == nil {
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	// Assuming you want to return the first accommodation found
-	accommodation := accommodations[0]
+	//accommodation := accommodations[0]
 
 	// Send the JSON response
 	rw.Header().Set("Content-Type", "application/json")
@@ -136,7 +136,7 @@ func (s *AccommodationsHandler) GetAccommodationById(rw http.ResponseWriter, h *
 	}
 }
 
-func (ah *AccommodationsHandler) GetAllAccommodations(w http.ResponseWriter, r *http.Request) {
+func (ah *AccommodationHandler) GetAllAccommodations(w http.ResponseWriter, r *http.Request) {
 	ah.logger.Println("Handle GET All Accommodations")
 
 	// Retrieve all accommodations from the store
@@ -147,7 +147,7 @@ func (ah *AccommodationsHandler) GetAllAccommodations(w http.ResponseWriter, r *
 		return
 	}
 
-	if len(accommodations) == 0 {
+	if len(*accommodations) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -161,7 +161,7 @@ func (ah *AccommodationsHandler) GetAllAccommodations(w http.ResponseWriter, r *
 	}
 }
 
-func (s *AccommodationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {
+func (s *AccommodationHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		s.logger.Println("Method [", h.Method, "] - Hit path :", h.URL.Path)
 
@@ -171,7 +171,7 @@ func (s *AccommodationsHandler) MiddlewareContentTypeSet(next http.Handler) http
 	})
 }
 
-func (s *AccommodationsHandler) MiddlewareAccommodationDeserialization(next http.Handler) http.Handler {
+func (s *AccommodationHandler) MiddlewareAccommodationDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		patient := &domain.Accommodation{}
 		err := patient.FromJSON(h.Body)
@@ -187,7 +187,7 @@ func (s *AccommodationsHandler) MiddlewareAccommodationDeserialization(next http
 }
 
 /*
-func (s *AccommodationsHandler) SetAvailability(rw http.ResponseWriter, r *http.Request) {
+func (s *AccommodationHandler) SetAvailability(rw http.ResponseWriter, r *http.Request) {
 	var availabilityRequest AvailabilityRequest
 
 	err := json.NewDecoder(r.Body).Decode(&availabilityRequest)
@@ -228,47 +228,47 @@ type AvailabilityRequest struct {
 }
 */
 
-func (s *AccommodationsHandler) SetAccommodationAvailability(rw http.ResponseWriter, h *http.Request) {
-	vars := mux.Vars(h)
-	accommodationID := vars["id"]
-	var availability map[time.Time]bool
+// func (s *AccommodationHandler) SetAccommodationAvailability(rw http.ResponseWriter, h *http.Request) {
+// 	vars := mux.Vars(h)
+// 	accommodationID := vars["id"]
+// 	var availability map[time.Time]bool
 
-	err := json.NewDecoder(h.Body).Decode(&availability)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	err := json.NewDecoder(h.Body).Decode(&availability)
+// 	if err != nil {
+// 		http.Error(rw, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	nil := s.repo.UpdateAccommodationAvailability(accommodationID, availability)
-	if nil != nil {
-		s.logger.Print("Database exception: ", err)
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	rw.WriteHeader(http.StatusCreated)
-}
+// 	nil := s.repo.UpdateAccommodationAvailability(accommodationID, availability)
+// 	if nil != nil {
+// 		s.logger.Print("Database exception: ", err)
+// 		rw.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
+// 	rw.WriteHeader(http.StatusCreated)
+// }
 
-func (s *AccommodationsHandler) SetAccommodationPrice(rw http.ResponseWriter, h *http.Request) {
-	vars := mux.Vars(h)
-	accommodationID := vars["id"]
-	var price map[time.Time]string
+// func (s *AccommodationHandler) SetAccommodationPrice(rw http.ResponseWriter, h *http.Request) {
+// 	vars := mux.Vars(h)
+// 	accommodationID := vars["id"]
+// 	var price map[time.Time]string
 
-	err := json.NewDecoder(h.Body).Decode(&price)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
+// 	err := json.NewDecoder(h.Body).Decode(&price)
+// 	if err != nil {
+// 		http.Error(rw, err.Error(), http.StatusBadRequest)
+// 		return
+// 	}
 
-	nil := s.repo.UpdateAccommodationPrice(accommodationID, price)
-	if nil != nil {
-		s.logger.Print("Database exception: ", err)
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	rw.WriteHeader(http.StatusCreated)
-}
+// 	nil := s.repo.UpdateAccommodationPrice(accommodationID, price)
+// 	if nil != nil {
+// 		s.logger.Print("Database exception: ", err)
+// 		rw.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
+// 	rw.WriteHeader(http.StatusCreated)
+// }
 
-func (s *AccommodationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+func (s *AccommodationHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -288,7 +288,7 @@ func (s *AccommodationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx 
 	return resp, nil
 }
 
-func (s *AccommodationsHandler) performAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+func (s *AccommodationHandler) performAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

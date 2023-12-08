@@ -64,9 +64,9 @@ services:
       - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
-      - CASS_DB=${CASS_DB}
+      - MONGO_DB_URI=${MONGO_DB_URI}
     depends_on:
-      cassandra:
+      mongo:
         condition: service_healthy
     networks:
       - network
