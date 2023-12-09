@@ -3,6 +3,7 @@ module reservations-service
 go 1.20
 
 require (
+	github.com/casbin/casbin v1.9.1
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/gocql/gocql v1.6.0
 	github.com/google/uuid v1.4.0
@@ -11,6 +12,7 @@ require (
 )
 
 require (
+	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

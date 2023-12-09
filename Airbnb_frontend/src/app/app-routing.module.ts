@@ -13,6 +13,7 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { ReservationsComponent } from './components/reservations/reservations.component';
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
+import { RatingsComponent } from './components/ratings/ratings.component';
 
 const routes: Routes = [
   {
@@ -75,6 +76,10 @@ const routes: Routes = [
     data: {
       roles: ['Guest']
     }
+  },
+  {
+    path: 'reviews',
+    component: RatingsComponent
   },
 ];
 

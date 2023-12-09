@@ -1,0 +1,15 @@
+p, NotLoggedIn, /auth/*, *
+
+p, LoggedIn, "/users/*", *
+
+p, Guest, /reservations/*, *
+
+p, Host, /accommodations/create, POST
+p, NotLoggedIn, /accommodations/get, GET
+p, Guest, /accommodations/get, GET
+p, Host, /accommodations/get, GET
+p, NotLoggedIn, /accommodations/get/*, GET
+p, Guest, /accommodations/get/*, GET
+p, Host, /accommodations/get/*, GET
+
+

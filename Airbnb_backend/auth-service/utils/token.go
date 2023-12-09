@@ -40,6 +40,7 @@ func VerifyToken(tokenString string) error {
 
 	return nil
 }
+
 func ParseTokenClaims(tokenString string) (jwt.MapClaims, error) {
 	token, _ := jwt.Parse(tokenString, nil)
 	claims, ok := token.Claims.(jwt.MapClaims)
