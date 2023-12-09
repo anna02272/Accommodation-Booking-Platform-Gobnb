@@ -96,6 +96,28 @@ services:
       - ./profile-service/profile-service.crt:/app/profile-service.crt
       - ./profile-service/profile-service.key:/app/profile-service.key
 
+  rating-server:
+    build:
+      context: ./rating-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${RATING_SERVICE_HOST}
+    hostname: ${RATING_SERVICE_HOST}
+    ports:
+      -  ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
+      - "449:449"
+    environment:
+      - PORT=${RATING_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - network
+    volumes:
+      - ./rating-service/rating-service.crt:/app/rating-service.crt
+      - ./rating-service/rating-service.key:/app/rating-service.key
+  
   api_gateway:
     build:
       context: ./api-gateway/
@@ -130,7 +152,6 @@ services:
       - network
 
   mongo:
-
     image: ${MONGO_IMAGE}
     container_name: ${MONGO_HOST}
     restart: always

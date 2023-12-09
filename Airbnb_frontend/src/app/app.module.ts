@@ -38,6 +38,10 @@ import { NgxCaptchaModule } from 'ngx-captcha';
 import { AccommodationService } from './services/accommodation.service';
 import { RefreshService } from './services/refresh.service';
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
+import { RatingsComponent } from './components/ratings/ratings.component';
+import { RateHostComponent } from './components/rate-host/rate-host.component';
+import { RateAccommodationComponent } from './components/rate-accommodation/rate-accommodation.component';
+
 
 @NgModule({
   declarations: [
@@ -59,6 +63,9 @@ import { DeleteAccountComponent } from './components/delete-account/delete-accou
     ForgotPasswordComponent,
     ResetPasswordComponent,
     DeleteAccountComponent,
+    RatingsComponent,
+    RateHostComponent,
+    RateAccommodationComponent,
   ],
   imports: [
     HttpClientModule,
