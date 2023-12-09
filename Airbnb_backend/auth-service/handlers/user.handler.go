@@ -65,6 +65,23 @@ func GetUserFromToken(tokenString string, userService services.UserService) (*do
 	return user, nil
 }
 
+func (uh *UserHandler) GetUserById(ctx *gin.Context) {
+	userID := ctx.Param("userId")
+
+	if userID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
+		return
+	}
+
+	user, err := uh.userService.FindUserById(userID)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
+}
+
 func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	var updatePassword *domain.PasswordChangeRequest
 
