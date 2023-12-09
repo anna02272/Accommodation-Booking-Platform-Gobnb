@@ -58,6 +58,7 @@ func (s *AccommodationHandler) AddAccommodation(c *gin.Context) {
 	}
 
 	acc.HostId = hostID
+	acc.Active = true
 
 	err = s.accommodationService.SaveAccommodation(acc)
 	if err != nil {
