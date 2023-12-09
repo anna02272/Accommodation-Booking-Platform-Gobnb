@@ -96,31 +96,31 @@ services:
       - ./profile-service/profile-service.crt:/app/profile-service.crt
       - ./profile-service/profile-service.key:/app/profile-service.key
 
-  rating-server:
-    build:
-      context: ./rating-service/
-      dockerfile: Dockerfile
-    restart: always
-    container_name: ${RATING_SERVICE_HOST}
-    hostname: ${RATING_SERVICE_HOST}
-    ports:
-      -  ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
-      - "449:449"
-    environment:
-      - PORT=${RATING_SERVICE_PORT}
-      - MONGO_DB_URI=${MONGO_DB_URI}
-    depends_on:
-      mongo:
-        condition: service_healthy
-    networks:
-      - network
-    volumes:
-      - ./rating-service/rating-service.crt:/app/rating-service.crt
-      - ./rating-service/rating-service.key:/app/rating-service.key
+  # rating-server:
+  #   build:
+  #     context: ./rating-service/
+  #     dockerfile: Dockerfile
+  #   restart: always
+  #   container_name: ${RATING_SERVICE_HOST}
+  #   hostname: ${RATING_SERVICE_HOST}
+  #   ports:
+  #     -  ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
+  #     - "449:449"
+  #   environment:
+  #     - PORT=${RATING_SERVICE_PORT}
+  #     - MONGO_DB_URI=${MONGO_DB_URI}
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy
+  #   networks:
+  #     - network
+  #   volumes:
+  #     - ./rating-service/rating-service.crt:/app/rating-service.crt
+  #     - ./rating-service/rating-service.key:/app/rating-service.key
   
   accommodation-server:
     build:
-      context: ./accommodation-service/
+      context: ./acc-service/
       dockerfile: Dockerfile
     restart: always
     container_name: ${ACCOMMODATION_SERVICE_HOST}
@@ -138,7 +138,7 @@ services:
       - network
     volumes:
       - ./acc-service/accomm-service.crt:/app/accomm-service.crt
-      - ./acc-service/accomm-service.key.pem:/app/accomm-service.key.pem
+      - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
   
   api_gateway:
     build:

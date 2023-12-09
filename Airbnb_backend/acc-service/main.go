@@ -1,13 +1,13 @@
 package main
 
 import (
+	"acc-service/handlers"
+	"acc-service/routes"
+	"acc-service/services"
 	"context"
 	"fmt"
 	"net/http"
 	"os"
-	"rating-service/handlers"
-	"rating-service/routes"
-	"rating-service/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -69,7 +69,7 @@ func main() {
 
 	AccommodationRouteHandler.AccommodationRoute(router)
 
-	err := server.RunTLS(":8088", "/app/accomm-service.crt", "/app/accomm-service.key.pem")
+	err := server.RunTLS(":8088", "/app/accomm-service.crt", "/app/accomm_decrypted_key.pem")
 	if err != nil {
 		fmt.Println(err)
 		return
