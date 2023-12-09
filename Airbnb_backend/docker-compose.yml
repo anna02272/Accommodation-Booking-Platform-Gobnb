@@ -118,6 +118,28 @@ services:
       - ./rating-service/rating-service.crt:/app/rating-service.crt
       - ./rating-service/rating-service.key:/app/rating-service.key
   
+  accommodation-server:
+    build:
+      context: ./accommodation-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${ACCOMMODATION_SERVICE_HOST}
+    hostname: ${ACCOMMODATION_SERVICE_HOST}
+    ports:
+      -  ${ACCOMMODATION_SERVICE_PORT}:${ACCOMMODATION_SERVICE_PORT}
+      - "445:445"
+    environment:
+      - PORT=${ACCOMMODATION_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - network
+    volumes:
+      - ./acc-service/accomm-service.crt:/app/accomm-service.crt
+      - ./acc-service/accomm-service.key.pem:/app/accomm-service.key.pem
+  
   api_gateway:
     build:
       context: ./api-gateway/
