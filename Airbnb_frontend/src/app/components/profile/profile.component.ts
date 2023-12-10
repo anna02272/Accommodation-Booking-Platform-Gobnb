@@ -15,20 +15,25 @@ export class ProfileComponent {
   }
 
 deleteProfile() {
-  this.userService.deleteProfile().subscribe(
-    () => {
-      console.log('Profile deleted successfully')
-      console.log("here")
-      this.errorMessage = null;
-      this.authService.logout();
-      this.router.navigate(['/delete-account']);
+    this.userService.deleteProfile().subscribe(
+      () => {
+        console.log('Profile deleted successfully')
+        console.log("here")
+        this.errorMessage = null;
+        this.authService.logout();
+        this.router.navigate(['/delete-account']);
+      },
+      error => {
+        console.error('Failed to delete profile:', error);
+          console.log('Error object:', error.error); // Log the entire error object
 
-    },
-    error => {
-      console.error('Failed to delete profile:', error);
-      this.errorMessage = error; 
-    }
-  );
-}
 
+        if (error.status === 400 && error.error.message) {
+          this.errorMessage = error.error.message;
+        } else {
+          this.errorMessage = "Failed to delete profile. Please try again.";
+        }
+      }
+    );
+  }
 }

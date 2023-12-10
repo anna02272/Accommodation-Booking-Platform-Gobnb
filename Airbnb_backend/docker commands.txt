@@ -22,3 +22,50 @@ go mod tidy - skida sve dependecy-je,i brise visak
 docker-compose up --build --remove-orphans (sa ovom komandom nema potrebe raditi prune, i svi logovi
 su odmah ispisani u terminalu, ovako je najbolje pokretati)
 docker container prune
+
+
+REDIS
+docker exec -it <ime_kontejnera> redis-cli
+ping - testiranje konekcije
+keys * - dobavljanje svih postojecih kljuceva
+keys prefiks* - dobavljanje svih postojecih kljuceva po prefiksu
+exists kljuc - provera postojanja kljuca
+ttl kljuc - provera time to live za kljuc
+flushall - brisanje svih kljuceva
+set kljuc vrednost -postavljanje string vrednosti za kljuc
+get kljuc - dobavljajne vrednosti za kljuc
+mget kljuc1 kljuc2 - dobavljanje vrednosti za svaki od kljuceva O(n) gde je n broj kljuceva
+
+Lists
+Najznacajnije komande:
+▶ lpush kljuc vrednost - dodavanje elementa na pocetak niza (kreira listu ako ne
+postoji za taj kljuc)
+▶ rpush kljuc vrednost - slicno; dodaje element na kraju niza
+▶ lpop kljuc - izvlaci prvi element iz niza vezanog za kljuc
+▶ rpop kljuc - izvlaci poslednji element iz niza vezanog za kljuc
+▶ llen kljuc - dobavlja duzinu niza
+▶ lrange kljuc start stop - dobavlja sve elemente niza u zadatom opsegu (start=0,
+stop=-1 dobavlja ceo niz)
+
+Sets
+Najznacajnije komande:
+▶ sadd kljuc vrednost - dodavanje elementa u skup (kreira skup ako ne postoji za taj
+kljuˇc)
+▶ srem kljuc vrednost - uklanjanje elementa iz skupa
+▶ sismember kljuc vrednost - provera da li se vrednost nalazi u skupu
+▶ sinter kljuc1 kljuc2 - presek dva skupa
+▶ scard kljuc - dobavlja kardinalitet (broj clanova) skupa
+▶ smembers kljuc - dobavlja sve clanove skupa O(n) gde je n broj clanova - nezgodno
+za velike skupove (koristimo HyperLogLog)
+
+Hash
+Najznacajnije komande:
+▶ hset kljuc polje1 vrednost1 polje2 vrednost2... - kreiranje hash objekta za
+kljuc
+▶ hget kljuc polje - dobavljanje vrednosti vezane za kljuc i polje
+▶ hmget kljuc polje1 polje2... - dobavljanje vrednosti vezane za kljuc i vise
+nabrojanih polja O(n) gde je n broj polja
+▶ hgetall kljuc - dobavljanje svih parova polje-vrednost za kljuc
+▶ hkeys kljuc - dobavlja svih polja za kljuc
+▶ hvals kljuc - dobavlja svih vrednosti za kljuc
+

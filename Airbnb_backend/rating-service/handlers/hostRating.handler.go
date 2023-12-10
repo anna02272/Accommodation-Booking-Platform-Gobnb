@@ -65,6 +65,26 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateHost})
 }
 
+func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
+	hostID := c.Param("hostId")
+
+	token := c.GetHeader("Authorization")
+	currentUser, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+	guestID := currentUser.ID.Hex()
+
+	err = s.hostRatingService.DeleteRating(hostID, guestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
+}
+
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
 	url := "https://auth-server:8080/api/users/getById/" + userID
 

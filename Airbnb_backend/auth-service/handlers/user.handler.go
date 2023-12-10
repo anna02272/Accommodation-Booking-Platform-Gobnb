@@ -6,6 +6,7 @@ import (
 	"auth-service/utils"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -177,7 +178,6 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 			return
 		}
 		defer respRes.Body.Close()
-
 		fmt.Println(respRes.StatusCode)
 		if respRes.StatusCode != 404 {
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have active reservations"})
@@ -185,6 +185,49 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		}
 	}
 
+	if user.UserRole == "Host" {
+		fmt.Println("here")
+
+		//userIDString := user.ID.String()
+		userIDString := user.ID.Hex()
+		fmt.Println(userIDString)
+		urlCheckReservations := "https://acc-server:8083/api/accommodations/get/host/" + userIDString
+		fmt.Println(urlCheckReservations)
+
+		timeout := 2000 * time.Second // Adjust the timeout duration as needed
+		ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+		if errRes != nil {
+			fmt.Println(err)
+			if ctx.Err() == context.DeadlineExceeded {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
+				return
+			}
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
+			return
+		}
+		defer respRes.Body.Close()
+
+		fmt.Println("Resp res log")
+		fmt.Println(respRes)
+		fmt.Println(respRes.StatusCode)
+		var response map[string]interface{}
+		if err := json.NewDecoder(respRes.Body).Decode(&response); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to decode response"})
+			return
+		}
+		fmt.Println("Reponse log")
+		fmt.Println(response)
+
+		if accommodations, ok := response["accommodations"].([]interface{}); ok {
+			if len(accommodations) > 0 {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have created accommodations"})
+				return
+			}
+		}
+	}
 	urlProfile := "https://profile-server:8084/api/profile/delete/" + user.Email
 	fmt.Println(urlProfile)
 
