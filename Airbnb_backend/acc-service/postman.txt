@@ -1,16 +1,18 @@
-cassandra CREATE TABLE IF NOT EXISTS accommodation.accommodations (accommodationId UUID, accommodation_name text, accommodation_location text, accommodation_amenities text, accommodation_min_guests int, accommodation_max_guests int, accommodation_image_url text, accommodation_availability map<timestamp, boolean>, accommodation_price map<timestamp, int>, PRIMARY KEY (accommodationId));
-
------
-
-POST   localhost:8083/api/accommodations/create
+POST   localhost:8088/api/accommodation/create
 
 {
-"accommodation_name": "Acc1",
-"accommodation_location": "Loc1",
-"accommodation_amenities": "Ame1, Ame2",
+"accommodation_name": "Acc",
+"accommodation_location": "Loc",
+"accommodation_amenities":
+    {
+        "TV": true
+    },
 "accommodation_min_guests": 1,
 "accommodation_max_guests": 5,
-"accommodation_image_url": "imageurl1"
+"accommodation_images":
+    [
+        "http://www.google.com"
+    ]
 }
 
 -----
