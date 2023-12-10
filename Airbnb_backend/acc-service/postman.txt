@@ -1,4 +1,4 @@
-POST   localhost:8083/api/accommodations/create
+POST   localhost:8088/api/accommodation/create
 
 {
 "accommodation_name": "Acc",
