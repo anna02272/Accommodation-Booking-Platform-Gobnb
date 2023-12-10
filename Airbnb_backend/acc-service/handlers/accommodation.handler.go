@@ -75,6 +75,61 @@ func (s *AccommodationHandler) AddAccommodation(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": acc})
 }
 
+func (s *AccommodationHandler) GetAccommodationById(c *gin.Context) {
+	accID := c.Param("id")
+
+	token := c.GetHeader("Authorization")
+	_, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+
+	acc, err := s.accommodationService.GetAccommodationById(accID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodation"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodation successfully obtained", "accommodation": acc})
+}
+
+func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
+	hostID := c.Param("hostId")
+
+	token := c.GetHeader("Authorization")
+	_, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+
+	accs, err := s.accommodationService.GetAccommodationsByHostId(hostID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodations successfully obtained", "accommodations": accs})
+}
+
+func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	_, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+
+	accs, err := s.accommodationService.GetAllAccommodations()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodations successfully obtained", "accommodations": accs})
+}
+
 // func (s *AccommodationHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
 // 	url := "https://auth-server:8080/api/users/getById/" + userID
 
