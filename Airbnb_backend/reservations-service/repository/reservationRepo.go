@@ -70,7 +70,7 @@ func (sr *ReservationRepo) CreateTable() {
 		`CREATE TABLE IF NOT EXISTS reservations_by_guest (
         reservation_id_time_created timeuuid,
         guest_id text,
-        accommodation_id UUID,
+        accommodation_id text,
         accommodation_name text,
         accommodation_location text,
         check_in_date timestamp,
@@ -153,7 +153,7 @@ func (sr *ReservationRepo) GetAllReservations(guestID string) (data.Reservations
 
 			ReservationIdTimeCreated: data.TimeUUID(m["reservation_id_time_created"].(gocql.UUID)),
 			GuestId:                  m["guest_id"].(string),
-			AccommodationId:          m["accommodation_id"].(gocql.UUID),
+			AccommodationId:          m["accommodation_id"].(string),
 			AccommodationLocation:    m["accommodation_location"].(string),
 			AccommodationName:        m["accommodation_name"].(string),
 			CheckInDate:              m["check_in_date"].(time.Time),
