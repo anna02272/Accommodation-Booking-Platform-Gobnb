@@ -5,19 +5,15 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"rating-service/domain"
-	error2 "rating-service/error"
 	"rating-service/services"
-	"strings"
 	"time"
 )
 
-type KeyProduct struct{}
 type HostRatingHandler struct {
 	hostRatingService services.HostRatingService
 	DB                *mongo.Collection
@@ -133,111 +129,6 @@ func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx cont
 	}
 	req.Header.Set("Authorization", token)
 
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (s *HostRatingHandler) CreateAccommodations(c *gin.Context) {
-	rw := c.Writer
-	h := c.Request
-
-	token := h.Header.Get("Authorization")
-	url := "https://auth-server:8080/api/users/currentUser"
-
-	timeout := 1000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
-	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
-			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
-			return
-		}
-
-		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
-		return
-	}
-	defer resp.Body.Close()
-
-	statusCode := resp.StatusCode
-	if statusCode != 200 {
-		errorMsg := map[string]string{"error": "Unauthorized."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
-		return
-	}
-
-	// Read the response body
-	// Create a JSON decoder for the response body
-	decoder := json.NewDecoder(resp.Body)
-
-	// Define a struct to represent the JSON structure
-	var response struct {
-		LoggedInUser struct {
-			ID       string          `json:"id"`
-			UserRole domain.UserRole `json:"userRole"`
-		} `json:"user"`
-		Message string `json:"message"`
-	}
-
-	// Decode the JSON response into the struct
-	if err := decoder.Decode(&response); err != nil {
-		if strings.Contains(err.Error(), "cannot parse") {
-			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
-			return
-		}
-
-		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	// Access the 'id' from the decoded struct
-	userRole := response.LoggedInUser.UserRole
-
-	if userRole != domain.Host {
-		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create accommodations.", http.StatusForbidden)
-		return
-	}
-
-	accommodation, exists := c.Get("accommodation")
-	if !exists {
-		error2.ReturnJSONError(rw, "Accommodation not found in context", http.StatusBadRequest)
-		return
-	}
-	acc, ok := accommodation.(domain.Accommodation)
-	if !ok {
-		error2.ReturnJSONError(rw, "Invalid type for Accommodation", http.StatusBadRequest)
-		return
-	}
-	insertedAcc, _, err := s.hostRatingService.InsertAccommodation(&acc, response.LoggedInUser.ID)
-	if err != nil {
-		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	rw.WriteHeader(http.StatusCreated)
-	jsonResponse, err1 := json.Marshal(insertedAcc)
-	if err1 != nil {
-		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
-		return
-	}
-	rw.Write(jsonResponse)
-}
-func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", token)
-
-	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
