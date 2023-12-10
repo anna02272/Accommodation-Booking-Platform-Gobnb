@@ -3,6 +3,7 @@ package services
 import (
 	"acc-service/domain"
 	"context"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -24,7 +25,7 @@ func (s *AccommodationServiceImpl) SaveAccommodation(accommodation *domain.Accom
 	return nil
 }
 
-func (s *AccommodationServiceImpl) GetAccommodationById(id string) (*domain.Accommodation, error) {
+func (s *AccommodationServiceImpl) GetAccommodationById(id primitive.ObjectID) (*domain.Accommodation, error) {
 	var accommodation *domain.Accommodation
 	err := s.collection.FindOne(context.Background(), domain.Accommodation{ID: id}).Decode(&accommodation)
 	if err != nil {

@@ -34,7 +34,7 @@ func (s *AccommodationHandler) AddAccommodation(c *gin.Context) {
 		return
 	}
 
-	hostID := currentUser.ID
+	hostID := currentUser.ID.String()
 
 	// hostUser, err := s.getUserByIDFromAuthService(hostID)
 	// if err != nil {

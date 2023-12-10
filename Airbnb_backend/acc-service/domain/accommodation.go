@@ -9,7 +9,7 @@ import (
 
 type Accommodation struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	HostId    primitive.ObjectID `bson:"host_id" json:"host_id"`
+	HostId    string             `bson:"host_id" json:"host_id"`
 	Name      string             `bson:"accommodation_name" json:"accommodation_name"`
 	Location  string             `bson:"accommodation_location" json:"accommodation_location"`
 	Amenities map[string]bool    `bson:"accommodation_amenities" json:"accommodation_amenities"`
