@@ -185,6 +185,36 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		}
 	}
 
+	if user.UserRole == "Host" {
+		fmt.Println("here")
+
+		userIDString := user.ID.String()
+		urlCheckReservations := "https://acc-server:8083/api/accommodations/get/" + userIDString
+		fmt.Println(urlCheckReservations)
+
+		timeout := 2000 * time.Second // Adjust the timeout duration as needed
+		ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+		if errRes != nil {
+			fmt.Println(err)
+			if ctx.Err() == context.DeadlineExceeded {
+				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
+				return
+			}
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
+			return
+		}
+		defer respRes.Body.Close()
+
+		fmt.Println(respRes.StatusCode)
+		if respRes.StatusCode != 404 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have created accommodations"})
+			return
+		}
+	}
+
 	urlProfile := "https://profile-server:8084/api/profile/delete/" + user.Email
 	fmt.Println(urlProfile)
 

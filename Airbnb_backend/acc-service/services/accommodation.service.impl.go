@@ -3,6 +3,7 @@ package services
 import (
 	"acc-service/domain"
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -20,15 +21,21 @@ func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Conte
 
 func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodation, hostID string) (*domain.Accommodation, string, error) {
 	accomm.HostId = hostID
+	accomm.ID = primitive.NilObjectID
 
 	result, err := s.collection.InsertOne(context.Background(), accomm)
 	if err != nil {
 		return nil, "", err
 	}
 
-	insertedID := result.InsertedID.(primitive.ObjectID).Hex()
+	insertedID, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, "", errors.New("failed to get inserted ID")
+	}
 
-	return accomm, insertedID, nil
+	insertedID = result.InsertedID.(primitive.ObjectID)
+
+	return accomm, insertedID.Hex(), nil
 }
 
 func (s *AccommodationServiceImpl) GetAllAccommodations() ([]*domain.Accommodation, error) {

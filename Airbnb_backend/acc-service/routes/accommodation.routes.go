@@ -24,7 +24,7 @@ func (rc *AccommodationRouteHandler) AccommodationRoute(rg *gin.RouterGroup) {
 	router.POST("/create", MiddlewareAccommodationDeserialization, rc.accommodationHandler.CreateAccommodations)
 	router.GET("/get/:id", rc.accommodationHandler.GetAccommodationByID)
 	router.GET("/get", rc.accommodationHandler.GetAllAccommodations)
-	router.GET("/get/host/:hostId", rc.accommodationHandler.GetAccommodationsByHostID)
+	router.GET("/get/host/:hostId", rc.accommodationHandler.GetAccommodationsByHostId)
 }
 
 func MiddlewareContentTypeSet(c *gin.Context) {
