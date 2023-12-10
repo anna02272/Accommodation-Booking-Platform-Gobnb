@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"net/http"
 	"strings"
 	"time"
@@ -87,6 +88,8 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		return
 	}
 
+	id := primitive.NewObjectID()
+
 	accommodation, exists := c.Get("accommodation")
 	if !exists {
 		error2.ReturnJSONError(rw, "Accommodation not found in context", http.StatusBadRequest)
@@ -97,6 +100,8 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		error2.ReturnJSONError(rw, "Invalid type for Accommodation", http.StatusBadRequest)
 		return
 	}
+	acc.ID = id
+
 	insertedAcc, _, err := s.accommodationService.InsertAccommodation(&acc, response.LoggedInUser.ID)
 	if err != nil {
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
@@ -142,6 +147,11 @@ func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 	accs, err := s.accommodationService.GetAccommodationsByHostId(hostID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
+		return
+	}
+
+	if len(accs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "No accommodations found for this host", "accommodations": []interface{}{}})
 		return
 	}
 

@@ -114,11 +114,10 @@
             
             </div>
 
-            <!-- Error handling-->
+            <!-- Error handling -->
             <div *ngIf="errorMessage" class="error">
-              You have active reservations. If you want to delete profile, please cancel reservations!
+              {{ errorMessage }}
             </div>
-            
 
 
           </div>

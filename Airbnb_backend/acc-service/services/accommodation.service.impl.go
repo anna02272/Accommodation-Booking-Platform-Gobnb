@@ -21,7 +21,6 @@ func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Conte
 
 func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodation, hostID string) (*domain.Accommodation, string, error) {
 	accomm.HostId = hostID
-	accomm.ID = primitive.NilObjectID
 
 	result, err := s.collection.InsertOne(context.Background(), accomm)
 	if err != nil {
@@ -76,12 +75,23 @@ func (s *AccommodationServiceImpl) GetAccommodationByID(accommodationID string) 
 }
 
 func (s *AccommodationServiceImpl) GetAccommodationsByHostId(hostId string) ([]*domain.Accommodation, error) {
-	var accommodations []*domain.Accommodation
-	cursor, err := s.collection.Find(context.Background(), domain.Accommodation{HostId: hostId})
+	filter := bson.M{"host_id": hostId}
+	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(context.Background(), &accommodations); err != nil {
+	defer cursor.Close(context.Background())
+
+	var accommodations []*domain.Accommodation
+	for cursor.Next(context.Background()) {
+		var acc domain.Accommodation
+		if err := cursor.Decode(&acc); err != nil {
+			return nil, err
+		}
+		accommodations = append(accommodations, &acc)
+	}
+
+	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
 	return accommodations, nil
