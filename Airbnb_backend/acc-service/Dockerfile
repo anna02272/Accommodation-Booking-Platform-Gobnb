@@ -10,5 +10,5 @@ FROM alpine
 COPY --from=build_container /app/server /usr/bin
 COPY accomm-service.crt /app/
 COPY accomm_decrypted_key.pem /app/
-EXPOSE 8
+EXPOSE 8083
 ENTRYPOINT ["server", "https"]

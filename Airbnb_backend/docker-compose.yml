@@ -54,13 +54,13 @@ services:
 
   acc-server:
     build:
-      context: ./accommodations-service/
+      context: ./acc-service/
       dockerfile: Dockerfile
     restart: always
     container_name: ${ACC_SERVICE_HOST}
     hostname: ${ACC_SERVICE_HOST}
     ports:
-      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
+      -  ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
       - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
@@ -71,8 +71,8 @@ services:
     networks:
       - network
     volumes:
-      - ./accommodations-service/accomm-service.crt:/app/accomm-service.crt
-      - ./accommodations-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
+      - ./acc-service/accomm-service.crt:/app/accomm-service.crt
+      - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
 
   profile-server:
     build:
@@ -118,28 +118,7 @@ services:
   #     - ./rating-service/rating-service.crt:/app/rating-service.crt
   #     - ./rating-service/rating-service.key:/app/rating-service.key
   
-  accommodation-server:
-    build:
-      context: ./acc-service/
-      dockerfile: Dockerfile
-    restart: always
-    container_name: ${ACCOMMODATION_SERVICE_HOST}
-    hostname: ${ACCOMMODATION_SERVICE_HOST}
-    ports:
-      -  ${ACCOMMODATION_SERVICE_PORT}:${ACCOMMODATION_SERVICE_PORT}
-      - "445:445"
-    environment:
-      - PORT=${ACCOMMODATION_SERVICE_PORT}
-      - MONGO_DB_URI=${MONGO_DB_URI}
-    depends_on:
-      mongo:
-        condition: service_healthy
-    networks:
-      - network
-    volumes:
-      - ./acc-service/accomm-service.crt:/app/accomm-service.crt
-      - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
-  
+
   api_gateway:
     build:
       context: ./api-gateway/

@@ -35,9 +35,3 @@ func (o *Accommodation) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(o)
 }
-
-type User struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username string             `bson:"username" json:"username"`
-	Email    string             `bson:"email" json:"email" validate:"required,email"`
-}

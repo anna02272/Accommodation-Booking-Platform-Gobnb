@@ -69,7 +69,7 @@ func main() {
 
 	AccommodationRouteHandler.AccommodationRoute(router)
 
-	err := server.RunTLS(":8088", "/app/accomm-service.crt", "/app/accomm_decrypted_key.pem")
+	err := server.RunTLS(":8083", "/app/accomm-service.crt", "/app/accomm_decrypted_key.pem")
 	if err != nil {
 		fmt.Println(err)
 		return

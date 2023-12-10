@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"acc-service/domain"
+	error2 "acc-service/error"
 	"acc-service/services"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -22,87 +25,119 @@ type AccommodationHandler struct {
 func NewAccommodationHandler(accommodationService services.AccommodationService, db *mongo.Collection) AccommodationHandler {
 	return AccommodationHandler{accommodationService, db}
 }
+func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
+	rw := c.Writer
+	h := c.Request
 
-func (s *AccommodationHandler) AddAccommodation(c *gin.Context) {
-	var acc *domain.Accommodation
-	//hostID := c.Param("hostId")
+	token := h.Header.Get("Authorization")
+	url := "https://auth-server:8080/api/users/currentUser"
 
-	token := c.GetHeader("Authorization")
-	currentUser, err := s.getCurrentUserFromAuthService(token)
+	timeout := 1000 * time.Second // Adjust the timeout duration as needed
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		if ctx.Err() == context.DeadlineExceeded {
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
 		return
 	}
 
-	hostID := currentUser.ID.String()
+	// Read the response body
+	// Create a JSON decoder for the response body
+	decoder := json.NewDecoder(resp.Body)
 
-	// hostUser, err := s.getUserByIDFromAuthService(hostID)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain host user information"})
-	// 	return
-	// }
+	// Define a struct to represent the JSON structure
+	var response struct {
+		LoggedInUser struct {
+			ID       string          `json:"id"`
+			UserRole domain.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
 
-	//currentDateTime := primitive.NewDateTimeFromTime(time.Now())
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
 
-	// rating := domain.Rating("5")
-	// newRateHost := &domain.RateHost{
-	// 	Host:        hostUser,
-	// 	Guest:       currentUser,
-	// 	DateAndTime: currentDateTime,
-	// 	Rating:      rating,
-	// }
-
-	if err := c.ShouldBindJSON(&acc); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	acc.HostId = hostID
-	acc.Active = true
+	// Access the 'id' from the decoded struct
+	userRole := response.LoggedInUser.UserRole
 
-	err = s.accommodationService.SaveAccommodation(acc)
+	if userRole != domain.Host {
+		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create accommodations.", http.StatusForbidden)
+		return
+	}
+
+	accommodation, exists := c.Get("accommodation")
+	if !exists {
+		error2.ReturnJSONError(rw, "Accommodation not found in context", http.StatusBadRequest)
+		return
+	}
+	acc, ok := accommodation.(domain.Accommodation)
+	if !ok {
+		error2.ReturnJSONError(rw, "Invalid type for Accommodation", http.StatusBadRequest)
+		return
+	}
+	insertedAcc, _, err := s.accommodationService.InsertAccommodation(&acc, response.LoggedInUser.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save accommodation"})
+		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// err = s.accommodationService.SaveRating(newRateHost)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save rating"})
-	// 	return
-	// }
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": acc})
+	rw.WriteHeader(http.StatusCreated)
+	jsonResponse, err1 := json.Marshal(insertedAcc)
+	if err1 != nil {
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
+		return
+	}
+	rw.Write(jsonResponse)
 }
 
-func (s *AccommodationHandler) GetAccommodationById(c *gin.Context) {
-	accID := c.Param("id")
-
-	token := c.GetHeader("Authorization")
-	_, err := s.getCurrentUserFromAuthService(token)
+func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
+	accommodations, err := s.accommodationService.GetAllAccommodations()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	acc, err := s.accommodationService.GetAccommodationById(accID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodation"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Accommodation successfully obtained", "accommodation": acc})
+	c.JSON(http.StatusOK, accommodations)
 }
 
+func (s *AccommodationHandler) GetAccommodationByID(c *gin.Context) {
+	accommodationID := c.Param("id")
+
+	accommodation, err := s.accommodationService.GetAccommodationByID(accommodationID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			error2.ReturnJSONError(c.Writer, "Accommodation not found", http.StatusNotFound)
+		} else {
+			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, accommodation)
+}
 func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 	hostID := c.Param("hostId")
-
-	token := c.GetHeader("Authorization")
-	_, err := s.getCurrentUserFromAuthService(token)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
-		return
-	}
 
 	accs, err := s.accommodationService.GetAccommodationsByHostId(hostID)
 	if err != nil {
@@ -111,72 +146,6 @@ func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Accommodations successfully obtained", "accommodations": accs})
-}
-
-func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	_, err := s.getCurrentUserFromAuthService(token)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
-		return
-	}
-
-	accs, err := s.accommodationService.GetAllAccommodations()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Accommodations successfully obtained", "accommodations": accs})
-}
-
-// func (s *AccommodationHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
-// 	url := "https://auth-server:8080/api/users/getById/" + userID
-
-// 	timeout := 2000 * time.Second
-// 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-// 	defer cancel()
-
-// 	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, "", url)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer resp.Body.Close()
-
-// 	if resp.StatusCode != http.StatusOK {
-// 		return nil, errors.New("User not found")
-// 	}
-
-// 	var user domain.User
-// 	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return &user, nil
-// }
-
-func (s *AccommodationHandler) getCurrentUserFromAuthService(token string) (*domain.User, error) {
-	url := "https://auth-server:8080/api/users/currentUser"
-
-	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New("Unauthorized")
-	}
-	var user domain.User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, err
-	}
-
-	return &user, nil
 }
 
 func (s *AccommodationHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
