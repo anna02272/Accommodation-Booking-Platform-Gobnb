@@ -43,8 +43,11 @@ services:
     environment:
       - PORT=${RES_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
+      - MONGO_DB_URI=${MONGO_DB_URI}
     depends_on:
       cassandra:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
     networks:
       - network
@@ -135,6 +138,9 @@ services:
       - profile-server
     networks:
       - network
+    volumes:
+      - ./api-gateway/api-gateway.crt:/app/api-gateway.crt
+      - ./api-gateway/api-gateway.key:/app/api-gateway.key
 
   cassandra:
     image: cassandra
