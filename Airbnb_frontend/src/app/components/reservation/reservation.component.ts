@@ -96,6 +96,7 @@ export class ReservationComponent implements OnInit  {
 
       },
       error: (error) => {
+        console.log(reservationCreate)
            this.showDiv = true;
            this.errorMessage = error.error.error;
             setTimeout(() => {

@@ -16,7 +16,7 @@ func (t TimeUUID) MarshalJSON() ([]byte, error) {
 type ReservationByGuest struct {
 	ReservationIdTimeCreated TimeUUID
 	GuestId                  string
-	AccommodationId          gocql.UUID
+	AccommodationId          string
 	AccommodationName        string
 	AccommodationLocation    string
 	CheckInDate              time.Time
@@ -25,10 +25,10 @@ type ReservationByGuest struct {
 }
 
 type ReservationByGuestCreate struct {
-	AccommodationId gocql.UUID `json:"accommodation_id"`
-	CheckInDate     time.Time  `json:"check_in_date"`
-	CheckOutDate    time.Time  `json:"check_out_date"`
-	NumberOfGuests  int        `json:"number_of_guests"`
+	AccommodationId string    `json:"accommodation_id"`
+	CheckInDate     time.Time `json:"check_in_date"`
+	CheckOutDate    time.Time `json:"check_out_date"`
+	NumberOfGuests  int       `json:"number_of_guests"`
 }
 
 type ReservationsByGuest []*ReservationByGuest
