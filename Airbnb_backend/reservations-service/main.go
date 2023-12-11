@@ -3,18 +3,63 @@ package main
 import (
 	"context"
 	"fmt"
-	gorillaHandlers "github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"reservations-service/handlers"
 	"reservations-service/repository"
+	"reservations-service/services"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	gorillaHandlers "github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var (
+	server2     *gin.Engine
+	ctx         context.Context
+	mongoclient *mongo.Client
+
+	availabilityCollection *mongo.Collection
+	availabilityService    services.AvailabilityService
+	AvailabilityHandler    handlers.AvailabilityHandler
+	//AvailabilityRouteHandler routes.AvailabilityRouteHandler
+	logger2 *log.Logger
+)
+
+func init() {
+	ctx = context.TODO()
+
+	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
+	mongoclient, err := mongo.Connect(ctx, mongoconn)
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err := mongoclient.Ping(ctx, readpref.Primary()); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("MongoDB successfully connected...")
+
+	// Collections
+	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
+	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx)
+	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2)
+	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
+	//AvailabilityRouteHandler = routes.NewAvailabilityRouteHandler(AvailabilityHandler, availabilityService)
+
+	server2 = gin.Default()
+}
+
 func main() {
+	defer mongoclient.Disconnect(ctx)
 	//Reading from environment, if not set we will default it to 8080.
 	//This allows flexibility in different environments
 	//(for eg. when running multiple docker api's and want to override the default port)
@@ -55,6 +100,10 @@ func main() {
 	cancelReservationForGuest := router.Methods(http.MethodDelete).Subrouter()
 	cancelReservationForGuest.HandleFunc("/api/reservations/cancel/{id}", reservationsHandler.CancelReservation)
 
+	createAvailability := router.Methods(http.MethodPost).Subrouter()
+	createAvailability.HandleFunc("/api/availability/create/{id}", AvailabilityHandler.CreateAvailability)
+	createAvailability.Use(AvailabilityHandler.MiddlewareAvailabilityDeserialization)
+
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
 		"https://localhost:4200/"})
@@ -78,6 +127,28 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
+	// defer mongoclient.Disconnect(ctx)
+
+	// corsConfig := cors.DefaultConfig()
+	// corsConfig.AllowOrigins = []string{"https://localhost:4200"}
+	// corsConfig.AllowCredentials = true
+	// corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
+
+	// server2.Use(cors.New(corsConfig))
+
+	// router2 := server2.Group("/api")
+	// router2.GET("/healthchecker", func(ctx *gin.Context) {
+	// 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Message"})
+	// })
+
+	// AvailabilityRouteHandler.AvailabilityRoute(router2)
+
+	// err2 := server2.RunTLS(":8082", "/app/reservation-service.crt", "/app/reservation-service.key")
+	// if err2 != nil {
+	// 	fmt.Println(err2)
+	// 	return
+	// }
 
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt)
