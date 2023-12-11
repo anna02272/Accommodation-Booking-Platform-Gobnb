@@ -85,6 +85,21 @@ func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
 }
 
+func (s *HostRatingHandler) GetAllRatings(c *gin.Context) {
+	ratings, averageRating, err := s.hostRatingService.GetAllRatings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"ratings":       ratings,
+		"averageRating": averageRating,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
 	url := "https://auth-server:8080/api/users/getById/" + userID
 

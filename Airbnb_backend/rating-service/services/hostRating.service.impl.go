@@ -48,6 +48,32 @@ func (s *HostRatingServiceImpl) SaveRating(rating *domain.RateHost) error {
 	return nil
 }
 
+//
+//Add this check that guest can rate it only if he had one reservation before from that host. This is get all : 	urlCheckReservations := "https://res-server:8082/api/reservations/getAllByHost"
+//fmt.Println(urlCheckReservations)
+//
+//timeout := 2000 * time.Second // Adjust the timeout duration as needed
+//ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+//defer cancel()
+//
+//respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+//if errRes != nil {
+//fmt.Println(err)
+//if ctx.Err() == context.DeadlineExceeded {
+//ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
+//return
+//}
+//ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
+//return
+//}
+//defer respRes.Body.Close()
+//fmt.Println(respRes.StatusCode)
+//if respRes.StatusCode != 200 {
+//ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rank host, you didn't have reservations from him before"})
+//return
+//}
+//}
+
 func (s *HostRatingServiceImpl) DeleteRating(hostID, guestID string) error {
 	hostObjectID, err := primitive.ObjectIDFromHex(hostID)
 	if err != nil {
@@ -74,4 +100,34 @@ func (s *HostRatingServiceImpl) DeleteRating(hostID, guestID string) error {
 	}
 
 	return nil
+}
+func (s *HostRatingServiceImpl) GetAllRatings() ([]*domain.RateHost, float64, error) {
+	cursor, err := s.collection.Find(context.Background(), bson.M{})
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+
+	var ratings []*domain.RateHost
+	totalRating := 0
+
+	for cursor.Next(context.Background()) {
+		var rating domain.RateHost
+		if err := cursor.Decode(&rating); err != nil {
+			return nil, 0, err
+		}
+		ratings = append(ratings, &rating)
+		totalRating += int(rating.Rating)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	averageRating := 0.0
+	if len(ratings) > 0 {
+		averageRating = float64(totalRating) / float64(len(ratings))
+	}
+
+	return ratings, averageRating, nil
 }
