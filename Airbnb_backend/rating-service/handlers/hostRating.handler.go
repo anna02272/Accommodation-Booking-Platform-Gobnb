@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,6 +23,7 @@ type HostRatingHandler struct {
 func NewHostRatingHandler(hostRatingService services.HostRatingService, db *mongo.Collection) HostRatingHandler {
 	return HostRatingHandler{hostRatingService, db}
 }
+
 func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	hostID := c.Param("hostId")
 
@@ -34,9 +36,15 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	hostUser, err := s.getUserByIDFromAuthService(hostID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain host user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain reservation information"})
 		return
 	}
+
+	if !s.canRateHost(token, hostID) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		return
+	}
+
 	var requestBody struct {
 		Rating int `json:"rating"`
 	}
@@ -63,6 +71,48 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateHost})
+}
+
+func (s *HostRatingHandler) canRateHost(token string, hostID string) bool {
+	urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
+
+	timeout := 2000 * time.Second
+	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(ctxRest, token, urlCheckReservations)
+	if errRes != nil {
+		fmt.Println(errRes)
+		return false
+	}
+
+	defer respRes.Body.Close()
+
+	if respRes.StatusCode != http.StatusOK {
+		fmt.Println("Failed to fetch user reservations. Status Code:", respRes.StatusCode)
+		return false
+	}
+
+	decoder := json.NewDecoder(respRes.Body)
+	var reservations []domain.ReservationByGuest
+	if err := decoder.Decode(&reservations); err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	if len(reservations) == 0 {
+		return false
+	}
+
+	for _, reservation := range reservations {
+		fmt.Println("AccommodationHostID:", reservation.AccommodationHostId)
+		fmt.Println("HostID:", hostID)
+		if reservation.AccommodationHostId == hostID {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *HostRatingHandler) DeleteRating(c *gin.Context) {

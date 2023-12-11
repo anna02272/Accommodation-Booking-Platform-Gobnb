@@ -2,6 +2,7 @@ package domain
 
 import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type RateHost struct {
@@ -26,6 +27,18 @@ type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Username string             `bson:"username" json:"username"`
 	Email    string             `bson:"email" json:"email" validate:"required,email"`
+}
+
+type ReservationByGuest struct {
+	ReservationIdTimeCreated string
+	GuestId                  string
+	AccommodationId          string
+	AccommodationName        string
+	AccommodationLocation    string
+	AccommodationHostId      string
+	CheckInDate              time.Time
+	CheckOutDate             time.Time
+	NumberOfGuests           int
 }
 
 type UserResponse struct {

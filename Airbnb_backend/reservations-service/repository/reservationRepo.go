@@ -73,6 +73,7 @@ func (sr *ReservationRepo) CreateTable() {
         accommodation_id text,
         accommodation_name text,
         accommodation_location text,
+        accommodation_host_id text,
         check_in_date timestamp,
         check_out_date timestamp,
         number_of_guests int,
@@ -94,7 +95,7 @@ func (sr *ReservationRepo) CreateTable() {
 }
 
 func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate,
-	guestId string, accommodationName string, accommodationLocation string) error {
+	guestId string, accommodationName string, accommodationLocation string, accommodationHostId string) error {
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
@@ -119,14 +120,15 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
-         (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location,
+         (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, accommodation_host_id,
           check_in_date, check_out_date,number_of_guests) 
-         VALUES (?, ?, ?, ?, ?, ?, ?,?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?,?, ?)`,
 		reservationIdTimeCreated,
 		guestId,
 		guestReservation.AccommodationId,
 		accommodationName,
 		accommodationLocation,
+		accommodationHostId,
 		guestReservation.CheckInDate,
 		guestReservation.CheckOutDate,
 		guestReservation.NumberOfGuests,
@@ -139,9 +141,10 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 
 	return nil
 }
+
 func (sr *ReservationRepo) GetAllReservations(guestID string) (data.ReservationsByGuest, error) {
 	query := `SELECT  reservation_id_time_created, guest_id, accommodation_id,
-        accommodation_location, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`
+        accommodation_location, accommodation_host_id, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`
 
 	iterable := sr.session.Query(query, guestID).Iter()
 
@@ -156,6 +159,7 @@ func (sr *ReservationRepo) GetAllReservations(guestID string) (data.Reservations
 			AccommodationId:          m["accommodation_id"].(string),
 			AccommodationLocation:    m["accommodation_location"].(string),
 			AccommodationName:        m["accommodation_name"].(string),
+			AccommodationHostId:      m["accommodation_host_id"].(string),
 			CheckInDate:              m["check_in_date"].(time.Time),
 			CheckOutDate:             m["check_out_date"].(time.Time),
 			NumberOfGuests:           m["number_of_guests"].(int),
