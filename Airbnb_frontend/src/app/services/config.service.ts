@@ -11,6 +11,7 @@ export class ConfigService {
   private _rec_api_url = 'https://localhost:8085/api';
   private _notif_api_url = 'https://localhost:8086/api';
   private _resv_api_url = 'https://localhost:8082/api';
+  private _rating_api_url = 'https://localhost:8087/api';
 
 
   private _auth_url = this._auth_api_url + '/auth';
@@ -30,6 +31,8 @@ export class ConfigService {
 
   private _resv_url = this._resv_api_url + '/reservations';
   private _create_resv_url = this._resv_api_url + '/reservations/create';
+
+  private _rating_url = this._rating_api_url + '/rating';
 
   get login_url(): string {
     return this._login_url;
@@ -68,6 +71,9 @@ export class ConfigService {
   }
   get deleteProfile_url(): string {
     return this._deleteProfile_url;
+  }
+  get rating_url(): string {
+    return this._rating_url;
   }
   }
 

@@ -40,7 +40,7 @@ import { RefreshService } from './services/refresh.service';
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 import { RatingsComponent } from './components/ratings/ratings.component';
 import { RateHostComponent } from './components/rate-host/rate-host.component';
-import { RateAccommodationComponent } from './components/rate-accommodation/rate-accommodation.component';
+import { RatingService } from './services/rating.service';
 
 
 @NgModule({
@@ -65,7 +65,6 @@ import { RateAccommodationComponent } from './components/rate-accommodation/rate
     DeleteAccountComponent,
     RatingsComponent,
     RateHostComponent,
-    RateAccommodationComponent,
   ],
   imports: [
     HttpClientModule,
@@ -106,6 +105,7 @@ import { RateAccommodationComponent } from './components/rate-accommodation/rate
     ReservationService,
     DatePipe,
     AccommodationService,
+    RatingService,
     RefreshService
     
   ],
