@@ -19,6 +19,7 @@ type ReservationByGuest struct {
 	AccommodationId          string
 	AccommodationName        string
 	AccommodationLocation    string
+	AccommodationHostId      string
 	CheckInDate              time.Time
 	CheckOutDate             time.Time
 	NumberOfGuests           int
