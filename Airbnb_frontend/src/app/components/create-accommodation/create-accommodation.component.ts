@@ -39,7 +39,7 @@ export class CreateAccommodationComponent {
       'WiFi': wifi,
       'AC': ac
     };
-    alert(amenities);
+    //alert(amenities);
 
     const images = new Array<string>();
     images.push('https://www.google.com/');
