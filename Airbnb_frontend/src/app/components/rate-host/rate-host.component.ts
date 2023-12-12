@@ -1,4 +1,6 @@
-import { Component, AfterViewInit, Input } from '@angular/core';
+import { Component, AfterViewInit, Input, SimpleChanges } from '@angular/core';
+import { RatingItem } from 'src/app/models/rateHost';
+import { UserService } from 'src/app/services';
 import { RatingService } from 'src/app/services/rating.service';
 
 @Component({
@@ -10,10 +12,37 @@ export class RateHostComponent implements AfterViewInit {
   @Input() hostId!: string;
   notification = { msgType: '', msgBody: '' };
   selectedRating: number | null = null;
+  ratings: RatingItem[] = [];
 
   constructor(
-    private ratingService: RatingService
+    private ratingService: RatingService,
+    private userService: UserService
   ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if ('hostId' in changes) {
+      this.fetchRating();
+    }
+  }
+
+  fetchRating(): void {
+    if (!this.hostId) {
+      return;
+    }
+
+    this.ratingService.getByHostAndGuest(this.hostId).subscribe(
+      (response: any) => {
+        if (response.ratings && response.ratings.length > 0) {
+          this.selectedRating = response.ratings[0].rating;
+          this.updateStars();
+        }
+      },
+      error => {
+        console.error('Error fetching rating', error);
+      }
+    );
+  }
+
 
   ngAfterViewInit() {
     const resetStarsButton = document.getElementById('resetStars');
@@ -30,6 +59,11 @@ export class RateHostComponent implements AfterViewInit {
         this.rateHost();
       });
     });
+
+  }
+
+  getUserId() {
+    return this.userService.currentUser?.user.ID;
   }
 
   resetStars(): void {
@@ -56,6 +90,13 @@ export class RateHostComponent implements AfterViewInit {
     );
   }
 
+  updateStars(): void {
+    const stars = document.getElementsByName('hostRating') as NodeListOf<HTMLInputElement>;
+    stars.forEach((star: HTMLInputElement) => {
+      star.checked = Number(star.value) === this.selectedRating;
+    });
+  }
+
   deleteRating(): void {
     if (!this.hostId) {
       console.error('Host ID is not provided.');
@@ -70,4 +111,5 @@ export class RateHostComponent implements AfterViewInit {
       }
     );
   }
+
 }

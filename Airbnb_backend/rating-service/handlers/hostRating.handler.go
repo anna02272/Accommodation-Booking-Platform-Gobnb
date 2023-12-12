@@ -150,6 +150,26 @@ func (s *HostRatingHandler) GetAllRatings(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	currentUser, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+	guestID := currentUser.ID.Hex()
+
+	hostID := c.Param("hostId")
+
+	ratings, err := s.hostRatingService.GetByHostAndGuest(hostID, guestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ratings": ratings})
+}
+
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
 	url := "https://auth-server:8080/api/users/getById/" + userID
 

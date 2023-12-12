@@ -29,4 +29,10 @@ export class RatingService {
 
     return this.apiService.delete(url);
   }
+
+  getByHostAndGuest(hostId: string): Observable<any> {
+    const url = `${this.configService.rating_url}/get/${hostId}`;
+    return this.apiService.get(url);
+  }
+  
 }

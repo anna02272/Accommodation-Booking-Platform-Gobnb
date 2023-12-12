@@ -31,7 +31,7 @@
     </section>
     <section id="testimonials">
         <div class="testimonial-heading">
-            <h1>Host Reviews (average: {{ ratingResponse.averageRating }})</h1>
+            <h1>Host Reviews (average: {{ ratingResponse?.averageRating }})</h1>
             <p class="notif" *ngIf="notification" [class]="notification.msgType">
                 {{ notification.msgBody }}
               </p>
@@ -39,7 +39,7 @@
         </div>
         <div class="testimonial-box-container" >
             <!-- one review -->
-            <div class="testimonial-box" *ngFor="let rating of ratingResponse.ratings; let i = index">
+            <div class="testimonial-box" *ngFor="let rating of ratingResponse?.ratings; let i = index">
                 <div class="box-top">
                     <div class="profile">
                         <div class="name-user">
