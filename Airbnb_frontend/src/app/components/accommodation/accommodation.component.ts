@@ -13,6 +13,7 @@ export class AccommodationComponent implements OnInit {
   accId!: string; 
   hostId!: string;
   accommodation!: Accommodation;
+  //am_map!: Map<string, boolean>;
   
   constructor( 
     private userService: UserService,
@@ -28,7 +29,7 @@ export class AccommodationComponent implements OnInit {
       this.accommodation = accommodation;
       this.hostId = accommodation.host_id;
     });
-    
+    //this.am_map = this.accommodation.accommodation_amenities;
   }
 
   getRole() {

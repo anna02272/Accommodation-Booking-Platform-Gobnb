@@ -3,10 +3,10 @@ export class Accommodation {
     accommodation_name: string;
     accommodation_location: string;
     _id: string; 
-    accommodation_amenities: string;
+    accommodation_amenities: Map<string, boolean>;
     accommodation_min_guests: number;
     accommodation_max_guests: number;
-    accommodation_image_url: string;
+    accommodation_images: Array<string>;
 
   
     constructor(
@@ -14,10 +14,10 @@ export class Accommodation {
       accommodation_name: string,
       accommodation_location: string,
       _id: string,
-      accommodation_amenities: string,
+      accommodation_amenities: Map<string, boolean>,
       accommodation_min_guests: number,
       accommodation_max_guests: number,
-      accommodation_image_url: string,
+      accommodation_images: Array<string>
 
     ) {
       this.host_id = host_id;
@@ -27,7 +27,7 @@ export class Accommodation {
       this.accommodation_amenities = accommodation_amenities;
       this.accommodation_min_guests = accommodation_min_guests;
       this.accommodation_max_guests = accommodation_max_guests;
-      this.accommodation_image_url = accommodation_image_url;
+      this.accommodation_images = accommodation_images;
     }
   }
   
