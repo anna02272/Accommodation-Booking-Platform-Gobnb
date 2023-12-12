@@ -48,11 +48,11 @@
       </p>
       <hr />
       <h3>Reviews</h3>
-     
+      <a routerLink="/reviews">Click here to see all reviews</a>
     </div>
-    <app-rate-accommodation></app-rate-accommodation>
-    <app-rate-host></app-rate-host>
-  
+    <div *ngIf="getRole() === 'Guest'">
+    <app-rate-host [hostId]="hostId"></app-rate-host>
+    </div>
   </div>
 
   <div class="enroll" *ngIf="getRole() === 'Guest'">

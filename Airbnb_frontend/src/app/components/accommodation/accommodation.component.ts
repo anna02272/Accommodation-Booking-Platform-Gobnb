@@ -11,6 +11,7 @@ import { AccommodationService } from 'src/app/services/accommodation.service';
 })
 export class AccommodationComponent implements OnInit {
   accId!: string; 
+  hostId!: string;
   accommodation!: Accommodation;
   //am_map!: Map<string, boolean>;
   
@@ -26,6 +27,7 @@ export class AccommodationComponent implements OnInit {
     this.accId = this.route.snapshot.paramMap.get('id')!;
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
+      this.hostId = accommodation.host_id;
     });
     //this.am_map = this.accommodation.accommodation_amenities;
   }
