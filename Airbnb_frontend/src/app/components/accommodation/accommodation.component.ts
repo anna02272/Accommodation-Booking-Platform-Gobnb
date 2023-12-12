@@ -12,6 +12,7 @@ import { AccommodationService } from 'src/app/services/accommodation.service';
 export class AccommodationComponent implements OnInit {
   accId!: string; 
   accommodation!: Accommodation;
+  //am_map!: Map<string, boolean>;
   
   constructor( 
     private userService: UserService,
@@ -26,7 +27,7 @@ export class AccommodationComponent implements OnInit {
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
     });
-    
+    //this.am_map = this.accommodation.accommodation_amenities;
   }
 
   getRole() {

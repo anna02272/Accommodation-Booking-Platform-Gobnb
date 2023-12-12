@@ -3,8 +3,8 @@
     <img class="img" src="assets/images/car.jpg" />
     <div class="head">
       <div class="name">
-        <h2>{{ accommodation?.accommodation_name }}</h2>
-        <p>{{ accommodation?.accommodation_location }}</p>
+        <h2>{{ accommodation.accommodation_name }}</h2>
+        <p>{{ accommodation.accommodation_location }}</p>
       </div>
       <span>Price</span>
     </div>
@@ -20,34 +20,30 @@
       est laborum.
     </p>
     <hr />
-    <h3>Benefits</h3>
-    <div class="benefits">
+    <h3>Amenities</h3>
+    <div class="amenities">
       <p>
-        <label> <input type="checkbox" name="wifi" /> Free WiFi </label>
+        
+        <label> <input type="checkbox" name="TV" id="tv" [checked]="accommodation.accommodation_amenities.get('TV')"/> TV </label>
       </p>
       <p>
-        <label> <input type="checkbox" name="kitchen" /> Kitchen </label>
+        <label> <input type="checkbox" name="WiFi" [checked]="accommodation.accommodation_amenities.get('WiFi')"/> WiFi </label>
       </p>
       <p>
         <label>
-          <input type="checkbox" name="air-conditioning" /> Air Conditioning
+          <input type="checkbox" name="AC" [checked]="accommodation.accommodation_amenities.get('AC')"/> AC
         </label>
-      </p>
-      <p>
-        <label>
-            <input type="checkbox" name="free-parking" /> Free Parking
-          </label>
       </p>
       <hr />
     <h3>Capacity</h3>
     <p>
         <label>Minimum Guests:
-          <input type="number" name="min" /> 
+          <p>{{ accommodation.accommodation_min_guests }}</p> 
         </label>
       </p>
       <p>Maximum Guests:
         <label>
-            <input type="number" name="max" /> 
+            <p>{{ accommodation.accommodation_max_guests }}</p> 
           </label>
       </p>
       <hr />
