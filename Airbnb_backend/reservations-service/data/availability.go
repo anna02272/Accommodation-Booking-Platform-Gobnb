@@ -2,16 +2,14 @@ package data
 
 import (
 	"encoding/json"
-	"io"
-	"time"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"io"
 )
 
 type Availability struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	AccommodationID  primitive.ObjectID `bson:"accommodation_id" json:"accommodation_id"`
-	Date             time.Time          `bson:"date" json:"ddate"`
+	Date             primitive.DateTime `bson:"date" json:"date"`
 	Price            float64            `bson:"price" json:"price"`
 	AvailabilityType AvailabilityType   `bson:"availability_type" json:"availability_type"`
 }

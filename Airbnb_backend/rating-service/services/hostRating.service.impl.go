@@ -106,3 +106,33 @@ func (s *HostRatingServiceImpl) GetAllRatings() ([]*domain.RateHost, float64, er
 
 	return ratings, averageRating, nil
 }
+
+func (s *HostRatingServiceImpl) GetByHostAndGuest(hostID, guestID string) ([]domain.RateHost, error) {
+	hostObjectID, err := primitive.ObjectIDFromHex(hostID)
+	if err != nil {
+		return nil, err
+	}
+
+	guestObjectID, err := primitive.ObjectIDFromHex(guestID)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{
+		"host._id":  hostObjectID,
+		"guest._id": guestObjectID,
+	}
+
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	var ratings []domain.RateHost
+	if err := cursor.All(context.Background(), &ratings); err != nil {
+		return nil, err
+	}
+
+	return ratings, nil
+}
