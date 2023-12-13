@@ -28,9 +28,21 @@ export class CreateAccommodationComponent {
   onSubmit() {
     const name = (document.getElementById('name') as HTMLInputElement).value;
     const location = (document.getElementById('location') as HTMLInputElement).value;
-    const amenities = (document.getElementById('amenities') as HTMLTextAreaElement).value;
+    //const amenities = (document.getElementById('amenities') as HTMLTextAreaElement).value;
+    const tv = (document.getElementById('tv') as HTMLInputElement).checked;
+    const wifi = (document.getElementById('wifi') as HTMLInputElement).checked;
+    const ac = (document.getElementById('ac') as HTMLInputElement).checked;
     const minGuests = parseInt((document.getElementById('minGuests') as HTMLInputElement).value, 10);
     const maxGuests = parseInt((document.getElementById('maxGuests') as HTMLInputElement).value, 10);
+    const amenities = {
+      'TV': tv,
+      'WiFi': wifi,
+      'AC': ac
+    };
+    //alert(amenities);
+
+    const images = new Array<string>();
+    images.push('https://www.google.com/');
 
     
     //const files: FileList = this.fileInput.nativeElement.files;
@@ -41,7 +53,7 @@ export class CreateAccommodationComponent {
       accommodation_amenities: amenities,
       accommodation_min_guests: minGuests,
       accommodation_max_guests: maxGuests,
-      accommodation_image_url: 'https://www.google.com/' 
+      accommodation_images: images
     };
 
     // for (let i = 0; i < files.length; i++) {

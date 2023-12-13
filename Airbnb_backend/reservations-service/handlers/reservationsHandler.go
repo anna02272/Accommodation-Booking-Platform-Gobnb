@@ -170,6 +170,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	var responseAccommodation struct {
 		AccommodationName      string `json:"accommodation_name"`
 		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationHostId    string `json:"host_id"`
 		AccommodationMinGuests int    `json:"accommodation_min_guests"`
 		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
 	}
@@ -193,7 +194,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
-		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation)
+		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation, responseAccommodation.AccommodationHostId)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
 		errorMsg := map[string]string{"error": "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date"}

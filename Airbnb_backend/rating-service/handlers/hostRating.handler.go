@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,39 +23,151 @@ type HostRatingHandler struct {
 func NewHostRatingHandler(hostRatingService services.HostRatingService, db *mongo.Collection) HostRatingHandler {
 	return HostRatingHandler{hostRatingService, db}
 }
+
 func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	hostID := c.Param("hostId")
 
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain current user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
 		return
 	}
 
 	hostUser, err := s.getUserByIDFromAuthService(hostID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to obtain host user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain reservation information"})
 		return
 	}
 
-	currentDateTime := primitive.NewDateTimeFromTime(time.Now())
+	if !s.canRateHost(token, hostID) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		return
+	}
 
-	rating := domain.Rating("5")
+	var requestBody struct {
+		Rating int `json:"rating"`
+	}
+
+	if err := c.BindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON request"})
+		return
+	}
+	currentDateTime := primitive.NewDateTimeFromTime(time.Now())
+	id := primitive.NewObjectID()
+
 	newRateHost := &domain.RateHost{
+		ID:          id,
 		Host:        hostUser,
 		Guest:       currentUser,
 		DateAndTime: currentDateTime,
-		Rating:      rating,
+		Rating:      domain.Rating(requestBody.Rating),
 	}
 
 	err = s.hostRatingService.SaveRating(newRateHost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save rating"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateHost})
+}
+
+func (s *HostRatingHandler) canRateHost(token string, hostID string) bool {
+	urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
+
+	timeout := 2000 * time.Second
+	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(ctxRest, token, urlCheckReservations)
+	if errRes != nil {
+		fmt.Println(errRes)
+		return false
+	}
+
+	defer respRes.Body.Close()
+
+	if respRes.StatusCode != http.StatusOK {
+		fmt.Println("Failed to fetch user reservations. Status Code:", respRes.StatusCode)
+		return false
+	}
+
+	decoder := json.NewDecoder(respRes.Body)
+	var reservations []domain.ReservationByGuest
+	if err := decoder.Decode(&reservations); err != nil {
+		fmt.Println(err)
+		return false
+	}
+
+	if len(reservations) == 0 {
+		return false
+	}
+
+	for _, reservation := range reservations {
+		fmt.Println("AccommodationHostID:", reservation.AccommodationHostId)
+		fmt.Println("HostID:", hostID)
+		if reservation.AccommodationHostId == hostID {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
+	hostID := c.Param("hostId")
+
+	token := c.GetHeader("Authorization")
+	currentUser, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+	guestID := currentUser.ID.Hex()
+
+	err = s.hostRatingService.DeleteRating(hostID, guestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
+}
+
+func (s *HostRatingHandler) GetAllRatings(c *gin.Context) {
+	ratings, averageRating, err := s.hostRatingService.GetAllRatings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"ratings":       ratings,
+		"averageRating": averageRating,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	currentUser, err := s.getCurrentUserFromAuthService(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		return
+	}
+	guestID := currentUser.ID.Hex()
+
+	hostID := c.Param("hostId")
+
+	ratings, err := s.hostRatingService.GetByHostAndGuest(hostID, guestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ratings": ratings})
 }
 
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string) (*domain.User, error) {
@@ -74,10 +187,12 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string) (*domain.U
 		return nil, errors.New("User not found")
 	}
 
-	var user domain.User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+	var userResponse domain.UserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
 		return nil, err
 	}
+
+	user := domain.ConvertToDomainUser(userResponse)
 
 	return &user, nil
 }
@@ -98,10 +213,13 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string) (*domain
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("Unauthorized")
 	}
-	var user domain.User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+
+	var userResponse domain.UserResponse
+	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
 		return nil, err
 	}
+
+	user := domain.ConvertToDomainUser(userResponse)
 
 	return &user, nil
 }

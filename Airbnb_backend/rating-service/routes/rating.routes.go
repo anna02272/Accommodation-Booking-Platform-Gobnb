@@ -17,6 +17,8 @@ func NewRatingRouteHandler(hostRatingHandler handlers.HostRatingHandler, hostRat
 
 func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/rating")
-
 	router.POST("/rateHost/:hostId", rc.hostRatingHandler.RateHost)
+	router.DELETE("/deleteRating/:hostId", rc.hostRatingHandler.DeleteRating)
+	router.GET("/getAll", rc.hostRatingHandler.GetAllRatings)
+	router.GET("/get/:hostId", rc.hostRatingHandler.GetByHostAndGuest)
 }
