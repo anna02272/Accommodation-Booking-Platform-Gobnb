@@ -3,7 +3,7 @@ export class Accommodation {
     accommodation_name: string;
     accommodation_location: string;
     _id: string;
-    accommodation_amenities: string;
+    accommodation_amenities: Map<string, boolean>;
     accommodation_min_guests: number;
     accommodation_max_guests: number;
     flagCanDelete?: boolean
@@ -15,7 +15,7 @@ export class Accommodation {
       accommodation_name: string,
       accommodation_location: string,
       _id: string,
-      accommodation_amenities: string,
+      accommodation_amenities: Map<string, boolean>,
       accommodation_min_guests: number,
       accommodation_max_guests: number,
       accommodation_images: Array<string>
