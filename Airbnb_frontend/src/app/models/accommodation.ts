@@ -2,18 +2,19 @@ export class Accommodation {
     host_id: string; 
     accommodation_name: string;
     accommodation_location: string;
-    accommodation_id: string; 
+    _id: string; 
     accommodation_amenities: string;
     accommodation_min_guests: number;
     accommodation_max_guests: number;
     accommodation_image_url: string;
+    flagCanDelete?: boolean
 
   
     constructor(
       host_id: string,
       accommodation_name: string,
       accommodation_location: string,
-      accommodation_id: string,
+      _id: string,
       accommodation_amenities: string,
       accommodation_min_guests: number,
       accommodation_max_guests: number,
@@ -23,7 +24,7 @@ export class Accommodation {
       this.host_id = host_id;
       this.accommodation_name = accommodation_name;
       this.accommodation_location = accommodation_location;
-      this.accommodation_id = accommodation_id;
+      this._id = _id;
       this.accommodation_amenities = accommodation_amenities;
       this.accommodation_min_guests = accommodation_min_guests;
       this.accommodation_max_guests = accommodation_max_guests;

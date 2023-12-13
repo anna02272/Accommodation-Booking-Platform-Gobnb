@@ -96,3 +96,32 @@ func (s *AccommodationServiceImpl) GetAccommodationsByHostId(hostId string) ([]*
 	}
 	return accommodations, nil
 }
+
+func (s *AccommodationServiceImpl) GetAccommodationByHostIdAndAccId(hostId string, accId string) (*domain.Accommodation, error) {
+	objID, err := primitive.ObjectIDFromHex(accId)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"host_id": hostId, "_id": objID}
+
+	var accommodation domain.Accommodation
+	err = s.collection.FindOne(context.Background(), filter).Decode(&accommodation)
+	if err != nil {
+		return nil, err
+	}
+
+	return &accommodation, nil
+}
+
+func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, hostID string) error {
+
+	objID, err := primitive.ObjectIDFromHex(accommodationID)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": objID, "host_id": hostID}
+
+	_, err = s.collection.DeleteOne(context.Background(), filter)
+	return err
+}

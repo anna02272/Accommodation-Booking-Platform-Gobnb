@@ -12,7 +12,6 @@ export class ConfigService {
   private _notif_api_url = 'https://localhost:8086/api';
   private _resv_api_url = 'https://localhost:8082/api';
 
-
   private _auth_url = this._auth_api_url + '/auth';
   private _login_url = this._auth_url + '/login';
   private _register_url = this._auth_url + '/register';
@@ -27,6 +26,8 @@ export class ConfigService {
   private _deleteProfile_url = this._user_url + '/delete';
 
   private _acc_url = this._acc_api_url + '/accommodations';
+  private _acc_delete = this._acc_url + '/delete/';
+  private _host_accs = this._acc_url + '/get/host/';
 
   private _resv_url = this._resv_api_url + '/reservations';
   private _create_resv_url = this._resv_api_url + '/reservations/create';
@@ -34,9 +35,19 @@ export class ConfigService {
   get login_url(): string {
     return this._login_url;
   }
+
   get register_url(): string {
     return this._register_url;
   }
+
+  get deleteAccommodation_url(): string {
+    return this._acc_delete;
+  }
+
+  get getAccommodationsByHost_url(): string {
+    return this._host_accs;
+  }
+
   get verifyEmail_url(): string {
     return this._verifyEmail_url;
   }

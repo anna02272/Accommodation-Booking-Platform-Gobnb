@@ -10,7 +10,7 @@ services:
     container_name: ${AUTH_SERVICE_HOST}
     hostname: ${AUTH_SERVICE_HOST}
     ports:
-      -  ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
+      - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
       - "446:446"
     environment:
       - PORT=${AUTH_SERVICE_PORT}
@@ -60,13 +60,16 @@ services:
     container_name: ${ACC_SERVICE_HOST}
     hostname: ${ACC_SERVICE_HOST}
     ports:
-      -  ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
+      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
       - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
+      - HDFS_URI=namenode:9000
     depends_on:
       mongo:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - network
@@ -90,6 +93,10 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
+      namenode:
+        condition: service_healthy
+      datanode:
+        condition: service_healthy
     networks:
       - network
     volumes:
@@ -97,27 +104,26 @@ services:
       - ./profile-service/profile-service.key:/app/profile-service.key
 
   rating-server:
-     build:
-       context: ./rating-service/
-       dockerfile: Dockerfile
-     restart: always
-     container_name: ${RATING_SERVICE_HOST}
-     hostname: ${RATING_SERVICE_HOST}
-     ports:
-       -  ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
-       - "449:449"
-     environment:
-       - PORT=${RATING_SERVICE_PORT}
-       - MONGO_DB_URI=${MONGO_DB_URI}
-     depends_on:
-       mongo:
-         condition: service_healthy
-     networks:
-       - network
-     volumes:
-       - ./rating-service/rating-service.crt:/app/rating-service.crt
-       - ./rating-service/rating-service.key:/app/rating-service.key
-  
+    build:
+      context: ./rating-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${RATING_SERVICE_HOST}
+    hostname: ${RATING_SERVICE_HOST}
+    ports:
+      - ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
+      - "449:449"
+    environment:
+      - PORT=${RATING_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - network
+    volumes:
+      - ./rating-service/rating-service.crt:/app/rating-service.crt
+      - ./rating-service/rating-service.key:/app/rating-service.key
 
   api_gateway:
     build:
@@ -192,10 +198,71 @@ services:
     networks:
       - network
 
+  redis:
+    container_name: ${REDIS_HOST}
+    image: redis
+    restart: always
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    command: "redis-server --save 20 1 --loglevel warning"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - network
+
+    # HDFS - Namenode
+  namenode:
+      image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+      container_name: namenode
+      ports:
+        - ${HDFS_NAMENODE_PORT}:${HDFS_NAMENODE_PORT}
+        - ${HDFS_NAMENODE_RPC_PORT}:${HDFS_NAMENODE_RPC_PORT}
+      volumes:
+        - hadoop_namenode:/hadoop/dfs/name
+      environment:
+        - CLUSTER_NAME=gobnb
+      env_file:
+        - ./.env
+
+      networks:
+        - network
+#      healthcheck:
+#        test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_NAMENODE_PORT}/" ]
+#        interval: 15s
+#        timeout: 5s
+#        retries: 3
+
+    # HDFS - Datanode
+  datanode:
+        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+        container_name: datanode
+        volumes:
+          - hadoop_datanode:/hadoop/dfs/data
+        environment:
+          SERVICE_PRECONDITION: "namenode:9870"
+        healthcheck:
+          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
+          interval: 15s
+          timeout: 5s
+          retries: 3
+        networks:
+          - network
+        env_file:
+          - ./.env
+
+
 volumes:
   mongo_store:
   mongo_express_data:
   cass_store:
+  redis_data:
+  hadoop_namenode:
+  hadoop_datanode:
 
 networks:
   network:

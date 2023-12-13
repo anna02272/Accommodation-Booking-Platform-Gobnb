@@ -25,6 +25,7 @@ func (rc *AccommodationRouteHandler) AccommodationRoute(rg *gin.RouterGroup) {
 	router.GET("/get/:id", rc.accommodationHandler.GetAccommodationByID)
 	router.GET("/get", rc.accommodationHandler.GetAllAccommodations)
 	router.GET("/get/host/:hostId", rc.accommodationHandler.GetAccommodationsByHostId)
+	router.DELETE("/delete/:accId", rc.accommodationHandler.DeleteAccommodation)
 }
 
 func MiddlewareContentTypeSet(c *gin.Context) {

@@ -1,30 +1,33 @@
 package main
 
 import (
+	"acc-service/cache"
 	"acc-service/handlers"
 	"acc-service/routes"
 	"acc-service/services"
 	"context"
 	"fmt"
-	"net/http"
-	"os"
-
+	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"log"
+	"net/http"
+	"os"
 )
 
 var (
-	server      *gin.Engine
-	ctx         context.Context
-	mongoclient *mongo.Client
-
+	server                    *gin.Engine
+	ctx                       context.Context
+	mongoclient               *mongo.Client
+	hdfsClient                *hdfs.Client
 	accommodationCollection   *mongo.Collection
 	accommodationService      services.AccommodationService
 	AccommodationHandler      handlers.AccommodationHandler
 	AccommodationRouteHandler routes.AccommodationRouteHandler
+	redisCache                *cache.ImageCache
 )
 
 func init() {
@@ -32,6 +35,16 @@ func init() {
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
+
+	//hdfsLogger := log.New(os.Stdout, "HDFS: ", log.LstdFlags)
+	//fileStorage, err := hdfs_store.New(hdfsLogger)
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	redisLogger := log.New(os.Stdout, "REDIS CACHE: ", log.LstdFlags)
+	imageCache := cache.New(redisLogger)
+	imageCache.Ping()
 
 	if err != nil {
 		panic(err)
@@ -48,6 +61,9 @@ func init() {
 	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx)
 	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, accommodationCollection)
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
+
+	redisCache = cache.New(log.New(os.Stdout, "REDIS CACHE: ", log.LstdFlags))
+	redisCache.Ping()
 
 	server = gin.Default()
 }

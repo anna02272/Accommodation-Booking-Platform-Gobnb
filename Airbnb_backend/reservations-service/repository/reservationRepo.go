@@ -88,6 +88,10 @@ func (sr *ReservationRepo) CreateTable() {
 		`CREATE INDEX IF NOT EXISTS idx_accommodation_id ON reservations_by_guest (accommodation_id);`,
 	).Exec()
 
+	err = sr.session.Query(
+		`CREATE INDEX IF NOT EXISTS idx_check_out_date ON reservations_by_guest (check_out_date);`,
+	).Exec()
+
 	if err != nil {
 		sr.logger.Println(err)
 	}
@@ -171,6 +175,22 @@ func (sr *ReservationRepo) GetAllReservations(guestID string) (data.Reservations
 	}
 
 	return reservations, nil
+}
+
+func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(accommodationId string) int {
+	var countVariable int
+	var checkOutNow = time.Now()
+
+	query := `
+		SELECT COUNT(*) FROM reservations_by_guest 
+         WHERE check_out_date >= ? AND accommodation_id = ? ALLOW FILTERING`
+
+	if err := sr.session.Query(query, checkOutNow, accommodationId).Scan(&countVariable); err != nil {
+		sr.logger.Println("Error retrieving reservation details:", err)
+		return -1
+	}
+	return countVariable
+
 }
 
 func (sr *ReservationRepo) CancelReservationByID(guestID string, reservationID string) error {

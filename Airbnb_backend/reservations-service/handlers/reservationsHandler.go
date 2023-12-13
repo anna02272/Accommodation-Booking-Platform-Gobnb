@@ -360,6 +360,89 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	rw.WriteHeader(http.StatusNoContent)
 }
 
+func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http.ResponseWriter, h *http.Request) {
+	token := h.Header.Get("Authorization")
+	url := "https://auth-server:8080/api/users/currentUser"
+
+	timeout := 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+
+		errorMsg := map[string]string{"error": "Authorization service not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	var response struct {
+		LoggedInUser struct {
+			ID       string        `json:"id"`
+			UserRole data.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
+
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+	vars := mux.Vars(h)
+	accIDString := vars["accId"]
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != data.Host {
+		errorMsg := map[string]string{"error": "Permission denied. Only hosts can see reservations for their guests"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
+		return
+	}
+
+	counter := s.repo.GetReservationByAccommodationIDAndCheckOut(accIDString)
+	if counter == -1 {
+		s.logger.Println("Error fetching reservations:", counter)
+		error2.ReturnJSONError(rw, counter, http.StatusBadRequest)
+		return
+	}
+
+	var Number struct {
+		NumberRsv int `json:"number"`
+	}
+
+	Number.NumberRsv = counter
+
+	responseJSON, err := json.Marshal(Number)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseJSON)
+
+}
+
 func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		s.logger.Println("Method [", h.Method, "] - Hit path :", h.URL.Path)

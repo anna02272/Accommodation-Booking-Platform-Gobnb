@@ -69,3 +69,6 @@ nabrojanih polja O(n) gde je n broj polja
 ▶ hkeys kljuc - dobavlja svih polja za kljuc
 ▶ hvals kljuc - dobavlja svih vrednosti za kljuc
 
+DATANODE,NAMENODE
+docker exec -it <> sh
+

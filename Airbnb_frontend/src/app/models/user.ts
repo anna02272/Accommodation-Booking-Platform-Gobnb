@@ -3,7 +3,7 @@ import { Gender } from "./gender";
 import { UserRole } from "./userRole";
 
 export class User {
-  id: number;
+  id: string;
   username: string;
   password: string;
   email: string;
@@ -15,7 +15,7 @@ export class User {
   userRole: UserRole;
   
 
-  constructor(id: number, username: string, password: string, email:string, name: string, lastname: string, address: Address, age: number, gender: Gender, userRole: UserRole) {
+  constructor(id: string, username: string, password: string, email:string, name: string, lastname: string, address: Address, age: number, gender: Gender, userRole: UserRole) {
     this.id = id;
     this.username = username;
     this.password = password;

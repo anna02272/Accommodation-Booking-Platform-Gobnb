@@ -52,6 +52,9 @@ func main() {
 	getReservationForGuest := router.Methods(http.MethodGet).Subrouter()
 	getReservationForGuest.HandleFunc("/api/reservations/getAll", reservationsHandler.GetAllReservations)
 
+	getReservationByAccommodationIdAndCheckOut := router.Methods(http.MethodGet).Subrouter()
+	getReservationByAccommodationIdAndCheckOut.HandleFunc("/api/reservations/get/{accId}", reservationsHandler.GetReservationByAccommodationIdAndCheckOut)
+
 	cancelReservationForGuest := router.Methods(http.MethodDelete).Subrouter()
 	cancelReservationForGuest.HandleFunc("/api/reservations/cancel/{id}", reservationsHandler.CancelReservation)
 

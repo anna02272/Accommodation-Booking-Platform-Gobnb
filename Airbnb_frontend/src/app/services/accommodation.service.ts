@@ -15,5 +15,13 @@ export class AccommodationService {
    getById(id : string) {
     return this.apiService.get(this.config.acc_url + "/get/" + id );
    }
+   
+   getByHost(hostId: string) {
+    return this.apiService.get(this.config.getAccommodationsByHost_url + hostId);
+   }
+
+   deleteAccommodation(accId: string) {
+    return this.apiService.delete(this.config.deleteAccommodation_url + accId)
+   }
 
 }
