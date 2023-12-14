@@ -85,7 +85,7 @@ export class RateHostComponent implements AfterViewInit {
         this.notification = { msgType: 'success', msgBody: 'Rating successfully submitted' };
       },
       error => {
-        this.notification = { msgType: 'error', msgBody: 'Error submitting rating' };
+        this.notification = { msgType: 'error', msgBody: 'You cannot rate this host. You don\'t have reservations from him' };
       }
     );
   }
