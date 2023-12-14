@@ -21,10 +21,9 @@ import (
 )
 
 var (
-	server2     *gin.Engine
-	ctx         context.Context
-	mongoclient *mongo.Client
-
+	server2                *gin.Engine
+	ctx                    context.Context
+	mongoclient            *mongo.Client
 	availabilityCollection *mongo.Collection
 	availabilityService    services.AvailabilityService
 	AvailabilityHandler    handlers.AvailabilityHandler
@@ -51,6 +50,7 @@ func init() {
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
 	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx)
+
 	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2)
 	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
 	//AvailabilityRouteHandler = routes.NewAvailabilityRouteHandler(AvailabilityHandler, availabilityService)
@@ -81,10 +81,18 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	//serviceAv, err := services.New(storeLogger)
+	//if err != nil {
+	//	logger.Fatal(err)
+	//}
+
 	defer store.CloseSession()
 	store.CreateTable()
 
-	reservationsHandler := handlers.NewReservationsHandler(logger, store)
+	//availabilityServiceImpl := services.NewAvailabilityServiceImpl(availabilityCollection, ctx)
+
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
