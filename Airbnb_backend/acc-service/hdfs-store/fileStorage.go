@@ -1,6 +1,7 @@
 package hdfs_store
 
 import (
+	"acc-service/cache"
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
 	"log"
@@ -38,7 +39,6 @@ func (fs *FileStorage) Close() {
 
 func (fs *FileStorage) CreateDirectories() error {
 	// Default permissions
-	// 0644 Only the owner can read and write. Everyone else can only read. No one can execute the file.
 	err := fs.client.MkdirAll(hdfsCopyDir, 0644)
 	if err != nil {
 		fs.logger.Println(err)
@@ -110,7 +110,6 @@ func (fs *FileStorage) WriteFile(fileContent string, fileName string) error {
 	// Create byte array from string file content
 	fileContentByteArray := []byte(fileContent)
 
-	// IMPORTANT: writes content to local buffer, content is pushed to HDFS only when Close is called!
 	_, err = file.Write(fileContentByteArray)
 	if err != nil {
 		fs.logger.Println("Error in writing file on HDFS:", err)
@@ -157,22 +156,85 @@ func extractFileNameFromURL(url string) string {
 	return parts[len(parts)-1]
 }
 
-func (fs *FileStorage) StoreImageInHDFS(imageURL string) (string, error) {
-	fileName := extractFileNameFromURL(imageURL)
+func (fs *FileStorage) StoreImageInHDFS(imageData []byte) (string, error) {
+	fileName := cache.GenerateUniqueImageID()
 
-	// Create local file
-	localFilePath := "/tmp/" + fileName // Adjust the local path as needed
-	err := fs.CopyLocalFile(localFilePath, fileName)
+	localFilePath := "/tmp/" + fileName
+	err := fs.WriteLocalFile(localFilePath, imageData)
 	if err != nil {
-		return "", fmt.Errorf("error copying local file: %v", err)
+		fs.logger.Printf("Error writing local file: %v\n", err)
+		return "", fmt.Errorf("error writing local file: %v", err)
 	}
 
-	// Copy file to HDFS
 	hdfsFilePath := hdfsCopyDir + fileName
 	err = fs.client.CopyToRemote(localFilePath, hdfsFilePath)
 	if err != nil {
+		fs.logger.Printf("Error copying file to HDFS: %v\n", err)
 		return "", fmt.Errorf("error copying file to HDFS: %v", err)
 	}
 
+	fs.logger.Printf("Image successfully stored in HDFS. HDFS Path: %s\n", hdfsFilePath)
+	fmt.Println("HDFS file path")
+	fmt.Println(hdfsFilePath)
+
 	return hdfsFilePath, nil
 }
+
+func (fs *FileStorage) WriteLocalFile(filePath string, data []byte) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		fs.logger.Printf("Error creating local file: %v\n", err)
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(data)
+	if err != nil {
+		fs.logger.Printf("Error writing local file: %v\n", err)
+		return err
+	}
+
+	return nil
+}
+
+//func (fs *FileStorage) GetFirstImageURL(accommodationID string) (string, error) {
+//	// Construct the cache key for the first image of the accommodation
+//	cacheKey := fmt.Sprintf(cacheAll, accommodationID)
+//
+//	// Check if the image URL is already cached
+//	imageURL, err := fs.cli.Get(cacheKey).Result()
+//	if err == nil {
+//		return imageURL, nil
+//	}
+//
+//	// If not cached, fetch the image data from HDFS or cache and construct the URL
+//	// Add your logic to fetch the image data from HDFS or cache
+//	// For example, you might have a method like GetImageFromHDFS(accommodationID) in your code
+//	imageData, err := fs.GetImageFromHDFS(accommodationID)
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	// Cache the image URL for future use
+//	fs.cli.Set(cacheKey, imageData, 300*time.Second)
+//
+//	// Construct the URL based on the accommodation ID and file path
+//	fileName := cache.GenerateUniqueImageID()
+//	hdfsFilePath := hdfsCopyDir + fileName
+//	imageURL = "https://your-hdfs-server" + hdfsFilePath
+//
+//	return imageURL, nil
+//}
+//
+//// Example method to fetch image data from HDFS based on accommodation ID
+//func (fs *FileStorage) GetImageFromHDFS(accommodationID string) (string, error) {
+//	// Add your logic to fetch the image data from HDFS
+//	// For example, you might have a method like ReadFileFromHDFS(accommodationID) in your code
+//	// Ensure to handle errors and return the image data as a string
+//	imageData, err := fs.ReadFileFromHDFS(accommodationID)
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	return imageData, nil
+//}

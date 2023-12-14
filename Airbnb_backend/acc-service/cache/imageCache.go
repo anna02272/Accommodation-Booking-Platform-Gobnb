@@ -1,11 +1,17 @@
 package cache
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/go-redis/redis"
 	"log"
 	"os"
 	"time"
+)
+
+const (
+	cacheImages = "images:%s:%s"
+	cacheAll    = "images"
 )
 
 type ImageCache struct {
@@ -34,14 +40,21 @@ func (pc *ImageCache) Ping() {
 	pc.logger.Println(val)
 }
 
-func (ic *ImageCache) PostImage(imageID string, imageData []byte) error {
-	key := constructImageKey(imageID)
-	err := ic.cli.Set(key, imageData, 30*time.Second).Err()
+func (ic *ImageCache) PostImage(imageID string, accID string, imageData []byte) error {
+	key := constructImageKey(imageID, accID)
+
+	encodedImage := base64.StdEncoding.EncodeToString(imageData)
+
+	err := ic.cli.Set(key, encodedImage, 300*time.Second).Err()
+	if err != nil {
+		fmt.Println("Error setting image in Redis:", err)
+		return err
+	}
 	return err
 }
 
-func (ic *ImageCache) GetImage(imageID string) ([]byte, error) {
-	key := constructImageKey(imageID)
+func (ic *ImageCache) GetImage(imageID, accID string) ([]byte, error) {
+	key := constructImageKey(imageID, accID)
 	imageData, err := ic.cli.Get(key).Bytes()
 	if err != nil {
 		return nil, err
@@ -50,8 +63,8 @@ func (ic *ImageCache) GetImage(imageID string) ([]byte, error) {
 	return imageData, nil
 }
 
-func (ic *ImageCache) ImageExists(imageID string) bool {
-	key := constructImageKey(imageID)
+func (ic *ImageCache) ImageExists(imageID, accID string) bool {
+	key := constructImageKey(imageID, accID)
 	cnt, err := ic.cli.Exists(key).Result()
 	if cnt == 1 {
 		return true
@@ -62,19 +75,18 @@ func (ic *ImageCache) ImageExists(imageID string) bool {
 	return false
 }
 
-func (ic *ImageCache) CacheImage(imageData string) error {
+func (ic *ImageCache) CacheImage(imageID, accID string, imageData string) error {
 	expiration := 30 * time.Second
-	imageID := generateUniqueImageID()
-	key := constructImageKey(imageID)
+	key := constructImageKey(imageID, accID)
 	err := ic.cli.Set(key, imageData, expiration).Err()
 	return err
 }
 
 // Helper function to construct image cache key
-func constructImageKey(imageID string) string {
-	return fmt.Sprintf("image:%s", imageID)
+func constructImageKey(imageID, accID string) string {
+	return fmt.Sprintf(cacheImages, accID, imageID)
 }
 
-func generateUniqueImageID() string {
+func GenerateUniqueImageID() string {
 	return fmt.Sprintf("image_%d", time.Now().UnixNano())
 }

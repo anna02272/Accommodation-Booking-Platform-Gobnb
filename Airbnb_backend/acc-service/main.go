@@ -3,6 +3,7 @@ package main
 import (
 	"acc-service/cache"
 	"acc-service/handlers"
+	hdfs_store "acc-service/hdfs-store"
 	"acc-service/routes"
 	"acc-service/services"
 	"context"
@@ -27,7 +28,7 @@ var (
 	accommodationService      services.AccommodationService
 	AccommodationHandler      handlers.AccommodationHandler
 	AccommodationRouteHandler routes.AccommodationRouteHandler
-	redisCache                *cache.ImageCache
+	imageCache                *cache.ImageCache
 )
 
 func init() {
@@ -36,14 +37,14 @@ func init() {
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
-	//hdfsLogger := log.New(os.Stdout, "HDFS: ", log.LstdFlags)
-	//fileStorage, err := hdfs_store.New(hdfsLogger)
-	//if err != nil {
-	//	panic(err)
-	//}
+	hdfsLogger := log.New(os.Stdout, "HDFS: ", log.LstdFlags)
+	fileStorage, err := hdfs_store.New(hdfsLogger)
+	if err != nil {
+		panic(err)
+	}
 
 	redisLogger := log.New(os.Stdout, "REDIS CACHE: ", log.LstdFlags)
-	imageCache := cache.New(redisLogger)
+	imageCache = cache.New(redisLogger)
 	imageCache.Ping()
 
 	if err != nil {
@@ -59,11 +60,8 @@ func init() {
 	// Collections
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
 	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx)
-	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, accommodationCollection)
+	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection)
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
-
-	redisCache = cache.New(log.New(os.Stdout, "REDIS CACHE: ", log.LstdFlags))
-	redisCache.Ping()
 
 	server = gin.Default()
 }
