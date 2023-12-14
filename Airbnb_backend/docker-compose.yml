@@ -102,10 +102,6 @@ services:
     depends_on:
       mongo:
         condition: service_healthy
-      namenode:
-        condition: service_healthy
-      datanode:
-        condition: service_healthy
     networks:
       - network
     volumes:
