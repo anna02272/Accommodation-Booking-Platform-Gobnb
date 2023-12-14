@@ -5,10 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -18,6 +14,11 @@ import (
 	"reservations-service/utils"
 	"strings"
 	"time"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var validateFields = validator.New()
@@ -471,7 +472,9 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
-		s.logger.Println("Method [", h.Method, "] - Hit path :", h.URL.Path)
+		if s.logger != nil {
+			s.logger.Println("Method [", h.Method, "] - Hit path :", h.URL.Path)
+		}
 
 		rw.Header().Add("Content-Type", "application/json")
 
@@ -551,6 +554,19 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 		return
 	}
 	accIDConvert, err := primitive.ObjectIDFromHex(accIDString)
+	checkAvailabilityRequest.CheckInDate = time.Date(
+		checkAvailabilityRequest.CheckInDate.Year(),
+		checkAvailabilityRequest.CheckInDate.Month(),
+		checkAvailabilityRequest.CheckInDate.Day(),
+		0, 0, 0, 0,
+		checkAvailabilityRequest.CheckInDate.Location())
+
+	checkAvailabilityRequest.CheckOutDate = time.Date(
+		checkAvailabilityRequest.CheckOutDate.Year(),
+		checkAvailabilityRequest.CheckOutDate.Month(),
+		checkAvailabilityRequest.CheckOutDate.Day(),
+		0, 0, 0, 0,
+		checkAvailabilityRequest.CheckOutDate.Location())
 
 	isAvailable, err := s.serviceAv.IsAvailable(
 		accIDConvert,

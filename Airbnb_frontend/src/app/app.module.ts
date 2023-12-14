@@ -41,6 +41,7 @@ import { DeleteAccountComponent } from './components/delete-account/delete-accou
 import { RatingsComponent } from './components/ratings/ratings.component';
 import { RateHostComponent } from './components/rate-host/rate-host.component';
 import { RatingService } from './services/rating.service';
+import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
 
 
 @NgModule({
@@ -65,6 +66,7 @@ import { RatingService } from './services/rating.service';
     DeleteAccountComponent,
     RatingsComponent,
     RateHostComponent,
+    CreateAvailabilityComponent,
   ],
   imports: [
     HttpClientModule,

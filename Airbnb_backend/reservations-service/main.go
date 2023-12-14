@@ -97,6 +97,7 @@ func main() {
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
 	router.Use(reservationsHandler.MiddlewareContentTypeSet)
+	//router.Use(AvailabilityHandler.MiddlewareContentTypeSet)
 
 	postReservationForGuest := router.Methods(http.MethodPost).Subrouter()
 	postReservationForGuest.HandleFunc("/api/reservations/create", reservationsHandler.CreateReservationForGuest)
@@ -112,8 +113,19 @@ func main() {
 	cancelReservationForGuest.HandleFunc("/api/reservations/cancel/{id}", reservationsHandler.CancelReservation)
 
 	createAvailability := router.Methods(http.MethodPost).Subrouter()
-	createAvailability.HandleFunc("/api/availability/create/{id}", AvailabilityHandler.CreateAvailability)
-	createAvailability.Use(AvailabilityHandler.MiddlewareAvailabilityDeserialization)
+	createAvailability.HandleFunc("/api/availability/create/{id}", AvailabilityHandler.CreateMultipleAvailability)
+
+	// getAvailabilityByAccId := router.Methods(http.MethodGet).Subrouter()
+	// getAvailabilityByAccId.HandleFunc("/api/availability/get/{id}", AvailabilityHandler.GetAvailabilityByAccommodationId)
+
+	// getAllAvailability := router.Methods(http.MethodGet).Subrouter()
+	// getAllAvailability.HandleFunc("/api/availability/getAll", AvailabilityHandler.GetAllAvailability)
+
+	// editAvailability := router.Methods(http.MethodPut).Subrouter()
+	// editAvailability.HandleFunc("/api/availability/edit/{id}", AvailabilityHandler.EditAvailability)
+
+	// deleteAvailability := router.Methods(http.MethodDelete).Subrouter()
+	// deleteAvailability.HandleFunc("/api/availability/delete/{id}", AvailabilityHandler.DeleteAvailability)
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
