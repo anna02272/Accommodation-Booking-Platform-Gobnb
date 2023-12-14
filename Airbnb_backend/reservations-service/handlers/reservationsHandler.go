@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"net/http"
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"reservations-service/repository"
+	"reservations-service/services"
 	"reservations-service/utils"
 	"strings"
 	"time"
@@ -24,16 +27,17 @@ type KeyProduct struct{}
 type ReservationsHandler struct {
 	logger *log.Logger
 	// NoSQL: injecting student repository
-	repo *repository.ReservationRepo
+	repo      *repository.ReservationRepo
+	serviceAv services.AvailabilityService
+	DB        *mongo.Collection
 }
 
-func NewReservationsHandler(l *log.Logger, r *repository.ReservationRepo) *ReservationsHandler {
-	return &ReservationsHandler{l, r}
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, db *mongo.Collection) *ReservationsHandler {
+	return &ReservationsHandler{l, r, srv, db}
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
 	token := h.Header.Get("Authorization")
-
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
@@ -193,11 +197,32 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		return
 	}
 
+	guestRsvPrimitive, err := primitive.ObjectIDFromHex(guestReservation.AccommodationId)
+	isAvailable, err := s.serviceAv.IsAvailable(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate)
+	if err != nil {
+		errorMsg := map[string]string{"error": "Error checking accommodation availability"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
+	if !isAvailable {
+		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
 	errReservation := s.repo.InsertReservationByGuest(guestReservation, guestId,
 		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation, responseAccommodation.AccommodationHostId)
 	if errReservation != nil {
 		s.logger.Print("Database exception: ", errReservation)
 		errorMsg := map[string]string{"error": "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	errBookAccommodation := s.serviceAv.BookAccommodation(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate)
+	if errBookAccommodation != nil {
+		errorMsg := map[string]string{"error": "Error booking accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"reservations-service/data"
 	"time"
 
@@ -49,8 +50,16 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
 		return false, err
 	}
+	if len(availabilities) == 0 {
+		return false, nil
+	}
+	fmt.Println(len(availabilities))
 	for _, availability := range availabilities {
-		if availability.AvailabilityType != data.Available {
+		//fmt.Println(availability.ID)
+		fmt.Println("here")
+		fmt.Println(availability.AvailabilityType)
+		fmt.Println(availability.Date)
+		if availability.AvailabilityType == data.Booked {
 			return false, nil
 		}
 	}
