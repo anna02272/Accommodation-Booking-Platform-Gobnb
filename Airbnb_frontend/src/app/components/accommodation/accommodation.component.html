@@ -3,22 +3,11 @@
     <img class="img" src="assets/images/car.jpg" />
     <div class="head">
       <div class="name">
-        <h2>{{ accommodation.accommodation_name }}</h2>
-        <p>{{ accommodation.accommodation_location }}</p>
+        <h2>{{ accommodation?.accommodation_name }}</h2>
+        <p>{{ accommodation?.accommodation_location }}</p>
       </div>
-      <span>Price</span>
+      <!-- <span>Price</span> -->
     </div>
-    <hr />
-    <h3>Description about accommodation</h3>
-    <p id="text ">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-      veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-      commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-      velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
-      cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id
-      est laborum.
-    </p>
     <hr />
     <h3>Amenities</h3>
     <div class="amenities">
@@ -35,14 +24,14 @@
       </p>
       <hr />
     <h3>Capacity</h3>
-    <p>
-        <label>Minimum Guests:
-          <p>{{ accommodation.accommodation_min_guests }}</p> 
+    <p>Minimum Guests:
+      <label>
+          <p class="blue">{{ accommodation?.accommodation_min_guests }}</p> 
         </label>
-      </p>
+    </p>
       <p>Maximum Guests:
         <label>
-            <p>{{ accommodation.accommodation_max_guests }}</p> 
+            <p class="blue">{{ accommodation?.accommodation_max_guests }}</p> 
           </label>
       </p>
       <hr />

@@ -324,12 +324,12 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			errorMsg := map[string]string{"error": "Authorization service not available."}
+			errorMsg := map[string]string{"error": "Authorization service not available. Try again later"}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
 
-		errorMsg := map[string]string{"error": "Authorization service not available."}
+		errorMsg := map[string]string{"error": "Authorization service not available.  Try again later"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
@@ -373,9 +373,9 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	if err := s.repo.CancelReservationByID(guestID, reservationIDString); err != nil {
 		s.logger.Println("Error canceling reservation:", err)
-		if strings.Contains(err.Error(), "cannot cancel reservation, check-in date has already started") {
+		if strings.Contains(err.Error(), "Cannot cancel reservation, check-in date has already started") {
 			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write([]byte(`{"error":"cannot cancel reservation, check-in date has already started"}`))
+			rw.Write([]byte(`{"error":"Cannot cancel reservation, check-in date has already started"}`))
 			return
 		}
 		errorMsg := map[string]string{"error": err.Error()}
