@@ -9,6 +9,9 @@ import (
 
 type AvailabilityService interface {
 	InsertAvailability(availability *data.Availability) (*data.Availability, error)
+	InsertMulitipleAvailability(availability data.AvailabilityPeriod, accId primitive.ObjectID) ([]*data.Availability, error)
+	GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID) ([]*data.Availability, error)
+
 	IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error)
 	BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error
 	// GetAvailabilityByID(availabilityID string) (*data.Availability, error)

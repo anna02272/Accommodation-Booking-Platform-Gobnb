@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reservations-service/data"
 	"time"
@@ -34,7 +35,114 @@ func (s *AvailabilityServiceImpl) InsertAvailability(accomm *data.Availability) 
 	return accomm, nil
 }
 
+func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.AvailabilityPeriod, accId primitive.ObjectID) ([]*data.Availability, error) {
+	var insertedAvailabilities []*data.Availability
+	var startDate1 = accomm.StartDate
+	startDate := time.Unix(int64(startDate1)/1000, (int64(startDate1)%1000)*1000000)
+	var endDate1 = accomm.EndDate
+	endDate := time.Unix(int64(endDate1)/1000, (int64(endDate1)%1000)*1000000)
+
+	for d := startDate; d.Before(endDate) || d.Equal(endDate); d = d.AddDate(0, 0, 1) {
+		var newAccomm data.Availability
+		newAccomm.AccommodationID = accId
+		newAccomm.AvailabilityType = accomm.AvailabilityType
+		newAccomm.Price = accomm.Price
+		newAccomm.PriceType = accomm.PriceType
+		dt := primitive.DateTime(d.UnixNano() / 1000000)
+		newAccomm.Date = dt
+
+		_, err := s.collection.InsertOne(context.Background(), newAccomm)
+		if err != nil {
+			return nil, err
+		}
+
+		insertedAvailabilities = append(insertedAvailabilities, &newAccomm)
+	}
+
+	return insertedAvailabilities, nil
+}
+
+func (s *AvailabilityServiceImpl) GetAllAvailability(accommodationID primitive.ObjectID) ([]*data.Availability, error) {
+	filter := bson.M{
+		"accommodation_id": accommodationID,
+	}
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+	var availabilities []*data.Availability
+	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		return nil, err
+	}
+	return availabilities, nil
+}
+
+func (s *AvailabilityServiceImpl) GetAvailabilityByID(availabilityID primitive.ObjectID) (*data.Availability, error) {
+	filter := bson.M{
+		"_id": availabilityID,
+	}
+	var availability data.Availability
+	err := s.collection.FindOne(context.Background(), filter).Decode(&availability)
+	if err != nil {
+		return nil, err
+	}
+	return &availability, nil
+}
+
+func (s *AvailabilityServiceImpl) EditAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, availabilityType data.AvailabilityType) error {
+
+	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+	if !isAvailable {
+		return errors.New("Accommodation is not available for the given date range.")
+	}
+
+	filter := bson.M{
+		"accommodation_id": accommodationID,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"availability_type": availabilityType,
+		},
+	}
+	result, err := s.collection.UpdateMany(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+	result = result
+	return nil
+}
+
+func (s *AvailabilityServiceImpl) DeleteAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error {
+
+	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate)
+	if err != nil {
+		return err
+	}
+	if !isAvailable {
+		return errors.New("Accommodation is not available for the given date range.")
+	}
+
+	filter := bson.M{
+		"accommodation_id": accommodationID,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	_, err = s.collection.DeleteMany(context.Background(), filter)
+	return err
+}
+
 func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error) {
+	fmt.Println(startDate.String())
+	fmt.Println(endDate.String())
 	filter := bson.M{
 		"accommodation_id": accommodationID,
 		"date": bson.M{
@@ -46,16 +154,18 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 	if err != nil {
 		return false, err
 	}
+
 	var availabilities []data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
 		return false, err
 	}
-	if len(availabilities) == 0 {
-		return false, nil
-	}
-	fmt.Println(len(availabilities))
+
+	counter := len(availabilities)
+	// difference between startDate and endDate in days
+	days := int(endDate.Sub(startDate).Hours()/24) + 1
+
 	for _, availability := range availabilities {
-		//fmt.Println(availability.ID)
+		fmt.Println(availability.ID)
 		fmt.Println("here")
 		fmt.Println(availability.AvailabilityType)
 		fmt.Println(availability.Date)
@@ -63,6 +173,14 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 			return false, nil
 		}
 	}
+
+	fmt.Println("counter: ", counter)
+	fmt.Println("days: ", days)
+
+	if counter != days {
+		return false, errors.New("Not all dates are defined in the database.")
+	}
+
 	return true, nil
 }
 
@@ -83,51 +201,17 @@ func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.Ob
 	return err
 }
 
-// func (s *AvailabilityServiceImpl) GetAllAvailability() ([]*data.Availability, error) {
-// 	cursor, err := s.collection.Find(context.Background(), bson.M{})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer cursor.Close(context.Background())
-
-// 	var availability []*data.Availability
-// 	for cursor.Next(context.Background()) {
-// 		var acc data.Availability
-// 		if err := cursor.Decode(&acc); err != nil {
-// 			return nil, err
-// 		}
-// 		availability = append(availability, &acc)
-// 	}
-
-// 	if err := cursor.Err(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return availability, nil
-// }
-
-// func (s *AvailabilityServiceImpl) GetAvailabilityByID(availabilityID string) (*data.Availability, error) {
-// 	objID, err := primitive.ObjectIDFromHex(availabilityID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	var availability data.Availability
-// 	err = s.collection.FindOne(s.ctx, bson.M{"_id": objID}).Decode(&availability)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &availability, nil
-// }
-
-// func (s *AvailabilityServiceImpl) GetAvailabilityByHostId(hostId string) ([]*data.Availability, error) {
-// 	var availability []*data.Availability
-// 	cursor, err := s.collection.Find(context.Background(), data.Availability{HostId: hostId})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	if err = cursor.All(context.Background(), &availability); err != nil {
-// 		return nil, err
-// 	}
-// 	return availability, nil
-//}
+func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID) ([]*data.Availability, error) {
+	filter := bson.M{
+		"accommodation_id": accommodationID,
+	}
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+	var availabilities []*data.Availability
+	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		return nil, err
+	}
+	return availabilities, nil
+}
