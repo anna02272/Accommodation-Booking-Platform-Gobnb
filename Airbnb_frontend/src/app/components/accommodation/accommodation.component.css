@@ -2,11 +2,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 8vw;
+  padding: 9vw;
 }
 #inner p {
-  font-size: 15px;
+  font-size: 14px;
 
+}
+.blue {
+  font-weight: 700;
+  color: #72A0C1;
 }
 
 #inner h2 {

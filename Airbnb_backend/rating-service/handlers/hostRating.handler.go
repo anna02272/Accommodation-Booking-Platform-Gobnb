@@ -30,13 +30,13 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information. Try again later"})
 		return
 	}
 
 	hostUser, err := s.getUserByIDFromAuthService(hostID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain reservation information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain host information.Try again later."})
 		return
 	}
 
@@ -120,7 +120,7 @@ func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information.  Try again later."})
 		return
 	}
 	guestID := currentUser.ID.Hex()

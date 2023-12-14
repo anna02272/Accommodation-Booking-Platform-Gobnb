@@ -36,10 +36,14 @@ cancelReservation(id: string): void {
       this.refreshService.refresh();
       this.notification = { msgType: 'success', msgBody: `Reservation canceled successfully.` };
     },
-    (error) => {
-      this.notification = { msgType: 'error', msgBody: `Cannot cancel reservation, check-in date has already started` };
-      console.error('Error canceling reservation:', error);
+  error => {
+    if (error.status === 400 && error.error && error.error.error) {
+      const errorMessage = error.error.error;
+      this.notification = { msgType: 'error', msgBody: errorMessage };
+    } else {
+      this.notification = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
     }
-  );
+  }
+);
 }
 }
