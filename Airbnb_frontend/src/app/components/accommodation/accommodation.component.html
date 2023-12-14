@@ -23,15 +23,14 @@
     <h3>Amenities</h3>
     <div class="amenities">
       <p>
-        
-        <label> <input type="checkbox" name="TV" id="tv" [checked]="accommodation.accommodation_amenities.get('TV')"/> TV </label>
+        <label> <input type="checkbox" name="TV" id="tv" [checked]=tv /> TV </label>
       </p>
       <p>
-        <label> <input type="checkbox" name="WiFi" [checked]="accommodation.accommodation_amenities.get('WiFi')"/> WiFi </label>
+        <label> <input type="checkbox" name="WiFi" [checked]=wifi/> WiFi </label>
       </p>
       <p>
         <label>
-          <input type="checkbox" name="AC" [checked]="accommodation.accommodation_amenities.get('AC')"/> AC
+          <input type="checkbox" name="AC" [checked]=ac/> AC
         </label>
       </p>
       <hr />
