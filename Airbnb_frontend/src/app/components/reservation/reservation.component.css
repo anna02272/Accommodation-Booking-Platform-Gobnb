@@ -139,4 +139,6 @@ button:hover{
     width: 25%;
   }
   
- 
+ #checkAvail {
+  margin-bottom: 5px;
+ }

@@ -51,6 +51,12 @@
       </div>
     </div>
   </div>
+
+    <button type="submit" value="Submit" (click)="checkAvailability()" id="checkAvail">
+      Check availability
+    </button>
+    <br>
+
   <button type="submit" value="Submit" (click)="createReservation()">
     Reserve
   </button>
@@ -62,6 +68,10 @@
 
 <div class="alert alert-success" role="alert" *ngIf="showDivSuccess">
   Reserved successfully!
+</div>
+
+<div class="alert alert-success" role="alert" *ngIf="showDivSuccessAvailability">
+  Dates are available!
 </div>
 
 <div class="alert alert-danger" role="alert" *ngIf="errorCheck">

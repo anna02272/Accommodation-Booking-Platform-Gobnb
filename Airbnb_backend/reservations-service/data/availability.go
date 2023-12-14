@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
+	"time"
 )
 
 type Availability struct {
@@ -12,6 +13,11 @@ type Availability struct {
 	Date             primitive.DateTime `bson:"date" json:"date"`
 	Price            float64            `bson:"price" json:"price"`
 	AvailabilityType AvailabilityType   `bson:"availability_type" json:"availability_type"`
+}
+
+type CheckAvailability struct {
+	CheckInDate  time.Time `json:"check_in_date"`
+	CheckOutDate time.Time `json:"check_out_date"`
 }
 
 type AvailabilityType string

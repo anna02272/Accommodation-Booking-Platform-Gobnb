@@ -479,6 +479,108 @@ func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.H
 	})
 }
 
+func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.Request) {
+	token := h.Header.Get("Authorization")
+	url := "https://auth-server:8080/api/users/currentUser"
+
+	timeout := 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+
+		errorMsg := map[string]string{"error": "Authorization service not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+	if statusCode != 200 {
+		errorMsg := map[string]string{"error": "Unauthorized."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	var response struct {
+		LoggedInUser struct {
+			ID       string        `json:"id"`
+			UserRole data.UserRole `json:"userRole"`
+		} `json:"user"`
+		Message string `json:"message"`
+	}
+
+	if err := decoder.Decode(&response); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+			return
+		}
+
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	userRole := response.LoggedInUser.UserRole
+
+	if userRole != data.Guest {
+		errorMsg := map[string]string{"error": "Permission denied. Only guests can check availability of accommodations."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
+		return
+	}
+
+	vars := mux.Vars(h)
+	accIDString, ok := vars["accId"]
+	if !ok {
+		errorMsg := map[string]string{"error": "Missing accommodationId in the URL"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	var checkAvailabilityRequest data.CheckAvailability
+	if err := json.NewDecoder(h.Body).Decode(&checkAvailabilityRequest); err != nil {
+		errorMsg := map[string]string{"error": "Invalid request body. Check the request format."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	accIDConvert, err := primitive.ObjectIDFromHex(accIDString)
+
+	isAvailable, err := s.serviceAv.IsAvailable(
+		accIDConvert,
+		checkAvailabilityRequest.CheckInDate,
+		checkAvailabilityRequest.CheckOutDate,
+	)
+	if err != nil {
+		errorMsg := map[string]string{"error": "Error checking accommodation availability"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
+	if !isAvailable {
+		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates, try another ones."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	successMsg := map[string]string{"message": "Accommodation is available for the specified dates."}
+	responseJSON, err := json.Marshal(successMsg)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseJSON)
+}
+
 func (s *ReservationsHandler) MiddlewareReservationForGuestDeserialization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, h *http.Request) {
 		patient := &data.ReservationByGuestCreate{}

@@ -15,6 +15,7 @@ export class ReservationComponent implements OnInit  {
     form!: FormGroup;
     showDiv: boolean = false;
     showDivSuccess: boolean = false;
+    showDivSuccessAvailability: boolean = false;
     //showDivErrorCheckInTime: boolean = false;
     check_in_date?: string;
     check_out_date?: string;
@@ -108,8 +109,53 @@ export class ReservationComponent implements OnInit  {
   );
     
   }
+
+
+  
+ checkAvailability(): void {
+
+    if (this.check_in_time === undefined){
+      this.errorCheck = true;
+      return
+    } 
+    else {
+      if (this.check_in_time > 24 || this.check_in_time < 1){
+              this.errorCheck = true;
+              return
+      }
+    }
+
+    this.errorCheck = false;
+
+    const checkAvailabilityData = {
+      check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
+      check_out_date: this.check_out_date+"T15:00:00Z",
+    };
+
+  this.reservationService.checkAvailability(checkAvailabilityData, this.accommodationId).subscribe(
+    {
+      next: (response) => {
+        console.log('Dates are available.', response);
+        this.showDivSuccessAvailability = true;
+         setTimeout(() => {
+        this.showDivSuccessAvailability = false;
+      }, 5000);
+
+      },
+      error: (error) => {
+           this.showDiv = true;
+           this.errorMessage = error.error.error;
+            setTimeout(() => {
+        this.showDiv = false;
+      }, 5000);
+           
+      }
+    }
+  );
+
+
+
+
+  } 
 }
-// function ViewChild(arg0: string, arg1:
-//    { static: boolean; }): (target: ReservationComponent, propertyKey: "reservationForm") => void {
-//   throw new Error('Function not implemented.');
-// }
+

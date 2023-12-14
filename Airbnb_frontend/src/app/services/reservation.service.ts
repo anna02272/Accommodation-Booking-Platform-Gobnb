@@ -26,5 +26,9 @@ export class ReservationService {
    cancelReservation(id: string): Observable<void> {
     return this.apiService.delete(`${this.configService.resv_url}/cancel/${id}`);
   }
+
+     checkAvailability(checkAvailabilityData: any, accId: string) {
+    return this.apiService.post(this.configService.resv_url + "/availability/" + accId, checkAvailabilityData);
+   }
 }
 

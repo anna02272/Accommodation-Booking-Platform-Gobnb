@@ -115,6 +115,9 @@ func main() {
 	createAvailability.HandleFunc("/api/availability/create/{id}", AvailabilityHandler.CreateAvailability)
 	createAvailability.Use(AvailabilityHandler.MiddlewareAvailabilityDeserialization)
 
+	checkAvailability := router.Methods(http.MethodPost).Subrouter()
+	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
 		"https://localhost:4200/"})
