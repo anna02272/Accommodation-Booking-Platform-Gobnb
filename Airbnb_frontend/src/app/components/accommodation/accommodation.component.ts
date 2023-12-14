@@ -13,7 +13,10 @@ export class AccommodationComponent implements OnInit {
   accId!: string; 
   hostId!: string;
   accommodation!: Accommodation;
-  //am_map!: Map<string, boolean>;
+  tv!: boolean;
+  wifi!: boolean;
+  ac!: boolean;
+  am_map!: Map<string, boolean>;
   
   constructor( 
     private userService: UserService,
@@ -28,6 +31,15 @@ export class AccommodationComponent implements OnInit {
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
       this.hostId = accommodation.host_id;
+      // generate an empty map string:booelan
+      this.am_map = new Map<string, boolean>();
+      //this am_map becomes accommodation_amenities
+      //this.am_map = JSON.stringify(this.accommodation.accommodation_amenities);
+      this.am_map = Object.entries(this.accommodation.accommodation_amenities).reduce((map, [key, value]) => map.set(key, value), new Map<string, boolean>());
+      //console.log(this.am_map.get('TV'));
+      this.tv = this.am_map.get('TV')!;
+      this.wifi = this.am_map.get('WiFi')!;
+      this.ac = this.am_map.get('AC')!;
     });
     //this.am_map = this.accommodation.accommodation_amenities;
   }
