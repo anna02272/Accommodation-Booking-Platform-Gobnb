@@ -84,10 +84,15 @@ export class RateHostComponent implements AfterViewInit {
       response => {
         this.notification = { msgType: 'success', msgBody: 'Rating successfully submitted' };
       },
-      error => {
-        this.notification = { msgType: 'error', msgBody: 'Error submitting rating' };
+    error => {
+      if (error.status === 400 && error.error && error.error.error) {
+        const errorMessage = error.error.error;
+        this.notification = { msgType: 'error', msgBody: errorMessage };
+      } else {
+        this.notification = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
       }
-    );
+    }
+  );
   }
 
   updateStars(): void {
@@ -107,7 +112,12 @@ export class RateHostComponent implements AfterViewInit {
         this.notification = { msgType: 'success', msgBody: 'Rating successfully deleted' };
       },
       error => {
-        this.notification = { msgType: 'error', msgBody: 'Error deleting rating' };
+        if (error.status === 400 && error.error && error.error.error) {
+          const errorMessage = error.error.error;
+          this.notification = { msgType: 'error', msgBody: errorMessage };
+        } else {
+          this.notification = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
+        }
       }
     );
   }

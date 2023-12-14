@@ -30,17 +30,57 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information. Try again later"})
 		return
 	}
 
 	hostUser, err := s.getUserByIDFromAuthService(hostID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain reservation information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain host information.Try again later."})
 		return
 	}
 
-	if !s.canRateHost(token, hostID) {
+	urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
+
+	timeout := 2000 * time.Second
+	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(ctxRest, token, urlCheckReservations)
+	if errRes != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
+		return
+	}
+
+	defer respRes.Body.Close()
+
+	if respRes.StatusCode != http.StatusOK {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		return
+	}
+
+	decoder := json.NewDecoder(respRes.Body)
+	var reservations []domain.ReservationByGuest
+	if err := decoder.Decode(&reservations); err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to decode reservations"})
+		return
+	}
+
+	if len(reservations) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		return
+	}
+
+	canRate := false
+	for _, reservation := range reservations {
+		if reservation.AccommodationHostId == hostID {
+			canRate = true
+			break
+		}
+	}
+
+	if !canRate {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
 		return
 	}
@@ -53,6 +93,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON request"})
 		return
 	}
+
 	currentDateTime := primitive.NewDateTimeFromTime(time.Now())
 	id := primitive.NewObjectID()
 
@@ -73,55 +114,13 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateHost})
 }
 
-func (s *HostRatingHandler) canRateHost(token string, hostID string) bool {
-	urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
-
-	timeout := 2000 * time.Second
-	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(ctxRest, token, urlCheckReservations)
-	if errRes != nil {
-		fmt.Println(errRes)
-		return false
-	}
-
-	defer respRes.Body.Close()
-
-	if respRes.StatusCode != http.StatusOK {
-		fmt.Println("Failed to fetch user reservations. Status Code:", respRes.StatusCode)
-		return false
-	}
-
-	decoder := json.NewDecoder(respRes.Body)
-	var reservations []domain.ReservationByGuest
-	if err := decoder.Decode(&reservations); err != nil {
-		fmt.Println(err)
-		return false
-	}
-
-	if len(reservations) == 0 {
-		return false
-	}
-
-	for _, reservation := range reservations {
-		fmt.Println("AccommodationHostID:", reservation.AccommodationHostId)
-		fmt.Println("HostID:", hostID)
-		if reservation.AccommodationHostId == hostID {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
 	hostID := c.Param("hostId")
 
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information.  Try again later."})
 		return
 	}
 	guestID := currentUser.ID.Hex()

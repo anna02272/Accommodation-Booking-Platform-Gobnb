@@ -30,16 +30,4 @@ export class RatingsComponent implements OnInit{
       this.load();
     });
   }
-  // cancelReservation(id: string): void {
-  //   this.resService.cancelReservation(id).subscribe(
-  //     () => {
-  //       this.refreshService.refresh();
-  //       this.notification = { msgType: 'success', msgBody: `Reservation canceled successfully.` };
-  //     },
-  //     (error) => {
-  //       this.notification = { msgType: 'error', msgBody: `Cannot cancel reservation, check-in date has already started` };
-  //       console.error('Error canceling reservation:', error);
-  //     }
-  //   );
-  // }
   }
