@@ -191,7 +191,7 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Host {
-		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create availabilitys.", http.StatusForbidden)
+		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create availabilities.", http.StatusForbidden)
 		return
 	}
 

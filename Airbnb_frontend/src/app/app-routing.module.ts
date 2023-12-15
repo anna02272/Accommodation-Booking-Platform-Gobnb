@@ -82,14 +82,14 @@ const routes: Routes = [
     path: 'reviews',
     component: RatingsComponent
   },
-  {
-    path: 'availability-create/:accId',
-    component: CreateAvailabilityComponent,
-    canActivate: [AuthGuard],
-    data: {
-      roles: ['Host']
-    }
-  },
+  // {
+  //   path: 'availability-create/:accId',
+  //   component: CreateAvailabilityComponent,
+  //   canActivate: [AuthGuard],
+  //   data: {
+  //     roles: ['Host']
+  //   }
+  // },
 ];
 
 @NgModule({

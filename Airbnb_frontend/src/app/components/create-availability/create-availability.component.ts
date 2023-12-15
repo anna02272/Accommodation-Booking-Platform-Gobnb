@@ -12,10 +12,9 @@ import { UserService } from 'src/app/services';
   styleUrls: ['./create-availability.component.css']
 })
 export class CreateAvailabilityComponent {
-  //@Input() accId!: string;
+  @Input() accId!: string;
   notification = { msgType: '', msgBody: '' };
-  //get accId from url
-  accId = this.route.snapshot.paramMap.get('accId');
+  // accId = this.route.snapshot.paramMap.get('accId');
 
 
   constructor(private dataService: AvailabilityService,
@@ -87,10 +86,6 @@ export class CreateAvailabilityComponent {
     );
 
     //this.resetForm();
-  }
-
-  getUsername() {
-    return this.userService.currentUser.user.username;
   }
 
 }
