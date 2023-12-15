@@ -46,11 +46,14 @@
       <button class="btn" routerLink="/availability-create/{{accId}}">Add Availability</button>
     </div> -->
   </div>
-
-  <div class="enroll" *ngIf="getRole() === 'Guest'">
+<div *ngIf="getRole() === 'Guest'">
+  <div class="enroll">
     <app-reservation [accommodationId]="accId"></app-reservation>
   </div>
+</div>
+<div *ngIf="getRole() === 'Host'">
   <div class="enroll">
-    <app-create-availability *ngIf="getRole() === 'Host'" [accId]="accId" ></app-create-availability>
+    <app-create-availability  [accId]="accId" ></app-create-availability>
   </div>
+</div>
 </section>

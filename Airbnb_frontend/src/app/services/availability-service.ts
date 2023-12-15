@@ -25,9 +25,14 @@ export class AvailabilityService {
         return availabilityPeriodDb;
       }));
   }
-  getAvailabilityByAccommodationId(id: string): Observable<void> {
-    return this.apiService.get(`${this.configService.availability_url}/getByAccId/${id}`);
-   }
+  // getAvailabilityByAccommodationId(id: string): Observable<void> {
+  //   return this.apiService.get(`${this.configService.availability_url}/get/${id}`);
+  //  }
+
+   getAvailabilityByAccommodationId(id: string) {
+    return this.apiService.get(`${this.configService.getAvailabilityPeriod_url}/${id}`);
+  }
+  
 
    sendData(data: any, accId: any): Observable<any> {
     const headers = new HttpHeaders({

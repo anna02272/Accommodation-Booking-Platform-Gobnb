@@ -31,18 +31,18 @@
           </div>
 
           <!-- Captcha -->
-          <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
+          <!-- <ngx-recaptcha2 #captchaElem [siteKey]="recaptchaSiteKey" (reset)="handleReset()" (expire)="handleExpire()"
             (load)="handleLoad()" (success)="handleSuccess($event)" [useGlobalDomain]="false" formControlName="captcha">
-          </ngx-recaptcha2>
+          </ngx-recaptcha2> -->
 
           <p class="error" *ngIf="notification" [class]="notification.msgType">
             {{ notification.msgBody }}
           </p>
 
       <!-- Display reCAPTCHA error message only if the form is submitted and the reCAPTCHA field is untouched and invalid -->
-      <div *ngIf="submitted && form.get('captcha')?.untouched && form.get('captcha')?.invalid" class="text-danger">
+      <!-- <div *ngIf="submitted && form.get('captcha')?.untouched && form.get('captcha')?.invalid" class="text-danger">
         Please check the reCAPTCHA.
-      </div>
+      </div> -->
 
           <div class="d-flex justify-content-between align-items-center">
             <!-- Checkbox -->
