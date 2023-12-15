@@ -1,9 +1,30 @@
+.container-fluid {
+  max-width: 500px; 
+  margin: 0 auto; 
+  padding: 20px; 
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end; /* Align the button to the right side of the footer */
+  padding: 15px; /* Add padding for spacing */
+}
+
+h2.heading {
+  font-size: 22px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #72A0C1; 
+  padding-top: 30px;
+  margin-left: 20px;
+}
+
 .btn{
-    float: right;
-    width: 200px;
+    width: 360px;
     height: 42px;
     border: 1px solid #72A0C1;
-    margin: 3 220 3px 0;
+    margin-left: 22px;
+    margin-bottom: 22px;
     background-color: #72A0C1;
     color: #fff;
     font-weight: bold;
@@ -24,11 +45,10 @@ input[type="text"],
   input[type="number"],
   input[type="date"],
   select {
-    padding: 12px;
-    font-size: 14px;
+    padding: 8px;
     border: 1px solid #c6c6c6; 
-    width: 100%;
-    margin-bottom: 18px;
+    width: 270px;
+    margin-left: 25px;
     color: #888;
     font-size: 16px;
     font-weight: 300;
