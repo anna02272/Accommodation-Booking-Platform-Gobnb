@@ -81,6 +81,7 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 
 func (ac *AuthHandler) Registration(ctx *gin.Context) {
 	var user *domain.User
+	rw := ctx.Writer
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
@@ -132,7 +133,7 @@ func (ac *AuthHandler) Registration(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Password is in blacklist!"})
 		return
 	}
-	newUser, err := ac.authService.Registration(user)
+	newUser, err := ac.authService.Registration(rw, user)
 
 	if err != nil {
 		if strings.Contains(err.Error(), "email already exist") {
@@ -306,4 +307,7 @@ func (ac *AuthHandler) ResetPassword(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Password data updated successfully"})
+}
+func (ac *AuthHandler) HealthCheck(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
