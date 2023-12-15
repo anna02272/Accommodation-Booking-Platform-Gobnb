@@ -42,6 +42,7 @@ import { RatingsComponent } from './components/ratings/ratings.component';
 import { RateHostComponent } from './components/rate-host/rate-host.component';
 import { RatingService } from './services/rating.service';
 import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
+import { AvailabilityService } from './services/availability-service';
 
 
 @NgModule({
@@ -108,7 +109,8 @@ import { CreateAvailabilityComponent } from './components/create-availability/cr
     DatePipe,
     AccommodationService,
     RatingService,
-    RefreshService
+    RefreshService,
+    AvailabilityService
     
   ],
   bootstrap: [AppComponent]

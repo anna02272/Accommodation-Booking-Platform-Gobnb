@@ -14,6 +14,7 @@ import { ResetPasswordComponent } from './components/reset-password/reset-passwo
 import { ReservationsComponent } from './components/reservations/reservations.component';
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 import { RatingsComponent } from './components/ratings/ratings.component';
+import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
 
 const routes: Routes = [
   {
@@ -80,6 +81,14 @@ const routes: Routes = [
   {
     path: 'reviews',
     component: RatingsComponent
+  },
+  {
+    path: 'availability-create/:accId',
+    component: CreateAvailabilityComponent,
+    canActivate: [AuthGuard],
+    data: {
+      roles: ['Host']
+    }
   },
 ];
 

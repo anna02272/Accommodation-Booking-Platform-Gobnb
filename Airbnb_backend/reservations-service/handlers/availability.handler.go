@@ -224,25 +224,25 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 	}
 
 	//set variable date1 of type time.Time to 2024-02-01T12:00:00.000Z
-	date1, err := time.Parse(time.RFC3339, "2024-02-01T00:00:00.000Z")
-	if err != nil {
-		panic(err)
-	}
-	date2, err := time.Parse(time.RFC3339, "2024-02-05T00:00:00.000Z")
-	if err != nil {
-		panic(err)
-	}
+	// date1, err := time.Parse(time.RFC3339, "2024-02-01T00:00:00.000Z")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// date2, err := time.Parse(time.RFC3339, "2024-02-05T00:00:00.000Z")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	insertedAvail = insertedAvail
+	//insertedAvail = insertedAvail
 
-	isa, err10 := s.availabilityService.IsAvailable(accId, date1, date2)
-	if err10 != nil {
-		error2.ReturnJSONError(rw, err10.Error(), http.StatusBadRequest)
-		return
-	}
+	// isa, err10 := s.availabilityService.IsAvailable(accId, date1, date2)
+	// if err10 != nil {
+	// 	error2.ReturnJSONError(rw, err10.Error(), http.StatusBadRequest)
+	// 	return
+	// }
 
 	rw.WriteHeader(http.StatusCreated)
-	jsonResponse, err1 := json.Marshal(isa)
+	jsonResponse, err1 := json.Marshal(insertedAvail)
 	if err1 != nil {
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
 		return

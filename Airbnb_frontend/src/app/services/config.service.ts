@@ -12,6 +12,7 @@ export class ConfigService {
   private _notif_api_url = 'https://localhost:8086/api';
   private _resv_api_url = 'https://localhost:8082/api';
   private _rating_api_url = 'https://localhost:8087/api';
+  private _availability_api_url = 'https://localhost:8082/api';
 
   private _auth_url = this._auth_api_url + '/auth';
   private _login_url = this._auth_url + '/login';
@@ -34,6 +35,9 @@ export class ConfigService {
   private _create_resv_url = this._resv_api_url + '/reservations/create';
 
   private _rating_url = this._rating_api_url + '/rating';
+
+  private _availability_url = this._availability_api_url + 'reservations/availability';
+  private _create_availability_period_url = this._availability_api_url + 'reservations/availability/create';
 
   get login_url(): string {
     return this._login_url;
@@ -85,6 +89,14 @@ export class ConfigService {
   }
   get rating_url(): string {
     return this._rating_url;
+  }
+
+  get availability_url(): string {
+    return this._availability_url;
+  }
+
+  get createAvailabilityPeriod_url(): string {
+    return this._create_availability_period_url;
   }
   }
 
