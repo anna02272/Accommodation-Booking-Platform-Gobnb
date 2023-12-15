@@ -1,0 +1,47 @@
+.btn{
+    float: right;
+    width: 200px;
+    height: 42px;
+    border: 1px solid #72A0C1;
+    margin: 3 220 3px 0;
+    background-color: #72A0C1;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14px;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+.btn:hover{
+    background-color: #5D8AA8;
+    cursor: pointer;
+}
+
+.notif{
+    color: red;
+}
+
+input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #c6c6c6; 
+    width: 100%;
+    margin-bottom: 18px;
+    color: #888;
+    font-size: 16px;
+    font-weight: 300;
+    border-radius: 2px;
+    transition: all 0.3s;
+  
+    &:focus,
+    &:hover {
+      outline: none;
+      border-color: #9FB1C1; 
+      +label {
+        color: #72A0C1; 
+        cursor: text;
+      }
+    }
+  }

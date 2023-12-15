@@ -42,6 +42,34 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 	var endDate1 = accomm.EndDate
 	endDate := time.Unix(int64(endDate1)/1000, (int64(endDate1)%1000)*1000000)
 
+	isAvailable, err := s.IsAvailable(accId, startDate, endDate)
+	if err != nil {
+		if err.Error() == "Availability not defined for accommodation." {
+			fmt.Println("Zero availability")
+		} else {
+			isNotDefined, err := s.IsNotDefined(accId, startDate, endDate)
+			if err != nil {
+				return nil, errors.New("Some of the dates are already defined in the database")
+			}
+
+			if !isNotDefined {
+				return nil, errors.New("Accommodation is already defined and available for the given date range")
+			}
+		}
+	}
+
+	if isAvailable {
+		if err.Error() == "Availability not defined for accommodation." {
+			fmt.Println("Zero availability")
+		} else {
+			return nil, errors.New("Accommodation is already defined and available for the given date range.")
+		}
+	}
+
+	if startDate.After(endDate) {
+		return nil, errors.New("Start date is after end date.")
+	}
+
 	for d := startDate; d.Before(endDate) || d.Equal(endDate); d = d.AddDate(0, 0, 1) {
 		var newAccomm data.Availability
 		newAccomm.AccommodationID = accId
@@ -169,7 +197,7 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 		fmt.Println("here")
 		fmt.Println(availability.AvailabilityType)
 		fmt.Println(availability.Date)
-		if availability.AvailabilityType == data.Booked {
+		if availability.AvailabilityType != data.Available {
 			return false, nil
 		}
 	}
@@ -178,10 +206,43 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 	fmt.Println("days: ", days)
 
 	if counter != days {
+		if counter == 0 {
+			return false, errors.New("Availability not defined for accommodation.")
+			fmt.Println("Zero availability in the database.")
+		}
 		return false, errors.New("Not all dates are defined in the database.")
 	}
 
 	return true, nil
+}
+
+func (s *AvailabilityServiceImpl) IsNotDefined(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error) {
+	filter := bson.M{
+		"accommodation_id": accommodationID,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		return false, err
+	}
+
+	var availabilities []data.Availability
+	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		return false, err
+	}
+
+	counter := len(availabilities)
+	// difference between startDate and endDate in days
+	//days := int(endDate.Sub(startDate).Hours()/24) + 1
+
+	if counter == 0 {
+		return true, nil
+	}
+
+	return false, errors.New("Dates are already defined in the database.")
 }
 
 func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error {
