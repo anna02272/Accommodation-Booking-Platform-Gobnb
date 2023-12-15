@@ -95,14 +95,14 @@ onSubmit() {
   this.notification = { msgType: '', msgBody: '' };
   this.submitted = true;
 
-  if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
-      this.notification = {
-        msgType: 'error',
-        msgBody: 'Please check the reCAPTCHA.'
-      };
-      this.submitted = false; 
-      return
-   }
+  // if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
+  //     this.notification = {
+  //       msgType: 'error',
+  //       msgBody: 'Please check the reCAPTCHA.'
+  //     };
+  //     this.submitted = false; 
+  //     return
+  //  }
   this.authService.login(this.form.value).subscribe(
     () => {
       this.userService.getMyInfo().subscribe();

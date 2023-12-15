@@ -59,7 +59,11 @@
   border-radius: 11px;
   box-shadow: 0px 20px 40px 0 rgba(12, 87, 226, 0.08);
 }
-
+#inner .enroll2 {
+  width: 450px;
+  border-radius: 11px;
+  box-shadow: 0px 20px 40px 0 rgba(12, 87, 226, 0.08);
+}
 .btn{
   float: right;
   width: 200px;

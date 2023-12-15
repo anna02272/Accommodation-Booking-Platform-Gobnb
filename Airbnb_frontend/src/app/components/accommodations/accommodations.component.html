@@ -16,7 +16,7 @@
         <div class="description">
           <h4><a [routerLink]="['/accommodation', accommodation._id]">{{ accommodation.accommodation_name }}</a></h4>
           <p>{{ accommodation.accommodation_location }}</p>
-        <button class="delete-btn" *ngIf="accommodation.flagCanDelete" (click)="deleteAccommodation(accommodation._id)">
+        <button class="delete-btn" *ngIf="getRole() === 'Host'" (click)="deleteAccommodation(accommodation._id)">
           Delete
         </button>
 
