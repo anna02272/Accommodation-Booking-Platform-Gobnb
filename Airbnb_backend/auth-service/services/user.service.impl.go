@@ -2,6 +2,7 @@ package services
 
 import (
 	"auth-service/domain"
+	error2 "auth-service/error"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -12,11 +13,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"io/ioutil"
+	_ "io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type UserServiceImpl struct {
@@ -111,32 +113,58 @@ func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credent
 
 	return user, nil
 }
-func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
+
+// func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
+//
+//		url := "https://profile-server:8084/api/profile/createUser"
+//
+//		reqBody, err := json.Marshal(user)
+//		if err != nil {
+//			return fmt.Errorf("error marshaling user JSON: %v", err)
+//		}
+//
+//		tr := http.DefaultTransport.(*http.Transport).Clone()
+//		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+//
+//		client := &http.Client{Transport: tr}
+//
+//		resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
+//		if err != nil {
+//			return fmt.Errorf("error making HTTPS request: %v", err)
+//		}
+//		defer resp.Body.Close()
+//
+//		if resp.StatusCode != http.StatusOK {
+//			if resp.StatusCode == http.StatusServiceUnavailable {
+//				return fmt.Errorf("service unavailable: %s", resp.Status)
+//			}
+//			body, _ := ioutil.ReadAll(resp.Body)
+//			return fmt.Errorf("unexpected response status: %s, body: %s", resp.Status, body)
+//		}
+//
+//		return nil
+//	}
+func (us *UserServiceImpl) SendUserToProfileService(rw http.ResponseWriter, user *domain.User) error {
 	url := "https://profile-server:8084/api/profile/createUser"
 
-	reqBody, err := json.Marshal(user)
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
 	if err != nil {
-		return fmt.Errorf("error marshaling user JSON: %v", err)
-	}
-
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	client := &http.Client{Transport: tr}
-
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return fmt.Errorf("error making HTTPS request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusServiceUnavailable {
-			return fmt.Errorf("service unavailable: %s", resp.Status)
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Profile service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
 		}
-		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("unexpected response status: %s, body: %s", resp.Status, body)
+
+		errorMsg := map[string]string{"error": "Profile service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
 	}
+
+	defer resp.Body.Close()
 
 	return nil
 }
@@ -208,3 +236,44 @@ func (us *UserServiceImpl) DeleteCredentials(user *domain.User) error {
 	}
 	return nil
 }
+func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, user *domain.User, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(user)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling user JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+//tr := http.DefaultTransport.(*http.Transport).Clone()
+//tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+//
+//req, err := http.NewRequest("POST", url, nil)
+//if err != nil {
+//	return nil, err
+//}
+//
+//// Perform the request with the provided context
+//client := &http.Client{Transport: tr}
+//resp, err := client.Do(req.WithContext(ctx))
+//if err != nil {
+//	return nil, err
+//}
+//
+//return resp, nil
+//}

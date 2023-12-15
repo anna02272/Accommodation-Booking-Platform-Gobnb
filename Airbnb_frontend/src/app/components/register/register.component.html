@@ -95,12 +95,12 @@
               <input
                 formControlName="name"
                 type="text"
-                id="name"
+                id="namee"
                 class="form-control form-control-lg"
                 placeholder="Enter name"
                 required
               />
-              <label class="form-label" for="name">Name</label>
+              <label class="form-label" for="namee">Name</label>
             </div>
             <!-- Lastname input -->
             <div class="col">
@@ -133,10 +133,16 @@
       [formGroup]="personalInfoForm"
     >
         <!-- Address input -->
-        <div class="form-outline mb-0">
-          <p>Enter your address:</p>
-          <p
-            *ngIf="personalInfoForm.controls['street']?.errors?.['minlength']"
+        <!-- Street input -->
+        
+
+        <!-- Address input -->
+         <div class="form-outline mb-0">
+          
+    
+
+            <p
+            *ngIf="personalInfoForm.controls['street'].errors?.['minlength']"
             class="text-danger"
           >
             Street is required.
@@ -149,45 +155,57 @@
             placeholder="Enter street"
             required
           />
-
           <label class="form-label" for="street">Street</label>
+
+          
+
           <div class="row">
             <div class="col">
-              <p
-                *ngIf="personalInfoForm.controls['address.city']?.errors?.['minlength']"
-                class="text-danger"
-              >
+              <p *ngIf="personalInfoForm.get('city')?.errors?.['minlength']" class="text-danger">
                 City is required.
               </p>
-              <input
-                formControlName="city"
-                type="text"
-                id="city"
-                class="form-control form-control-lg"
-                placeholder="Enter city"
-                required
-              />
+              <input formControlName="city" type="text" id="city" class="form-control form-control-lg" placeholder="Enter city" required />
               <label class="form-label" for="city">City</label>
             </div>
+        
             <div class="col">
-              <p
-                *ngIf="personalInfoForm.controls['address.country']?.errors?.['minlength']"
-                class="text-danger"
-              >
+              <p *ngIf="personalInfoForm.get('country')?.errors?.['minlength']" class="text-danger">
                 Country is required.
               </p>
-              <input
-                formControlName="country"
-                type="text"
-                id="country"
-                class="form-control form-control-lg"
-                placeholder="Enter country"
-                required
-              />
+              <input formControlName="country" type="text" id="country" class="form-control form-control-lg" placeholder="Enter country" required />
               <label class="form-label" for="country">Country</label>
             </div>
           </div>
-        </div>
+        </div> 
+<!-- Address input -->
+        <!-- <div class="form-outline mb-0">
+          <p>Enter your address:</p>
+          <p *ngIf="personalInfoForm.get('address')?.get('street')?.errors?.['minlength']" class="text-danger">
+            Street is required.
+          </p>
+          <input formControlName="address.street" type="text" id="street" class="form-control form-control-lg" placeholder="Enter street" required />
+          <label class="form-label" for="street">Street</label>
+
+          <div class="row">
+            <div class="col">
+              <p *ngIf="personalInfoForm.get('address')?.get('city')?.errors?.['minlength']" class="text-danger">
+                City is required.
+              </p>
+              <input formControlName="address.city" type="text" id="city" class="form-control form-control-lg" placeholder="Enter city" required />
+              <label class="form-label" for="city">City</label>
+            </div>
+
+            <div class="col">
+              <p *ngIf="personalInfoForm.get('address')?.get('country')?.errors?.['minlength']" class="text-danger">
+                Country is required.
+              </p>
+              <input formControlName="address.country" type="text" id="country" class="form-control form-control-lg" placeholder="Enter country" required />
+              <label class="form-label" for="country">Country</label>
+            </div>
+          </div>
+        </div> -->
+
+
 
         <div class="form-outline mb-0">
           <div class="row">
