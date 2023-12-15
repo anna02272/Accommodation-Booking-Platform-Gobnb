@@ -114,21 +114,21 @@ export class ReservationComponent implements OnInit  {
   
  checkAvailability(): void {
 
-    if (this.check_in_time === undefined){
-      this.errorCheck = true;
-      return
-    } 
-    else {
-      if (this.check_in_time > 24 || this.check_in_time < 1){
-              this.errorCheck = true;
-              return
-      }
-    }
+    // if (this.check_in_time === undefined){
+    //   this.errorCheck = true;
+    //   return
+    // } 
+    // else {
+    //   if (this.check_in_time > 24 || this.check_in_time < 1){
+    //           this.errorCheck = true;
+    //           return
+    //   }
+    // }
 
     this.errorCheck = false;
 
     const checkAvailabilityData = {
-      check_in_date: this.check_in_date+`T${this.check_in_time}:00:00Z`,
+      check_in_date: this.check_in_date+ "T00:00:00Z",
       check_out_date: this.check_out_date+"T15:00:00Z",
     };
 
@@ -145,6 +145,7 @@ export class ReservationComponent implements OnInit  {
       error: (error) => {
            this.showDiv = true;
            this.errorMessage = error.error.error;
+           console.log(error);
             setTimeout(() => {
         this.showDiv = false;
       }, 5000);

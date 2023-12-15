@@ -180,6 +180,7 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		fmt.Println("Database Query Error:", err)
 		return false, err
 	}
 
