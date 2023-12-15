@@ -27,26 +27,40 @@ export class AccommodationsComponent implements OnInit{
   ) {}
 
   ngOnInit() {
-      this.load();
-      this.subscribeToRefresh();
-    }
+    this.userService.getMyInfo().subscribe(
+      () => {
+        this.loadByHost();
+        this.subscribeToRefresh();
+      },
+      () => {
+        this.load() 
+        this.subscribeToRefresh();
+      }
+    );
+  }
+  
+  loadByHost() {
+      const userRole =  this.userService.currentUser?.user.userRole;
 
-    getRole() {
-      return this.userService.currentUser?.user.userRole;
-    }
-
-    load() {
-      if (this.getRole() === 'Host') {
-            this.accService.getByHost(this.userService.currentUser.user.id).subscribe((data: Accommodation[]) => {
-              this.accommodations = data;
-            });
-      } else {
-        this.accService.getAll().subscribe((data: Accommodation[]) => {
+      if (userRole === 'Host') {
+        this.accService.getByHost(this.userService.currentUser.user.id).subscribe((data: Accommodation[]) => {
           this.accommodations = data;
         });
+      } else {
+        
+        this.load() 
       }
     }
     
+    load() {
+      this.accService.getAll().subscribe((data: Accommodation[]) => {
+        this.accommodations = data;
+      });
+  }
+  
+  getRole() {
+    return this.userService.currentUser?.user.userRole;
+  }
     // if (localStorage.getItem("jwt") !== ""){
     //   console.log("here")
     // this.userService.getMyInfo().pipe(
