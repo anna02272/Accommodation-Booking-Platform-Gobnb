@@ -200,11 +200,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	guestRsvPrimitive, err := primitive.ObjectIDFromHex(guestReservation.AccommodationId)
 	isAvailable, err := s.serviceAv.IsAvailable(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate)
-	if err != nil {
-		errorMsg := map[string]string{"error": "Error checking accommodation availability"}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
-		return
-	}
+	//if err != nil {
+	//	fmt.Println(err)
+	//	fmt.Println("here in error")
+	//	errorMsg := map[string]string{"error": "Error checking accommodation availability"}
+	//	error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+	//	return
+	//}
 
 	if !isAvailable {
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates"}
