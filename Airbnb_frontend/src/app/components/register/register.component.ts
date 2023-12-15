@@ -19,6 +19,11 @@ export class RegisterComponent {
   password: string = '';
   personalInfoForm: FormGroup = new FormGroup({});
   submitted = false;
+  address: FormGroup = new FormGroup({});
+  street: any;
+  name : any;
+  new : any;
+
 
   notification: DisplayMessage = {} as DisplayMessage;
   returnUrl = '';
@@ -31,6 +36,23 @@ export class RegisterComponent {
     private route: ActivatedRoute,
     private formBuilder: FormBuilder
   ) {
+    
+    this.personalInfoForm = this.formBuilder.group({
+      username: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(32)]],
+      password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(32)]],
+      email: ['', [Validators.required, Validators.email, Validators.minLength(6), Validators.maxLength(64)]],
+      name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(64)]],
+      lastname: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(64)]],
+      
+            street: ['', Validators.required],
+            city: ['', Validators.required],
+            country: ['', Validators.required],
+      
+      
+      age: ['', [Validators.maxLength(3)]],
+      gender: [''],
+      userRole: ['', [Validators.required]],
+    });
 
   }
   ngOnInit() {
@@ -47,28 +69,14 @@ export class RegisterComponent {
       };
 
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-      this.personalInfoForm = this.formBuilder.group({
-        username: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(32)])],
-        password: ['',Validators.compose([Validators.required,Validators.minLength(8),Validators.maxLength(32),passwordPatternValidator ])],
-        email: ['', Validators.compose([Validators.required, Validators.email, Validators.minLength(6), Validators.maxLength(64)])],
-        name: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-        lastname: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-        // address: this.formBuilder.group({
-          street: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-          city: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-          country: ['', Validators.compose([Validators.required, Validators.minLength(1), Validators.maxLength(64)])],
-        // }),
-        age: ['', Validators.compose([Validators.maxLength(3)])],
-        gender: [''],
-        userRole: ['', Validators.compose([Validators.required])],
-        captcha: [null, Validators.required]
-      });
+
 
   }
   get passwordControl() {
     return this.personalInfoForm.get('password');
   }
 
+  
   ngOnDestroy() {
     this.ngUnsubscribe.next();
     this.ngUnsubscribe.complete();
@@ -94,16 +102,31 @@ export class RegisterComponent {
   onSubmit() {
     this.notification = { msgType: '', msgBody: '' };
     this.submitted = true;
-
+    this.street= this.personalInfoForm.get('street')
+    this.name= this.personalInfoForm.get('name')
     const emailControl = this.personalInfoForm.get('email');
-    console.log("here")
+    
+    this.new = {}
+    this.new.username= this.personalInfoForm.get('username')?.value
+    this.new.password= this.personalInfoForm.get('password')?.value
+    this.new.email= this.personalInfoForm.get('email')?.value
+    this.new.name= this.personalInfoForm.get('name')?.value
+    this.new.lastname= this.personalInfoForm.get('lastname')?.value
+    this.new.address= {}
+    this.new.address.street= this.personalInfoForm.get('street')?.value
+    this.new.address.city= this.personalInfoForm.get('city')?.value
+    this.new.address.country= this.personalInfoForm.get('country')?.value
+    this.new.age= this.personalInfoForm.get('age')?.value
+    this.new.gender= this.personalInfoForm.get('gender')?.value
+    this.new.userRole= this.personalInfoForm.get('userRole')?.value
+
     if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
     this.notification.msgBody += 'Please check the reCAPTCHA. ';
     this.submitted = false;
     console.log("captcha failed")
     return
     }
-    this.authService.register(this.personalInfoForm.value).subscribe(
+    this.authService.register(this.new).subscribe(
       (data) => {
         console.log("register")
         this.submitted = true;

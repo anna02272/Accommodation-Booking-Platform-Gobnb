@@ -228,8 +228,8 @@ services:
       image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
       container_name: namenode
       ports:
-        - ${HDFS_NAMENODE_PORT}:${HDFS_NAMENODE_PORT}
-        - ${HDFS_NAMENODE_RPC_PORT}:${HDFS_NAMENODE_RPC_PORT}
+        - "9870:9870"
+        - "9000:9000"
       volumes:
         - hadoop_namenode:/hadoop/dfs/name
       environment:
@@ -245,7 +245,7 @@ services:
 #        timeout: 5s
 #        retries: 3
 
-    # HDFS - Datanode
+#    # HDFS - Datanode
   datanode:
         image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
         container_name: datanode

@@ -61,6 +61,7 @@ export class AuthService {
       'userRole' : user.userRole,
      
     };
+    console.log( body)
     return this.apiService.post(this.config.register_url, JSON.stringify(body), signupHeaders)
       .pipe(map(() => {
         console.log('Register success');

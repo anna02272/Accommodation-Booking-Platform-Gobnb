@@ -30,7 +30,7 @@ func (uc *AuthServiceImpl) Login(*domain.LoginInput) (*domain.User, error) {
 	return nil, nil
 }
 
-func (uc *AuthServiceImpl) Registration(user *domain.User) (*domain.UserResponse, error) {
+func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.User) (*domain.UserResponse, error) {
 	hashedPassword, _ := utils.HashPassword(user.Password)
 	user.Password = hashedPassword
 	code := randstr.String(20)
@@ -51,7 +51,7 @@ func (uc *AuthServiceImpl) Registration(user *domain.User) (*domain.UserResponse
 		return nil, err
 	}
 
-	err = uc.userService.SendUserToProfileService(user)
+	err = uc.userService.SendUserToProfileService(rw, user)
 	if err != nil {
 		return nil, err
 	}
