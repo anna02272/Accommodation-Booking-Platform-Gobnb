@@ -573,12 +573,12 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 		checkAvailabilityRequest.CheckInDate,
 		checkAvailabilityRequest.CheckOutDate,
 	)
-	if err != nil {
-		fmt.Println(err)
-		errorMsg := map[string]string{"error": "Error checking accommodation availability"}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
-		return
-	}
+	//if err != nil {
+	//	fmt.Println(err)
+	//	errorMsg := map[string]string{"error": "Error checking accommodation availability"}
+	//	error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+	//	return
+	//}
 
 	if !isAvailable {
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates, try another ones."}
