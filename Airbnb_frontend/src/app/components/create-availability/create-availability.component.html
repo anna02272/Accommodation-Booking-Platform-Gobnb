@@ -3,30 +3,18 @@
       <form (ngSubmit)="onSubmit()" enctype="multipart/form-data">
         <div class="modal-content">
           <div class="modal-header align-items-center">
-            <h5 class="text-center w-100" id="exampleModalLabel">
+            <h2 class="heading">
               Create Availability Period
-            </h5>
+            </h2>
          
           </div>
           <p class="notif" *ngIf="notification" [class]="notification.msgType">
             {{ notification.msgBody }}
           </p>
+          
           <div class="modal-body">
             <div class="my-1 p-1">
               <div class="d-flex flex-column">
-                <div class="d-flex align-items-center">
-                  <div class="p-4">
-                    <img
-                      src="assets/images/avatar.png"
-                      class="rounded-circle me-2"
-                      style="width: 38px; height: 38px; object-fit: cover"
-                    />
-                  </div>
-                  <div>
-                    <p class="m-0 fw-bold">{{ getUsername() }}</p>
-                  </div>
-                </div>
-  
                 <ng-container>
                   <div class="row mb-3">
                     <div class="col-sm-2">
@@ -41,7 +29,8 @@
                         placeholder="Start Date"
                       />
                     </div>
-  
+                    </div>
+                    <div class="row mb-3">
                     <div class="col-sm-2">
                       <h6 class="mb-2">End Date</h6>
                     </div>
@@ -79,7 +68,7 @@
 
                   <div class="row mb-3">
                     <div class="col-sm-2">
-                      <h6 class="mb-2">Availability</h6>
+                      <h6 class="mb-3">Availability</h6>
                     </div>
                     <div class="col-sm-4 text-secondary">
                         <select id="availabilityType" name="availabilityType">
@@ -93,9 +82,7 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer">
             <button type="submit" class="btn">Create Availability</button>
-          </div>
         </div>
       </form>
     </div>
