@@ -14,8 +14,8 @@ import { UrlSerializer } from '@angular/router';
 })
 export class AccommodationsComponent implements OnInit{
   accommodations: Accommodation[] = [];
-  loggedHostAccommodations: any[] = [];
-  loggedHost?: any
+  // loggedHostAccommodations: any[] = [];
+  // loggedHost?: any
   showErrorDiv: boolean = false
   showSuccessMsg: boolean = false
   errorMsg?: string;
@@ -27,58 +27,78 @@ export class AccommodationsComponent implements OnInit{
   ) {}
 
   ngOnInit() {
-      this.load();
-      this.subscribeToRefresh();
-
-    if (localStorage.getItem("jwt") !== ""){
-      console.log("here")
-    this.userService.getMyInfo().pipe(
-        tap(user =>{ 
-          this.loggedHost = user
-          this.loadHostAcc();
-          this.refreshService.getRefreshObservable().subscribe(() => {
-            this.loadHostAcc();
-            });
-          console.log(this.accommodations)
-
-        })
-      )
-      .subscribe();
-    }
-
-
-
-  
+    this.userService.getMyInfo().subscribe(
+      () => {
+        this.loadByHost();
+        this.subscribeToRefresh();
+      },
+      () => {
+        this.load() 
+        this.subscribeToRefresh();
+      }
+    );
   }
+  
+  loadByHost() {
+      const userRole =  this.userService.currentUser?.user.userRole;
 
-  load() {
+      if (userRole === 'Host') {
+        this.accService.getByHost(this.userService.currentUser.user.id).subscribe((data: Accommodation[]) => {
+          this.accommodations = data;
+        });
+      } else {
+        
+        this.load() 
+      }
+    }
+    
+    load() {
       this.accService.getAll().subscribe((data: Accommodation[]) => {
         this.accommodations = data;
-  });
+      });
+  }
   
-}
+  getRole() {
+    return this.userService.currentUser?.user.userRole;
+  }
+    // if (localStorage.getItem("jwt") !== ""){
+    //   console.log("here")
+    // this.userService.getMyInfo().pipe(
+    //     tap(user =>{ 
+    //       this.loggedHost = user
+    //       this.loadHostAcc();
+    //       this.refreshService.getRefreshObservable().subscribe(() => {
+    //         this.loadHostAcc();
+    //         });
+    //       console.log(this.accommodations)
 
-loadHostAcc(){
-    this.accService.getByHost(this.loggedHost.user.id).subscribe((data:any) => {
-        this.loggedHostAccommodations = data.accommodations;
-        let tempArray = []
-        for (let acc of this.loggedHostAccommodations){
-            tempArray.push(acc._id)
-        }
-        this.loggedHostAccommodations = tempArray
-        console.log(this.loggedHostAccommodations)
+    //     })
+    //   )
+    //   .subscribe();
+    // }
+
+
+// loadHostAcc(){
+//     this.accService.getByHost(this.loggedHost.user.id).subscribe((data:any) => {
+//         this.loggedHostAccommodations = data.accommodations;
+//         let tempArray = []
+//         for (let acc of this.loggedHostAccommodations){
+//             tempArray.push(acc._id)
+//         }
+//         this.loggedHostAccommodations = tempArray
+//         console.log(this.loggedHostAccommodations)
 
                   
-        for (let acc of this.accommodations){
-          if (this.loggedHostAccommodations.indexOf(acc._id) != -1){
-            var index = this.accommodations.indexOf(acc);
-            acc.flagCanDelete = true;
-            this.accommodations[index] = acc
+//         for (let acc of this.accommodations){
+//           if (this.loggedHostAccommodations.indexOf(acc._id) != -1){
+//             var index = this.accommodations.indexOf(acc);
+//             acc.flagCanDelete = true;
+//             this.accommodations[index] = acc
 
-          }
-        }
-  });
-}
+//           }
+//         }
+//   });
+// }
 
 deleteAccommodation(accId: string) {
   this.accService.deleteAccommodation(accId).subscribe(

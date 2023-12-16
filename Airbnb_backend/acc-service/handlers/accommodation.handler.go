@@ -147,6 +147,7 @@ func (s *AccommodationHandler) GetAccommodationByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, accommodation)
 }
+
 func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 	hostID := c.Param("hostId")
 
@@ -161,7 +162,7 @@ func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Accommodations successfully obtained", "accommodations": accs})
+	c.JSON(http.StatusOK, accs)
 }
 
 func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {

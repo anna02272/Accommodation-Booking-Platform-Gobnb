@@ -40,6 +40,7 @@ export class ConfigService {
 
   private _availability_url = this._availability_api_url + 'reservations/availability';
   private _create_availability_period_url = this._availability_api_url + 'reservations/availability/create';
+  private _get_availability_url = this._availability_api_url + '/availability/get';
 
   get login_url(): string {
     return this._login_url;
@@ -107,6 +108,9 @@ export class ConfigService {
 
   get createAvailabilityPeriod_url(): string {
     return this._create_availability_period_url;
+  }
+  get getAvailabilityPeriod_url(): string {
+    return this._get_availability_url;
   }
   }
 

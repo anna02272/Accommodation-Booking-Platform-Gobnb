@@ -115,8 +115,8 @@ func main() {
 	createAvailability := router.Methods(http.MethodPost).Subrouter()
 	createAvailability.HandleFunc("/api/availability/create/{id}", AvailabilityHandler.CreateMultipleAvailability)
 
-	// getAvailabilityByAccId := router.Methods(http.MethodGet).Subrouter()
-	// getAvailabilityByAccId.HandleFunc("/api/availability/get/{id}", AvailabilityHandler.GetAvailabilityByAccommodationId)
+	getAvailabilityByAccId := router.Methods(http.MethodGet).Subrouter()
+	getAvailabilityByAccId.HandleFunc("/api/availability/get/{id}", AvailabilityHandler.GetAvailabilityByAccommodationId)
 
 	// getAllAvailability := router.Methods(http.MethodGet).Subrouter()
 	// getAllAvailability.HandleFunc("/api/availability/getAll", AvailabilityHandler.GetAllAvailability)

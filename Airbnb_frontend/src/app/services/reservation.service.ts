@@ -23,6 +23,7 @@ export class ReservationService {
   getAll() {
     return this.apiService.get(this.configService.resv_url + "/getAll");
    }
+   
    cancelReservation(id: string): Observable<void> {
     return this.apiService.delete(`${this.configService.resv_url}/cancel/${id}`);
   }
