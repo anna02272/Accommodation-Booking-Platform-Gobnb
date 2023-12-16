@@ -42,6 +42,12 @@
     <app-rate-host [hostId]="hostId"></app-rate-host>
     </div>
     <br>
+
+    <h3> Images </h3>
+    <div *ngFor="let image of images">
+      <img class="img" [src]="image" alt="Accommodation Image"/>
+    </div>
+
     <!-- <div *ngIf="getRole() === 'Host'">
       <button class="btn" routerLink="/availability-create/{{accId}}">Add Availability</button>
     </div> -->

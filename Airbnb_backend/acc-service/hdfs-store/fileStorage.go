@@ -4,6 +4,7 @@ import (
 	"acc-service/cache"
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -11,7 +12,7 @@ import (
 
 // NoSQL: FileStorage struct encapsulating HDFS client
 type FileStorage struct {
-	client *hdfs.Client
+	Client *hdfs.Client
 	logger *log.Logger
 }
 
@@ -27,25 +28,25 @@ func New(logger *log.Logger) (*FileStorage, error) {
 
 	// Return storage handler with logger and HDFS client
 	return &FileStorage{
-		client: client,
+		Client: client,
 		logger: logger,
 	}, nil
 }
 
 func (fs *FileStorage) Close() {
 	// Close all underlying connections to the HDFS server
-	fs.client.Close()
+	fs.Client.Close()
 }
 
 func (fs *FileStorage) CreateDirectories() error {
 	// Default permissions
-	err := fs.client.MkdirAll(hdfsCopyDir, 0644)
+	err := fs.Client.MkdirAll(hdfsCopyDir, 0644)
 	if err != nil {
 		fs.logger.Println(err)
 		return err
 	}
 
-	err = fs.client.Mkdir(hdfsWriteDir, 0644)
+	err = fs.Client.Mkdir(hdfsWriteDir, 0644)
 	if err != nil {
 		fs.logger.Println(err)
 		return err
@@ -72,7 +73,7 @@ func (fs *FileStorage) WalkDirectories() []string {
 		}
 		return nil
 	}
-	fs.client.Walk(hdfsRoot, callbackFunc)
+	fs.Client.Walk(hdfsRoot, callbackFunc)
 	return paths
 }
 
@@ -92,7 +93,7 @@ func (fs *FileStorage) CopyLocalFile(localFilePath, fileName string) error {
 	file.Close()
 
 	// Copy file to HDFS
-	_ = fs.client.CopyToRemote(localFilePath, hdfsCopyDir+fileName)
+	_ = fs.Client.CopyToRemote(localFilePath, hdfsCopyDir+fileName)
 	return nil
 }
 
@@ -100,7 +101,7 @@ func (fs *FileStorage) WriteFile(fileContent string, fileName string) error {
 	filePath := hdfsWriteDir + fileName
 
 	// Create file on HDFS with default replication and block size
-	file, err := fs.client.Create(filePath)
+	file, err := fs.Client.Create(filePath)
 	if err != nil {
 		fs.logger.Println("Error in creating file on HDFS:", err)
 		return err
@@ -132,7 +133,7 @@ func (fs *FileStorage) ReadFile(fileName string, isCopied bool) (string, error) 
 	}
 
 	// Open file for reading
-	file, err := fs.client.Open(filePath)
+	file, err := fs.Client.Open(filePath)
 	if err != nil {
 		fs.logger.Println("Error in opening file for reding on HDFS:", err)
 		return "", err
@@ -167,7 +168,7 @@ func (fs *FileStorage) StoreImageInHDFS(imageData []byte) (string, error) {
 	}
 
 	hdfsFilePath := hdfsCopyDir + fileName
-	err = fs.client.CopyToRemote(localFilePath, hdfsFilePath)
+	err = fs.Client.CopyToRemote(localFilePath, hdfsFilePath)
 	if err != nil {
 		fs.logger.Printf("Error copying file to HDFS: %v\n", err)
 		return "", fmt.Errorf("error copying file to HDFS: %v", err)
@@ -197,44 +198,52 @@ func (fs *FileStorage) WriteLocalFile(filePath string, data []byte) error {
 	return nil
 }
 
-//func (fs *FileStorage) GetFirstImageURL(accommodationID string) (string, error) {
-//	// Construct the cache key for the first image of the accommodation
-//	cacheKey := fmt.Sprintf(cacheAll, accommodationID)
-//
-//	// Check if the image URL is already cached
-//	imageURL, err := fs.cli.Get(cacheKey).Result()
-//	if err == nil {
-//		return imageURL, nil
-//	}
-//
-//	// If not cached, fetch the image data from HDFS or cache and construct the URL
-//	// Add your logic to fetch the image data from HDFS or cache
-//	// For example, you might have a method like GetImageFromHDFS(accommodationID) in your code
-//	imageData, err := fs.GetImageFromHDFS(accommodationID)
-//	if err != nil {
-//		return "", err
-//	}
-//
-//	// Cache the image URL for future use
-//	fs.cli.Set(cacheKey, imageData, 300*time.Second)
-//
-//	// Construct the URL based on the accommodation ID and file path
-//	fileName := cache.GenerateUniqueImageID()
-//	hdfsFilePath := hdfsCopyDir + fileName
-//	imageURL = "https://your-hdfs-server" + hdfsFilePath
-//
-//	return imageURL, nil
-//}
-//
-//// Example method to fetch image data from HDFS based on accommodation ID
-//func (fs *FileStorage) GetImageFromHDFS(accommodationID string) (string, error) {
-//	// Add your logic to fetch the image data from HDFS
-//	// For example, you might have a method like ReadFileFromHDFS(accommodationID) in your code
-//	// Ensure to handle errors and return the image data as a string
-//	imageData, err := fs.ReadFileFromHDFS(accommodationID)
-//	if err != nil {
-//		return "", err
-//	}
-//
-//	return imageData, nil
-//}
+func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName string) error {
+	filePath := hdfsWriteDir + fileName
+	fmt.Println(filePath)
+	fmt.Println("here filePath")
+
+	// If the directory doesn't exist, create it
+	err := fs.Client.Mkdir(hdfsWriteDir+dirName, 0777) // You can adjust the permission mode as needed
+	if err != nil {
+		fmt.Println(err)
+		fmt.Println("Ok")
+	}
+
+	file, err := fs.Client.Create(filePath + ".jpg")
+	if err != nil {
+		fs.logger.Println("Error in creating file on HDFS:", err)
+		return err
+	}
+
+	_, err = file.Write(imageData)
+	if err != nil {
+		fs.logger.Println("Error in writing image to file on HDFS:", err)
+		return err
+	}
+
+	err = file.Close()
+	if err != nil {
+		fs.logger.Println("Error in closing file on HDFS:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (fs *FileStorage) ReadFileBytes(fileName string) ([]byte, error) {
+	file, err := fs.Client.Open(fileName)
+	if err != nil {
+		fs.logger.Println("Error in opening file for reading on HDFS:", err)
+		return nil, err
+	}
+	defer file.Close()
+
+	fileContent, err := io.ReadAll(file)
+	if err != nil {
+		fs.logger.Println("Error in reading file on HDFS:", err)
+		return nil, err
+	}
+
+	return fileContent, nil
+}

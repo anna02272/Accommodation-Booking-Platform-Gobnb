@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Accommodation } from 'src/app/models/accommodation';
 import { UserService } from 'src/app/services';
 import { AccommodationService } from 'src/app/services/accommodation.service';
+import { DomSanitizer } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-accommodation',
@@ -17,11 +18,13 @@ export class AccommodationComponent implements OnInit {
   wifi!: boolean;
   ac!: boolean;
   am_map!: Map<string, boolean>;
+  images!: any[];
   
   constructor( 
     private userService: UserService,
     private accService : AccommodationService,
     private route: ActivatedRoute ,
+    private sanitizer: DomSanitizer
     ) 
   { }
  
@@ -41,8 +44,41 @@ export class AccommodationComponent implements OnInit {
       this.wifi = this.am_map.get('WiFi')!;
       this.ac = this.am_map.get('AC')!;
     });
+
+    this.getImages(this.accId);
     //this.am_map = this.accommodation.accommodation_amenities;
   }
+
+
+getImages(accId: string) {
+  this.accService.fetchAccImages(accId).subscribe(
+   (images: any[]) => {
+      this.images = images.map(image => this.arrayBufferToBase64(image.data));
+      for (let im of images){
+        console.log(im.data);
+         let objectURL = 'data:image/png;base64,' + im.data;
+        let imageTest = this.sanitizer.bypassSecurityTrustUrl(objectURL);
+        this.images[images.indexOf(im)] = imageTest;
+      }
+    },
+    (error) => {
+    console.error('Error fetching images:', error);
+     
+    }
+  );
+}
+
+arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return 'data:image/jpeg;base64,' + btoa(binary);
+}
+
+
 
   getRole() {
     return this.userService.currentUser?.user.userRole;

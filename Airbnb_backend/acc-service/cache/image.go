@@ -8,6 +8,7 @@ import (
 type Image struct {
 	ID    string `json:"image_id"`
 	AccID string `json:"accommodation_id"`
+	Data  []byte `json:"data"`
 }
 
 type Images []*Image

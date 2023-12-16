@@ -106,7 +106,9 @@
                   </div>
                 </div>
 
-                <h6 class="mb-2">Add images:</h6>
+                <h6 class="mb-2">Add images:</h6> 
+                  <input type="file" name="images" accept="image/*" multiple (change)="handleImageChange($event)" />
+
                 <!-- <div class="image-pair-container">
                   <div class="small-image-container">
                     <button
