@@ -15,7 +15,6 @@ type Accommodation struct {
 	Amenities map[string]bool    `bson:"accommodation_amenities" json:"accommodation_amenities"`
 	MinGuests int                `bson:"accommodation_min_guests" json:"accommodation_min_guests"`
 	MaxGuests int                `bson:"accommodation_max_guests" json:"accommodation_max_guests"`
-	Images    []string           `bson:"accommodation_images" json:"accommodation_images"`
 	Active    bool               `bson:"accommodation_active" json:"accommodation_active"`
 }
 

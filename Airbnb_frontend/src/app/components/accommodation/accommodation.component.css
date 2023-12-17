@@ -31,7 +31,8 @@
 }
 
 #inner .overview {
-  width: 55%;
+  width: 58,5%;
+  position: relative;
 }
 
 #inner .overview .img {
@@ -41,6 +42,22 @@
   border-radius: 20px;
   margin-bottom: 20px;
 }
+#inner .overview i {
+  position: absolute;
+  top: 16%;
+  font-size: 40px; 
+  color: #72a0c1;
+  cursor: pointer;
+}
+
+#inner .overview i.fa-arrow-left {
+  left: 0;
+}
+
+#inner .overview i.fa-arrow-right {
+  right: 0;
+}
+
 #inner .overview .head {
   display: flex;
   align-items: flex-start;

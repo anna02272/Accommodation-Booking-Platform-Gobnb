@@ -7,7 +7,6 @@ export class Accommodation {
     accommodation_min_guests: number;
     accommodation_max_guests: number;
     flagCanDelete?: boolean
-    accommodation_images: Array<string>;
 
 
     constructor(
@@ -18,7 +17,6 @@ export class Accommodation {
       accommodation_amenities: Map<string, boolean>,
       accommodation_min_guests: number,
       accommodation_max_guests: number,
-      accommodation_images: Array<string>
 
     ) {
       this.host_id = host_id;
@@ -28,6 +26,5 @@ export class Accommodation {
       this.accommodation_amenities = accommodation_amenities;
       this.accommodation_min_guests = accommodation_min_guests;
       this.accommodation_max_guests = accommodation_max_guests;
-      this.accommodation_images = accommodation_images;
     }
   }

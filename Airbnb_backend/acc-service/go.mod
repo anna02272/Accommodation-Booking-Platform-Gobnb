@@ -8,7 +8,6 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.4.0
-	github.com/gorilla/mux v1.8.1
 	go.mongodb.org/mongo-driver v1.13.1
 )
 
