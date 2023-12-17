@@ -19,6 +19,8 @@ export class AccommodationComponent implements OnInit {
   ac!: boolean;
   am_map!: Map<string, boolean>;
   images!: any[];
+  currentImage: string = ''; 
+  currentIndex: number = 0;
   
   constructor( 
     private userService: UserService,
@@ -34,19 +36,14 @@ export class AccommodationComponent implements OnInit {
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
       this.hostId = accommodation.host_id;
-      // generate an empty map string:booelan
       this.am_map = new Map<string, boolean>();
-      //this am_map becomes accommodation_amenities
-      //this.am_map = JSON.stringify(this.accommodation.accommodation_amenities);
       this.am_map = Object.entries(this.accommodation.accommodation_amenities).reduce((map, [key, value]) => map.set(key, value), new Map<string, boolean>());
-      //console.log(this.am_map.get('TV'));
       this.tv = this.am_map.get('TV')!;
       this.wifi = this.am_map.get('WiFi')!;
       this.ac = this.am_map.get('AC')!;
     });
 
     this.getImages(this.accId);
-    //this.am_map = this.accommodation.accommodation_amenities;
   }
 
 
@@ -59,6 +56,9 @@ getImages(accId: string) {
          let objectURL = 'data:image/png;base64,' + im.data;
         let imageTest = this.sanitizer.bypassSecurityTrustUrl(objectURL);
         this.images[images.indexOf(im)] = imageTest;
+      }
+      if (this.images.length > 0) {
+        this.currentImage = this.images[0];
       }
     },
     (error) => {
@@ -78,7 +78,19 @@ arrayBufferToBase64(buffer: ArrayBuffer): string {
   return 'data:image/jpeg;base64,' + btoa(binary);
 }
 
+prevImage() {
+  if (this.currentIndex > 0) {
+    this.currentIndex--;
+    this.currentImage = this.images[this.currentIndex];
+  }
+}
 
+nextImage() {
+  if (this.currentIndex < this.images.length - 1) {
+    this.currentIndex++;
+    this.currentImage = this.images[this.currentIndex];
+  }
+}
 
   getRole() {
     return this.userService.currentUser?.user.userRole;

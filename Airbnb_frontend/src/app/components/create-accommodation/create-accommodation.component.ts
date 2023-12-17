@@ -46,11 +46,6 @@ export class CreateAccommodationComponent {
       'WiFi': wifi,
       'AC': ac
     };
-    //alert(amenities);
-
-    // const images = new Array<string>();
-    // images.push('https://www.google.com/');
-
     
     //const files: FileList = this.fileInput.nativeElement.files;
 
@@ -60,7 +55,6 @@ export class CreateAccommodationComponent {
       accommodation_amenities: amenities,
       accommodation_min_guests: minGuests,
       accommodation_max_guests: maxGuests,
-     // accommodation_images: images
     };
 
     // for (let i = 0; i < files.length; i++) {
