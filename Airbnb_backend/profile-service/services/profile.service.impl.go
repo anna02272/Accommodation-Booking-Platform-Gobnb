@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 	"profile-service/domain"
 	"regexp"
 	"strings"
@@ -67,6 +68,27 @@ func (us *UserServiceImpl) FindUserByEmail(email string) error {
 		if err == mongo.ErrNoDocuments {
 			return errors.New("User does not exist") // No user found, return nil user and nil error
 		}
+		return err
+	}
+
+	return nil
+}
+
+func (uc *UserServiceImpl) UpdateUser(user *domain.User) error {
+	filter := bson.M{"email": user.Email}
+
+	// Prvo provjeravamo postoji li korisnik s datim emailom
+	existingUser := uc.collection.FindOne(uc.ctx, filter)
+	if existingUser.Err() != nil {
+		return existingUser.Err()
+	}
+	log.Println(existingUser)
+
+	// Ako korisnik s datim emailom postoji, vršimo ažuriranje
+	update := bson.M{"$set": user}
+	log.Println(update)
+	_, err := uc.collection.UpdateOne(uc.ctx, filter, update)
+	if err != nil {
 		return err
 	}
 
