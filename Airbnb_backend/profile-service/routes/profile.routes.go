@@ -17,5 +17,6 @@ func (rc *ProfileRouteHandler) ProfileRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/profile")
 	router.POST("/createUser", rc.profileHandler.CreateProfile)
 	router.DELETE("/delete/:email", rc.profileHandler.DeleteProfile)
+	router.POST("/updateUser", rc.profileHandler.UpdateUser)
 
 }
