@@ -25,7 +25,7 @@ func NewUserHandler(userService services.UserService) UserHandler {
 
 var currentProfileUser *domain.User
 
-func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
+func (ac *UserHandler) CurrentUserProfile(ctx *gin.Context) {
 	tokenString := ctx.GetHeader("Authorization")
 	tokenString = html.EscapeString(tokenString)
 
@@ -42,7 +42,25 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 	}
 	_, err = ac.userService.FindProfileInfoByEmail(ctx, user.Email)
 	println(currentProfileUser)
-	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "userr": currentProfileUser})
+	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": currentProfileUser})
+}
+func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
+	tokenString := ctx.GetHeader("Authorization")
+	tokenString = html.EscapeString(tokenString)
+
+	if tokenString == "" {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
+		return
+	}
+	tokenString = tokenString[len("Bearer "):]
+
+	user, err := GetUserFromToken(tokenString, ac.userService)
+	if err != nil {
+		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": user})
 }
 func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
 	tokenString = html.EscapeString(tokenString)

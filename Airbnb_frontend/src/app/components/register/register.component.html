@@ -132,15 +132,7 @@
       *ngIf="!submitted"
       [formGroup]="personalInfoForm"
     >
-        <!-- Address input -->
-        <!-- Street input -->
-        
-
-        <!-- Address input -->
          <div class="form-outline mb-0">
-          
-    
-
             <p
             *ngIf="personalInfoForm.controls['street'].errors?.['minlength']"
             class="text-danger"
@@ -156,8 +148,6 @@
             required
           />
           <label class="form-label" for="street">Street</label>
-
-          
 
           <div class="row">
             <div class="col">
@@ -177,34 +167,6 @@
             </div>
           </div>
         </div> 
-<!-- Address input -->
-        <!-- <div class="form-outline mb-0">
-          <p>Enter your address:</p>
-          <p *ngIf="personalInfoForm.get('address')?.get('street')?.errors?.['minlength']" class="text-danger">
-            Street is required.
-          </p>
-          <input formControlName="address.street" type="text" id="street" class="form-control form-control-lg" placeholder="Enter street" required />
-          <label class="form-label" for="street">Street</label>
-
-          <div class="row">
-            <div class="col">
-              <p *ngIf="personalInfoForm.get('address')?.get('city')?.errors?.['minlength']" class="text-danger">
-                City is required.
-              </p>
-              <input formControlName="address.city" type="text" id="city" class="form-control form-control-lg" placeholder="Enter city" required />
-              <label class="form-label" for="city">City</label>
-            </div>
-
-            <div class="col">
-              <p *ngIf="personalInfoForm.get('address')?.get('country')?.errors?.['minlength']" class="text-danger">
-                Country is required.
-              </p>
-              <input formControlName="address.country" type="text" id="country" class="form-control form-control-lg" placeholder="Enter country" required />
-              <label class="form-label" for="country">Country</label>
-            </div>
-          </div>
-        </div> -->
-
 
 
         <div class="form-outline mb-0">

@@ -115,7 +115,7 @@
                   <h6 class="mb-0">Name</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input formControlName="name" type="text" class="form-control"   name="name" />
+                  <input formControlName="name" type="text" class="form-control" [(ngModel)]="currentProfile.name"  name="name" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -123,7 +123,7 @@
                   <h6 class="mb-0">Last Name</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input formControlName="lastname" type="text" class="form-control"   name="lastname" />
+                  <input formControlName="lastname" type="text" class="form-control" [(ngModel)]="currentProfile.lastname"  name="lastname" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -131,7 +131,7 @@
                   <h6 class="mb-0">Street</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input #streetInput type="text" class="form-control"  formControlName="street" name="street" />
+                  <input #streetInput type="text" class="form-control" [(ngModel)]="currentProfile.address.street"  formControlName="street" name="street" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -139,7 +139,7 @@
                   <h6 class="mb-0">City</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input #cityInput type="text" class="form-control"  formControlName="city" name="city" />
+                  <input #cityInput type="text" class="form-control" [(ngModel)]="currentProfile.address.city" formControlName="city" name="city" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -147,7 +147,7 @@
                   <h6 class="mb-0">Country</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input #countryInput type="text" class="form-control" formControlName="country"  name="county" />
+                  <input #countryInput type="text" class="form-control" [(ngModel)]="currentProfile.address.country" formControlName="country"  name="county" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -155,7 +155,7 @@
                   <h6 class="mb-0">Age</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                  <input type="number" class="form-control" formControlName="age" [(ngModel)]="currentUser.age" />
+                  <input type="number" class="form-control" formControlName="age" [(ngModel)]="currentProfile.age" />
                 </div>
               </div>
               <div class="row mb-3">
@@ -163,13 +163,13 @@
                   <h6 class="mb-0">Gender</h6>
                 </div>
                 <div class="col-sm-9 text-secondary">
-                    <input type="radio" id="male" name="gender" value="Male" formControlName="gender" [(ngModel)]="currentUser.gender" />  
+                    <input type="radio" id="male" name="gender" value="Male" formControlName="gender" [(ngModel)]="currentProfile.gender" [checked]="currentProfile.gender === 'Male'" />  
                   <label for="male">Male</label><br />
                    
-                  <input type="radio" id="female" name="gender" value="Female" formControlName="gender" [(ngModel)]="currentUser.gender" />
+                  <input type="radio" id="female" name="gender" value="Female" formControlName="gender" [(ngModel)]="currentUser.gender" [checked]="currentProfile.gender === 'Female'"/>
                     <label for="female">Female</label><br />
                    
-                  <input type="radio" id="other" name="gender" value="Other" formControlName="gender" [(ngModel)]="currentUser.gender" />  
+                  <input type="radio" id="other" name="gender" value="Other" formControlName="gender" [(ngModel)]="currentUser.gender" [checked]="currentProfile.gender === 'Other'"/>  
                   <label for="other">Other</label>
                 </div>
               </div>

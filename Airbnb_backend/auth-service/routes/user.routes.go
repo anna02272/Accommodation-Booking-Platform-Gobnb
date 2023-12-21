@@ -21,6 +21,7 @@ func (uc *UserRouteHandler) UserRoute(rg *gin.RouterGroup) {
 
 	router.PATCH("/changePassword", uc.userHandler.ChangePassword)
 	router.DELETE("/delete", uc.userHandler.DeleteUser)
+	router.GET("/currentUserProfile", uc.userHandler.CurrentUserProfile)
 	router.POST("/currentProfile", uc.userHandler.CurrentProfile)
 
 }
