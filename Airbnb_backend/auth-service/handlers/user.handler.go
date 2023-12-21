@@ -23,6 +23,8 @@ func NewUserHandler(userService services.UserService) UserHandler {
 	return UserHandler{userService}
 }
 
+var currentProfileUser *domain.User
+
 func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 	tokenString := ctx.GetHeader("Authorization")
 	tokenString = html.EscapeString(tokenString)
@@ -38,8 +40,9 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": user})
+	_, err = ac.userService.FindProfileInfoByEmail(ctx, user.Email)
+	println(currentProfileUser)
+	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "userr": currentProfileUser})
 }
 func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
 	tokenString = html.EscapeString(tokenString)
@@ -103,6 +106,12 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindJSON(&updatePassword); err != nil {
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request body"})
+		return
+	}
+	passwordExistsBlackList, err := utils.CheckBlackList(updatePassword.NewPassword, "blacklist.txt")
+
+	if passwordExistsBlackList {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Password is in blacklist!"})
 		return
 	}
 
@@ -260,7 +269,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
 
-func (s *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string, method string) (*http.Response, error) {
+func (ac *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, token string, url string, method string) (*http.Response, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -278,4 +287,19 @@ func (s *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.Co
 	}
 
 	return resp, nil
+}
+
+func (ac *UserHandler) CurrentProfile(ctx *gin.Context) {
+	var user *domain.User
+
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+	currentProfileUser = user
+	println("evo me")
+	println(user.Name)
+	println(&user)
+	println(ctx)
+
 }

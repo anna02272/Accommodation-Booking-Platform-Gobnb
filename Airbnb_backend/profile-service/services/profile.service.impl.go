@@ -1,15 +1,20 @@
 package services
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
+	"net/http"
 	"profile-service/domain"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type UserServiceImpl struct {
@@ -73,7 +78,47 @@ func (us *UserServiceImpl) FindUserByEmail(email string) error {
 
 	return nil
 }
+func (us *UserServiceImpl) FindProfileByEmail(email string) (*domain.User, error) {
+	var user *domain.User
 
+	// Improved email format validation using regular expression
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(email) {
+		return nil, errors.New("Invalid email format")
+	}
+
+	query := bson.M{"email": strings.ToLower(email)}
+	err := us.collection.FindOne(us.ctx, query).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("User does not exist") // No user found, return nil user and nil error
+		}
+		return nil, err
+	}
+	err = us.SendUserToAuthService(user)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (us *UserServiceImpl) SendUserToAuthService(user *domain.User) error {
+	url := "https://auth-server:8080/api/users/currentProfile"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	println("ovde")
+	println(user.Name)
+	println(url)
+	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
+
+	defer resp.Body.Close()
+
+	return nil
+}
 func (uc *UserServiceImpl) UpdateUser(user *domain.User) error {
 	filter := bson.M{"email": user.Email}
 
@@ -93,4 +138,28 @@ func (uc *UserServiceImpl) UpdateUser(user *domain.User) error {
 	}
 
 	return nil
+}
+
+func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, user *domain.User, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(user)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling user JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
