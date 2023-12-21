@@ -76,3 +76,19 @@ func (ph *ProfileHandler) UpdateUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile updated successfully"})
 }
+func (ph *ProfileHandler) FindUserByEmail(ctx *gin.Context) {
+	email := ctx.Param("email")
+
+	if email == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+
+	user, err := ph.profileService.FindProfileByEmail(email)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
+}

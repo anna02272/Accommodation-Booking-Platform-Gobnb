@@ -34,28 +34,28 @@
               <div class="col-sm-3">
                 <h6 class="mb-0">Username</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Username</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.username}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">Email</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Email</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.email}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">Name</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Name</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.name}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">Last Name</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Last Name</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.lastname}}</div>
             </div>
             <hr />
 
@@ -63,28 +63,28 @@
               <div class="col-sm-3">
                 <h6 class="mb-0">Street</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Street</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.address.street}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">City</h6>
               </div>
-              <div class="col-sm-9 text-secondary">City</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.address.city}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">Country</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Country</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.address.country}}</div>
             </div>
             <hr />
             <div class="row">
               <div class="col-sm-3">
                 <h6 class="mb-0">Age</h6>
               </div>
-              <div class="col-sm-9 text-secondary">Age</div>
+              <div class="col-sm-9 text-secondary">{{currentProfile.age}}</div>
             </div>
             <hr />
             <div class="row">
@@ -93,14 +93,17 @@
             </div>
             <div class="col-sm-9 text-secondary">
            
-                  <input type="radio" id="male" name="gender" value="Male" />  
-                <label for="male">Male</label><br />
-                 
-                <input type="radio" id="female" name="gender" value="Female" />
-                  <label for="female">Female</label><br />
-                 
-                <input type="radio" id="other" name="gender" value="Other" />  
-                <label for="other">Other</label>
+                {{currentProfile.gender}}
+              </div>
+            </div>
+            <hr />
+            <div class="row">
+              <div class="col-sm-3">
+                <h6 class="mb-0">Role</h6>
+            </div>
+            <div class="col-sm-9 text-secondary">
+           
+                {{currentProfile.userRole}}
               </div>
             </div>
             <hr />
