@@ -20,15 +20,17 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       mongo:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - network
     volumes:
       - ./auth-service/auth-service.crt:/app/auth-service.crt
       - ./auth-service/auth-service.key:/app/auth-service.key
-
 
   res-server:
     build:
@@ -44,11 +46,14 @@ services:
       - PORT=${RES_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
       - MONGO_DB_URI=${MONGO_DB_URI}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       cassandra:
         condition: service_healthy
       mongo:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - network
     volumes:
@@ -71,6 +76,7 @@ services:
       - HDFS_URI=namenode:9000
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       mongo:
         condition: service_healthy
@@ -80,6 +86,8 @@ services:
         condition: service_healthy
       namenode:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - network
     volumes:
@@ -99,9 +107,12 @@ services:
     environment:
       - PORT=${PROFILE_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       mongo:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - network
     volumes:
@@ -121,9 +132,12 @@ services:
     environment:
       - PORT=${RATING_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       mongo:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     networks:
       - network
     volumes:
@@ -144,6 +158,7 @@ services:
       - res-server
       - acc-server
       - profile-server
+      - rating-server
     networks:
       - network
     volumes:
@@ -224,6 +239,7 @@ services:
       - network
 
     # HDFS - Namenode
+
   namenode:
       image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
       container_name: namenode
@@ -239,13 +255,7 @@ services:
 
       networks:
         - network
-#      healthcheck:
-#        test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_NAMENODE_PORT}/" ]
-#        interval: 15s
-#        timeout: 5s
-#        retries: 3
 
-#    # HDFS - Datanode
   datanode:
         image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
         container_name: datanode
@@ -263,6 +273,28 @@ services:
         env_file:
           - ./.env
 
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - "16686:16686"
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:16686/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  collector:
+    container_name: collector
+    image: otel/opentelemetry-collector:0.69.0
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./api-gateway/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    networks:
+      - network
 
 volumes:
   mongo_store:

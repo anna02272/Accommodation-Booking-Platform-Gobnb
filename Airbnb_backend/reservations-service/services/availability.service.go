@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"reservations-service/data"
 	"time"
 
@@ -8,13 +9,13 @@ import (
 )
 
 type AvailabilityService interface {
-	InsertAvailability(availability *data.Availability) (*data.Availability, error)
-	InsertMulitipleAvailability(availability data.AvailabilityPeriod, accId primitive.ObjectID) ([]*data.Availability, error)
-	GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID) ([]*data.Availability, error)
+	InsertAvailability(availability *data.Availability, ctx context.Context) (*data.Availability, error)
+	InsertMulitipleAvailability(availability data.AvailabilityPeriod, accId primitive.ObjectID, ctx context.Context) ([]*data.Availability, error)
+	GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID, ctx context.Context) ([]*data.Availability, error)
 
-	IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error)
-	BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error
-	// GetAvailabilityByID(availabilityID string) (*data.Availability, error)
-	// GetAvailabilitysByHostId(hostId string) ([]*data.Availability, error)
-	// GetAllAvailabilitys() ([]*data.Availability, error)
+	IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) (bool, error)
+	BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) error
+	// GetAvailabilityByID(availabilityID string, ctx context.Context) (*data.Availability, error)
+	// GetAvailabilitysByHostId(hostId string, ctx context.Context) ([]*data.Availability, error)
+	// GetAllAvailabilitys() ([]*data.Availability, error, ctx context.Context)
 }

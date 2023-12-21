@@ -7,12 +7,13 @@ import (
 )
 
 type Config struct {
-	SecretKey string
-	EmailFrom string
-	SMTPHost  string
-	SMTPPass  string
-	SMTPPort  int
-	SMTPUser  string
+	SecretKey     string
+	EmailFrom     string
+	SMTPHost      string
+	SMTPPass      string
+	SMTPPort      int
+	SMTPUser      string
+	JaegerAddress string
 }
 
 func LoadConfig() *Config {
@@ -22,12 +23,13 @@ func LoadConfig() *Config {
 		log.Printf("Error converting SMTP_PORT to int: %v", err)
 	}
 	return &Config{
-		SecretKey: os.Getenv("SECRET_KEY"),
-		EmailFrom: os.Getenv("EMAIL_FROM"),
-		SMTPHost:  os.Getenv("SMTP_HOST"),
-		SMTPPass:  os.Getenv("SMTP_PASS"),
-		SMTPPort:  smtpPort,
-		SMTPUser:  os.Getenv("SMTP_USER"),
+		SecretKey:     os.Getenv("SECRET_KEY"),
+		EmailFrom:     os.Getenv("EMAIL_FROM"),
+		SMTPHost:      os.Getenv("SMTP_HOST"),
+		SMTPPass:      os.Getenv("SMTP_PASS"),
+		SMTPPort:      smtpPort,
+		SMTPUser:      os.Getenv("SMTP_USER"),
+		JaegerAddress: os.Getenv("JAEGER_ADDRESS"),
 	}
 
 }

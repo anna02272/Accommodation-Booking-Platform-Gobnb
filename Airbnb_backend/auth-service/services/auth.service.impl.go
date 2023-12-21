@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"strings"
@@ -20,17 +22,22 @@ type AuthServiceImpl struct {
 	collection  *mongo.Collection
 	ctx         context.Context
 	userService UserService
+	Tracer      trace.Tracer
 }
 
-func NewAuthService(collection *mongo.Collection, ctx context.Context, userService UserService) AuthService {
-	return &AuthServiceImpl{collection, ctx, userService}
+func NewAuthService(collection *mongo.Collection, ctx context.Context, userService UserService, tr trace.Tracer) AuthService {
+	return &AuthServiceImpl{collection, ctx, userService, tr}
 }
 
-func (uc *AuthServiceImpl) Login(*domain.LoginInput) (*domain.User, error) {
+func (uc *AuthServiceImpl) Login(loginInput *domain.LoginInput, ctx context.Context) (*domain.User, error) {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.Login")
+	defer span.End()
 	return nil, nil
 }
 
-func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.User) (*domain.UserResponse, error) {
+func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.User, ctx context.Context) (*domain.UserResponse, error) {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.Registration")
+	defer span.End()
 	hashedPassword, _ := utils.HashPassword(user.Password)
 	user.Password = hashedPassword
 	code := randstr.String(20)
@@ -48,16 +55,19 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 	}
 	res, err := uc.collection.InsertOne(uc.ctx, credentials)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	err = uc.userService.SendUserToProfileService(rw, user)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	// Send Verification Email
 	if err := uc.SendVerificationEmail(credentials); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		log.Printf("Error sending verification email: %v", err)
 		return nil, err
 	}
@@ -67,6 +77,7 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 
 	err = uc.collection.FindOne(uc.ctx, query).Decode(&newUser)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	return newUser, nil

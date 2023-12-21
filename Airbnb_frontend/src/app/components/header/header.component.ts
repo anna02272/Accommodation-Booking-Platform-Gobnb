@@ -22,4 +22,7 @@ export class HeaderComponent {
   logout() {
     this.authService.logout();
   }
+  getRole() {
+    return this.userService.currentUser?.user.userRole;
+  }
 }
