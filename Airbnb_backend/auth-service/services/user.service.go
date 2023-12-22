@@ -9,7 +9,7 @@ import (
 
 type UserService interface {
 	FindUserById(string) (*domain.User, error)
-	FindUserByEmail(string) (*domain.User, error)
+	FindUserByEmail(email string) (*domain.User, error)
 	FindUserByUsername(string) (*domain.User, error)
 	FindCredentialsByEmail(string) (*domain.Credentials, error)
 	SendUserToProfileService(rw http.ResponseWriter, user *domain.User) error

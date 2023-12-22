@@ -14,6 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
@@ -37,22 +38,11 @@ var (
 	authService      services.AuthService
 	AuthHandler      handlers.AuthHandler
 	AuthRouteHandler routes.AuthRouteHandler
+	tracer           trace.Tracer
 )
 
 func init() {
 	ctx = context.TODO()
-	cfg := config.LoadConfig()
-
-	ctnx := context.Background()
-	exp, err := newExporter(cfg.JaegerAddress)
-	if err != nil {
-		log.Fatalf("failed to initialize exporter: %v", err)
-	}
-	tp := newTraceProvider(exp)
-	defer func() { _ = tp.Shutdown(ctnx) }()
-	otel.SetTracerProvider(tp)
-	tracer := tp.Tracer("auth-service")
-	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
@@ -69,7 +59,7 @@ func init() {
 
 	// Collections
 	authCollection = mongoclient.Database("Gobnb").Collection("auth")
-	userService = services.NewUserServiceImpl(authCollection, ctx)
+	userService = services.NewUserServiceImpl(authCollection, ctx, tracer)
 	authService = services.NewAuthService(authCollection, ctx, userService, tracer)
 	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection, tracer)
 	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler, authService)
@@ -81,6 +71,18 @@ func init() {
 
 func main() {
 	defer mongoclient.Disconnect(ctx)
+	cfg := config.LoadConfig()
+
+	ctnx := context.Background()
+	exp, err := newExporter(cfg.JaegerAddress)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(ctnx) }()
+	otel.SetTracerProvider(tp)
+	tracer = tp.Tracer("auth-service")
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"https://localhost:4200"}
@@ -97,7 +99,7 @@ func main() {
 	AuthRouteHandler.AuthRoute(router)
 	UserRouteHandler.UserRoute(router)
 
-	err := server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
+	err = server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
 	if err != nil {
 		fmt.Println(err)
 		return

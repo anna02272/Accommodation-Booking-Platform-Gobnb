@@ -41,6 +41,7 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": user})
 }
+
 func GetUserFromToken(tokenString string, userService services.UserService) (*domain.User, error) {
 	tokenString = html.EscapeString(tokenString)
 

@@ -33,14 +33,14 @@ func NewAuthHandler(authService services.AuthService, userService services.UserS
 }
 
 func (ac *AuthHandler) Login(ctx *gin.Context) {
-	_, span := ac.Tracer.Start(ctx.Request.Context(), "AuthHandler.Login")
-	defer span.End()
+	//_, span := ac.Tracer.Start(ctx.Request.Context(), "AuthHandler.Login")
+	//defer span.End()
 
 	var credentials *domain.LoginInput
 	var userVerif *domain.Credentials
 
 	if err := ctx.ShouldBindJSON(&credentials); err != nil {
-		span.SetStatus(codes.Error, err.Error())
+		//span.SetStatus(codes.Error, err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
@@ -53,45 +53,45 @@ func (ac *AuthHandler) Login(ctx *gin.Context) {
 	user, err := ac.userService.FindUserByEmail(credentials.Email)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			span.SetStatus(codes.Error, "Invalid email")
+			//span.SetStatus(codes.Error, "Invalid email")
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email"})
 			return
 		} else if err == errors.New("invalid email format") {
-			span.SetStatus(codes.Error, "Invalid email format")
+			//span.SetStatus(codes.Error, "Invalid email format")
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid email format"})
 			return
 		} else {
-			span.SetStatus(codes.Error, err.Error())
+			//span.SetStatus(codes.Error, err.Error())
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 			return
 		}
 	}
 	userVerif, err = ac.userService.FindCredentialsByEmail(credentials.Email)
 	if err != nil {
-		span.SetStatus(codes.Error, "Wrong credentials")
+		//span.SetStatus(codes.Error, "Wrong credentials")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Wrong credentials"})
 		return
 	}
 
 	if !userVerif.Verified {
-		span.SetStatus(codes.Error, "Please verify your email")
+		//span.SetStatus(codes.Error, "Please verify your email")
 		ctx.JSON(http.StatusForbidden, gin.H{"status": "fail", "message": "Please verify your email"})
 		return
 	}
 
 	if err := utils.VerifyPassword(user.Password, credentials.Password); err != nil {
-		span.SetStatus(codes.Error, "Invalid password")
+		//span.SetStatus(codes.Error, "Invalid password")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password"})
 		return
 	}
 
 	accessToken, err := utils.CreateToken(user.Username)
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
+		//span.SetStatus(codes.Error, err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-	span.SetStatus(codes.Ok, "Login successful")
+	//span.SetStatus(codes.Ok, "Login successful")
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "accessToken": accessToken})
 }
 

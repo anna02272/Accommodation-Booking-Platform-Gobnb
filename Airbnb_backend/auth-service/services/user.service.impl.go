@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel/trace"
 	_ "io/ioutil"
 	"log"
 	"net/http"
@@ -24,10 +25,11 @@ import (
 type UserServiceImpl struct {
 	collection *mongo.Collection
 	ctx        context.Context
+	Tracer     trace.Tracer
 }
 
-func NewUserServiceImpl(collection *mongo.Collection, ctx context.Context) UserService {
-	return &UserServiceImpl{collection, ctx}
+func NewUserServiceImpl(collection *mongo.Collection, ctx context.Context, tr trace.Tracer) UserService {
+	return &UserServiceImpl{collection, ctx, tr}
 }
 
 func (us *UserServiceImpl) FindUserById(id string) (*domain.User, error) {
@@ -49,6 +51,9 @@ func (us *UserServiceImpl) FindUserById(id string) (*domain.User, error) {
 }
 
 func (us *UserServiceImpl) FindUserByEmail(email string) (*domain.User, error) {
+	//ctx, span := us.Tracer.Start(ctx, "UserService.FindUserByEmail")
+	//defer span.End()
+
 	var user *domain.User
 
 	// Improved email format validation using regular expression
