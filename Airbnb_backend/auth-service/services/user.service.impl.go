@@ -103,6 +103,7 @@ func (us *UserServiceImpl) FindUserByUsername(username string) (*domain.User, er
 
 	return user, nil
 }
+
 func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credentials, error) {
 	var user *domain.Credentials
 
@@ -118,37 +119,48 @@ func (us *UserServiceImpl) FindCredentialsByEmail(email string) (*domain.Credent
 
 	return user, nil
 }
+func (us *UserServiceImpl) FindProfileInfoByEmail(ctx context.Context, email string) (*domain.CurrentUser, error) {
+	url := "https://profile-server:8084/api/profile/getUser/" + email
 
-// func (us *UserServiceImpl) SendUserToProfileService(user *domain.User) error {
+	resp, err := us.HTTPSperformRequestWithContext(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("Failed to fetch user profile from profile service")
+	}
+
+	var profileUser *domain.CurrentUser
+	if err := json.NewDecoder(resp.Body).Decode(&profileUser); err != nil {
+		return nil, errors.New("Failed to decode response from profile service")
+	}
+
+	return profileUser, nil
+}
+
+//func (us *UserServiceImpl) FindProfileInfoByEmail(ctx context.Context, email string) {
+//	url := "https://profile-server:8084/api/profile/getUser" + email
 //
-//		url := "https://profile-server:8084/api/profile/createUser"
+//	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+//	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+//	defer cancel()
+//	// Poziv ka Profile servisu
+//	//profileUser, err := us.profileService.GetUserByEmail(email)
+//	//if err != nil {
+//	//	return
+//	//}
+//	//
+//	//// Mapiranje rezultata na strukturu ProfileInfo
+//	//profileInfo := &ProfileInfo{
+//	//	Email:    profileUser.Email,
+//	//	FullName: profileUser.FullName, // Prilagodite prema stvarnoj strukturi iz Profile servisa
+//	//	// ... mapirajte ostala polja ...
+//	//}
 //
-//		reqBody, err := json.Marshal(user)
-//		if err != nil {
-//			return fmt.Errorf("error marshaling user JSON: %v", err)
-//		}
-//
-//		tr := http.DefaultTransport.(*http.Transport).Clone()
-//		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-//
-//		client := &http.Client{Transport: tr}
-//
-//		resp, err := client.Post(url, "application/json", bytes.NewBuffer(reqBody))
-//		if err != nil {
-//			return fmt.Errorf("error making HTTPS request: %v", err)
-//		}
-//		defer resp.Body.Close()
-//
-//		if resp.StatusCode != http.StatusOK {
-//			if resp.StatusCode == http.StatusServiceUnavailable {
-//				return fmt.Errorf("service unavailable: %s", resp.Status)
-//			}
-//			body, _ := ioutil.ReadAll(resp.Body)
-//			return fmt.Errorf("unexpected response status: %s, body: %s", resp.Status, body)
-//		}
-//
-//		return nil
-//	}
+//	//return profileInfo, nil
+
 func (us *UserServiceImpl) SendUserToProfileService(rw http.ResponseWriter, user *domain.User) error {
 	url := "https://profile-server:8084/api/profile/createUser"
 
@@ -251,6 +263,25 @@ func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx conte
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+func (us *UserServiceImpl) HTTPSperformRequestWithContext(ctx context.Context, url string) (*http.Response, error) {
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
