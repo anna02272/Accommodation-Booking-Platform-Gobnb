@@ -14,6 +14,7 @@ type Config struct {
 	SMTPPort      int
 	SMTPUser      string
 	JaegerAddress string
+	ServiceName   string
 }
 
 func LoadConfig() *Config {
@@ -30,6 +31,7 @@ func LoadConfig() *Config {
 		SMTPPort:      smtpPort,
 		SMTPUser:      os.Getenv("SMTP_USER"),
 		JaegerAddress: os.Getenv("JAEGER_ADDRESS"),
+		ServiceName:   "auth-service",
 	}
 
 }

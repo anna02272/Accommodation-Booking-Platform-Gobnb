@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
@@ -35,23 +34,17 @@ var (
 	availabilityService    services.AvailabilityService
 	AvailabilityHandler    handlers.AvailabilityHandler
 	logger2                *log.Logger
-	tracer                 trace.Tracer
 )
 
 func init() {
 	ctx = context.TODO()
 
 	cfg := config.GetConfig()
-	cnt := context.Background()
-	exp, err := newExporter(cfg.JaegerAddress)
+	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
 	if err != nil {
-		log.Fatalf("failed to initialize exporter: %v", err)
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
 	}
-	tp := newTraceProvider(exp)
-	defer func() { _ = tp.Shutdown(cnt) }()
-	otel.SetTracerProvider(tp)
-	tracer = tp.Tracer("reservations-service")
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	tracer := tracerProvider.Tracer(cfg.ServiceName)
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
@@ -104,7 +97,7 @@ func main() {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	// NoSQL: Initialize Reservation Repository store
-	store, err := repository.New(storeLogger)
+	store, err := repository.New(storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -209,4 +202,23 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 		sdktrace.WithBatcher(exp),
 		sdktrace.WithResource(r),
 	)
+}
+func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize exporter due: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp, nil
 }

@@ -12,6 +12,6 @@ type AuthService interface {
 	Registration(rw http.ResponseWriter, user *domain.User, ctx context.Context) (*domain.UserResponse, error)
 	//Registration(http.ResponseWriter, *domain.User) (*domain.UserResponse, error)
 	ResendVerificationEmail(ctx *gin.Context)
-	SendVerificationEmail(credentials *domain.Credentials) error
-	SendPasswordResetToken(credentials *domain.Credentials) error
+	SendVerificationEmail(credentials *domain.Credentials, ctx context.Context) error
+	SendPasswordResetToken(credentials *domain.Credentials, ctx context.Context) error
 }

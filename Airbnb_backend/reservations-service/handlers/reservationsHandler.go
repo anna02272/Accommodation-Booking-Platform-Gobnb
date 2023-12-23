@@ -42,17 +42,17 @@ func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
-	ctxt, span := s.Tracer.Start(h.Context(), "ReservationsHandler.CreateReservationForGuest")
+	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.CreateReservationForGuest")
 	defer span.End()
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
@@ -220,7 +220,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 
 	guestRsvPrimitive, err := primitive.ObjectIDFromHex(guestReservation.AccommodationId)
-	isAvailable, err := s.serviceAv.IsAvailable(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate, ctxt)
+	isAvailable, err := s.serviceAv.IsAvailable(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate, ctx)
 	//if err != nil {
 	//	fmt.Println(err)
 	//	fmt.Println("here in error")
@@ -236,7 +236,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		return
 	}
 
-	errReservation := s.Repo.InsertReservationByGuest(ctxt, guestReservation, guestId,
+	errReservation := s.Repo.InsertReservationByGuest(ctx, guestReservation, guestId,
 		responseAccommodation.AccommodationName, responseAccommodation.AccommodationLocation, responseAccommodation.AccommodationHostId)
 	if errReservation != nil {
 		span.SetStatus(codes.Error, "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date")
@@ -246,7 +246,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		return
 	}
 
-	errBookAccommodation := s.serviceAv.BookAccommodation(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate, ctxt)
+	errBookAccommodation := s.serviceAv.BookAccommodation(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate, ctx)
 	if errBookAccommodation != nil {
 		span.SetStatus(codes.Error, "Error booking accommodation.")
 		errorMsg := map[string]string{"error": "Error booking accommodation."}
@@ -268,7 +268,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 }
 
 func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http.Request) {
-	ctxt, span := s.Tracer.Start(h.Context(), "ReservationsHandler.GetAllReservations")
+	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.GetAllReservations")
 	defer span.End()
 
 	token := h.Header.Get("Authorization")
@@ -276,12 +276,12 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -331,7 +331,7 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 		return
 	}
 
-	reservations, err := s.Repo.GetAllReservations(ctxt, guestID)
+	reservations, err := s.Repo.GetAllReservations(ctx, guestID)
 	if err != nil {
 		span.SetStatus(codes.Error, "Error getting reservations: "+err.Error())
 		s.logger.Print("Error getting reservations: ", err)
@@ -361,10 +361,10 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available. Try again later")
@@ -445,10 +445,10 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
@@ -519,7 +519,6 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 	responseJSON, err := json.Marshal(Number)
 	if err != nil {
-
 		span.SetStatus(codes.Error, "Error creating JSON response:")
 		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
 		return
@@ -540,10 +539,10 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")

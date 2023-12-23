@@ -17,12 +17,13 @@ import (
 type ReservationRepo struct {
 	session *gocql.Session //connection towards CassandraDB
 	logger  *log.Logger
+	ctx     context.Context
 	Tracer  trace.Tracer
 }
 
 // NoSQL: Constructor which reads db configuration from environment and creates a keyspace
 // if CassandrDB exists, this function connects to DB,if not it tries to create cassandraDB
-func New(logger *log.Logger) (*ReservationRepo, error) {
+func New(logger *log.Logger, tracer trace.Tracer) (*ReservationRepo, error) {
 	db := os.Getenv("CASS_DB")
 
 	// Connect to default keyspace
@@ -59,6 +60,7 @@ func New(logger *log.Logger) (*ReservationRepo, error) {
 	return &ReservationRepo{
 		session: session,
 		logger:  logger,
+		Tracer:  tracer,
 	}, nil
 }
 
@@ -108,7 +110,7 @@ func (sr *ReservationRepo) CreateTable() {
 
 func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestReservation *data.ReservationByGuestCreate,
 	guestId string, accommodationName string, accommodationLocation string, accommodationHostId string) error {
-	_, span := sr.Tracer.Start(ctx, "ReservationRepository.InsertReservationByGuest")
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.InsertReservationByGuest")
 	defer span.End()
 
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date

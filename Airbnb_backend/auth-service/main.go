@@ -14,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
@@ -38,7 +37,6 @@ var (
 	authService      services.AuthService
 	AuthHandler      handlers.AuthHandler
 	AuthRouteHandler routes.AuthRouteHandler
-	tracer           trace.Tracer
 )
 
 func init() {
@@ -57,13 +55,20 @@ func init() {
 
 	fmt.Println("MongoDB successfully connected...")
 
+	cfg := config.LoadConfig()
+	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+	tracer := tracerProvider.Tracer(cfg.ServiceName)
+
 	// Collections
 	authCollection = mongoclient.Database("Gobnb").Collection("auth")
 	userService = services.NewUserServiceImpl(authCollection, ctx, tracer)
 	authService = services.NewAuthService(authCollection, ctx, userService, tracer)
 	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection, tracer)
 	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler, authService)
-	UserHandler = handlers.NewUserHandler(userService)
+	UserHandler = handlers.NewUserHandler(userService, tracer)
 	UserRouteHandler = routes.NewRouteUserHandler(UserHandler)
 
 	server = gin.Default()
@@ -71,18 +76,6 @@ func init() {
 
 func main() {
 	defer mongoclient.Disconnect(ctx)
-	cfg := config.LoadConfig()
-
-	ctnx := context.Background()
-	exp, err := newExporter(cfg.JaegerAddress)
-	if err != nil {
-		log.Fatalf("failed to initialize exporter: %v", err)
-	}
-	tp := newTraceProvider(exp)
-	defer func() { _ = tp.Shutdown(ctnx) }()
-	otel.SetTracerProvider(tp)
-	tracer = tp.Tracer("auth-service")
-	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowOrigins = []string{"https://localhost:4200"}
@@ -99,36 +92,29 @@ func main() {
 	AuthRouteHandler.AuthRoute(router)
 	UserRouteHandler.UserRoute(router)
 
-	err = server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
+	err := server.RunTLS(":8080", "/app/auth-service.crt", "/app/auth-service.key")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 }
-func newExporter(address string) (*jaeger.Exporter, error) {
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to initialize exporter due: %w", err)
 	}
-	return exp, nil
-}
-
-func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
-	r, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("auth-service"),
-		),
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		)),
 	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	if err != nil {
-		panic(err)
-	}
-
-	return sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exp),
-		sdktrace.WithResource(r),
-	)
+	return tp, nil
 }
