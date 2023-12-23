@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, UserService } from 'src/app/services';
+import { User } from 'src/app/models/user';
+
 
 @Component({
   selector: 'app-profile',
@@ -9,11 +11,27 @@ import { AuthService, UserService } from 'src/app/services';
 })
 export class ProfileComponent {
   errorMessage: string | null = null;
+  currentProfile!: User;
+
 
   constructor(private userService: UserService, private router: Router, private authService: AuthService) {
     
   }
+  ngOnInit() {
+    this.load();
+  }
+  load() {
+    this.userService.getProfile().subscribe((data: any) => {
+      this.currentProfile = data.user;
+      console.log(this.currentProfile.name)
+      console.log(this.currentProfile.lastname)
 
+      console.log(this.currentProfile.gender)
+      console.log(this.currentProfile.address.city)
+
+
+  });
+}
 deleteProfile() {
     this.userService.deleteProfile().subscribe(
       () => {

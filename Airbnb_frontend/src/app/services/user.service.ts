@@ -12,8 +12,12 @@ import { Observable } from 'rxjs';
 })
 export class UserService {
   currentUser: any;
+  currentUserProfile: any;
+
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
+  
+  
   
   constructor(
     private apiService: ApiService,
@@ -28,6 +32,11 @@ export class UserService {
         return user;
       }));
   }
+
+  getProfile() {
+    return this.apiService.get(this.config.currentUserProfile_url );
+   }
+ 
    
   setCurrentUser(user: User | null) {
     this.currentUserSubject.next(user);

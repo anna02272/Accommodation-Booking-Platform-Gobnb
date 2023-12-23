@@ -17,6 +17,17 @@ type User struct {
 	Gender   Gender             `bson:"gender,omitempty" json:"gender"`
 	UserRole UserRole           `bson:"userRole" json:"userRole"`
 }
+type CurrentUser struct {
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Username string             `bson:"username" json:"username"`
+	Email    string             `bson:"email" json:"email" validate:"required,email"`
+	Name     string             `bson:"name" json:"name"`
+	Lastname string             `bson:"lastname" json:"lastname"`
+	Address  Address            `bson:"address" json:"address"`
+	Age      int                `bson:"age,omitempty" json:"age"`
+	Gender   Gender             `bson:"gender,omitempty" json:"gender"`
+	UserRole UserRole           `bson:"userRole" json:"userRole"`
+}
 
 type Credentials struct {
 	ID                 primitive.ObjectID `bson:"_id" json:"id"`
