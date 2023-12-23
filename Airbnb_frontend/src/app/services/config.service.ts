@@ -9,10 +9,10 @@ export class ConfigService {
   private _acc_api_url = 'https://localhost:8083/api';
   private _profile_api_url = 'https://localhost:8084/api';
   private _rec_api_url = 'https://localhost:8085/api';
-  private _notif_api_url = 'https://localhost:8086/api';
   private _resv_api_url = 'https://localhost:8082/api';
   private _rating_api_url = 'https://localhost:8087/api';
   private _availability_api_url = 'https://localhost:8082/api';
+  private _notifications_api_url = 'https://localhost:8089/api';
 
   private _auth_url = this._auth_api_url + '/auth';
   private _login_url = this._auth_url + '/login';
@@ -34,6 +34,11 @@ export class ConfigService {
   private _host_accs = this._acc_url + '/get/host/';
   private _img_acc_all = this.acc_url + '/images/';
   private _img_acc_upload = this.acc_url + '/upload/images/';
+
+
+  private _notif_url = this._notifications_api_url + '/notifications';
+  private _fetchNotifications_url = this._notif_url + '/host';
+
 
   private _resv_url = this._resv_api_url + '/reservations';
   private _create_resv_url = this._resv_api_url + '/reservations/create';
@@ -58,6 +63,10 @@ export class ConfigService {
 
   get getAccommodationsByHost_url(): string {
     return this._host_accs;
+  }
+
+  get getNotificationUrl_url(): string  {
+    return this._fetchNotifications_url;
   }
 
   get verifyEmail_url(): string {

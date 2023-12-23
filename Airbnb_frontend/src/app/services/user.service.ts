@@ -54,4 +54,8 @@ export class UserService {
   return this.apiService.delete(this.config.deleteProfile_url)
   }
 
+  getUserNotifications() {
+    return this.apiService.get(this.config.getNotificationUrl_url)
+  }
+
 }

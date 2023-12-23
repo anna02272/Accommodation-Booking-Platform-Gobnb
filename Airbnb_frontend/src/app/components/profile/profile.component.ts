@@ -12,6 +12,7 @@ import { User } from 'src/app/models/user';
 export class ProfileComponent {
   errorMessage: string | null = null;
   currentProfile!: User;
+  notifications!: any[];
 
 
   constructor(private userService: UserService, private router: Router, private authService: AuthService) {
@@ -28,6 +29,8 @@ export class ProfileComponent {
 
       console.log(this.currentProfile.gender)
       console.log(this.currentProfile.address.city)
+
+      this.getNotifications();
 
 
   });
@@ -51,6 +54,21 @@ deleteProfile() {
         } else {
           this.errorMessage = "Failed to delete profile. Please try again.";
         }
+      }
+    );
+  }
+
+  getNotifications() {
+    this.userService.getUserNotifications().subscribe(
+      (data: any) => {
+        this.notifications = data;
+        console.log("notifications")
+        console.log(data)
+      },
+      error => {
+        console.error('Failed to delete profile:', error);
+          console.log('Error object:', error.error); // Log the entire error object
+
       }
     );
   }

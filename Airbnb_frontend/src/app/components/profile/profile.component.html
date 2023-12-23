@@ -26,6 +26,13 @@
             <h6>Reservation 1</h6>
             <p>info</p>
         </div>
+
+  <h5 class="d-flex align-items-center mb-3">Notifications:</h5>
+<div *ngFor="let notification of notifications" class="align-items-center card mt-3">
+  <h6> {{notification.date_and_time }}</h6>
+  <p>{{ notification.notification_text }}</p>
+</div>
+
       </div>
       <div class="col-md-8">
         <div class="card mb-3">
