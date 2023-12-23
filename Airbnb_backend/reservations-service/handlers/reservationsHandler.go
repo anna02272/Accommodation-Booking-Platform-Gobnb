@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -26,14 +27,14 @@ var validateFields = validator.New()
 type KeyProduct struct{}
 
 type ReservationsHandler struct {
-	logger *log.Logger
-	// NoSQL: injecting student repository
+	logger    *log.Logger
 	repo      *repository.ReservationRepo
 	serviceAv services.AvailabilityService
 	DB        *mongo.Collection
 }
 
-func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, db *mongo.Collection) *ReservationsHandler {
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService,
+	r *repository.ReservationRepo, db *mongo.Collection) *ReservationsHandler {
 	return &ReservationsHandler{l, r, srv, db}
 }
 
@@ -169,9 +170,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		return
 	}
 
-	decoder = json.NewDecoder(resp.Body)
-
-	// Define a struct to represent the JSON structure
+	// Define a struct to represent the JSON structure of user
 	var responseAccommodation struct {
 		AccommodationName      string `json:"accommodation_name"`
 		AccommodationLocation  string `json:"accommodation_location"`
@@ -179,6 +178,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		AccommodationMinGuests int    `json:"accommodation_min_guests"`
 		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
 	}
+	decoder = json.NewDecoder(resp.Body)
 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
@@ -187,7 +187,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-
+		fmt.Println("Acommodaiton errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -200,13 +200,6 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	guestRsvPrimitive, err := primitive.ObjectIDFromHex(guestReservation.AccommodationId)
 	isAvailable, err := s.serviceAv.IsAvailable(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	fmt.Println("here in error")
-	//	errorMsg := map[string]string{"error": "Error checking accommodation availability"}
-	//	error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
-	//	return
-	//}
 
 	if !isAvailable {
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates"}
@@ -226,6 +219,92 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	errBookAccommodation := s.serviceAv.BookAccommodation(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate)
 	if errBookAccommodation != nil {
 		errorMsg := map[string]string{"error": "Error booking accommodation."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(responseAccommodation.AccommodationHostId)
+	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		errorMsg := map[string]string{"error": "Authorization service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeHostCheck := resp.StatusCode
+	fmt.Println(statusCodeHostCheck)
+	if statusCodeHostCheck != 200 {
+		errorMsg := map[string]string{"error": "Host with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	decoder = json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var responseHost struct {
+		Host struct {
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"user"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseHost); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		fmt.Println("User has errored")
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	notificationPayload := map[string]interface{}{
+		"host_id":    responseAccommodation.AccommodationHostId,
+		"host_email": responseHost.Host.Email,
+		"notification_text": "Dear " + responseHost.Host.Username + "\n you have a new reservation! Your " +
+			responseAccommodation.AccommodationName + " has been reserved.",
+	}
+
+	notificationPayloadJSON, err := json.Marshal(notificationPayload)
+	if err != nil {
+		errorMsg := map[string]string{"error": "Error creating notification payload."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	notificationURL := "https://notifications-server:8089/api/notifications/create"
+
+	timeout = 2000 * time.Second
+	ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Error creating notification request."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		errorMsg := map[string]string{"error": "Notification service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
@@ -374,6 +453,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	vars := mux.Vars(h)
 	reservationIDString := vars["id"]
 
+	fmt.Println("rsv ID")
+	fmt.Println(reservationIDString)
+
+	accommodationID, err := s.repo.GetReservationAccommodationID(reservationIDString, guestID)
+	if err != nil {
+		errorMsg := map[string]string{"error": err.Error()}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
 	if err := s.repo.CancelReservationByID(guestID, reservationIDString); err != nil {
 		s.logger.Println("Error canceling reservation:", err)
 		if strings.Contains(err.Error(), "Cannot cancel reservation, check-in date has already started") {
@@ -382,6 +471,138 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 			return
 		}
 		errorMsg := map[string]string{"error": err.Error()}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(accommodationID)
+	fmt.Println("ACCOMMODATION ID")
+
+	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Accommodation service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		errorMsg := map[string]string{"error": "Accommodation service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeAccommodation := resp.StatusCode
+	fmt.Println(statusCodeAccommodation)
+	if statusCodeAccommodation != 200 {
+		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	var responseAccommodation struct {
+		AccommodationName      string `json:"accommodation_name"`
+		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationHostId    string `json:"host_id"`
+		AccommodationMinGuests int    `json:"accommodation_min_guests"`
+		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
+	}
+	decoder = json.NewDecoder(resp.Body)
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseAccommodation); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		fmt.Println("Acommodaiton errored")
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Authorization service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		errorMsg := map[string]string{"error": "Authorization service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeHostCheck := resp.StatusCode
+	fmt.Println(statusCodeHostCheck)
+	if statusCodeHostCheck != 200 {
+		errorMsg := map[string]string{"error": "Host with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	decoder = json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var responseHost struct {
+		Host struct {
+			Email    string `json:"email"`
+			Username string `json:"username"`
+		} `json:"user"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseHost); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		fmt.Println("User has errored")
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	notificationPayload := map[string]interface{}{
+		"host_id":    responseAccommodation.AccommodationHostId,
+		"host_email": responseHost.Host.Email,
+		"notification_text": "Dear " + responseHost.Host.Username + "\n your reservation has been cancelled! Your " +
+			responseAccommodation.AccommodationName + " has been cancelled.",
+	}
+
+	notificationPayloadJSON, err := json.Marshal(notificationPayload)
+	if err != nil {
+		errorMsg := map[string]string{"error": "Error creating notification payload."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	notificationURL := "https://notifications-server:8089/api/notifications/create"
+
+	timeout = 2000 * time.Second
+	ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			errorMsg := map[string]string{"error": "Error creating notification request."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		errorMsg := map[string]string{"error": "Notification service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
@@ -575,7 +796,7 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 		checkAvailabilityRequest.CheckInDate,
 		checkAvailabilityRequest.CheckOutDate,
 	)
-  
+
 	if err != nil {
 		fmt.Println(err)
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates, try another ones."}
@@ -627,6 +848,27 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 	req.Header.Set("Authorization", token)
 
 	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
+	ctx context.Context, token string, url string, method string, requestBody []byte,
+) (*http.Response, error) {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {

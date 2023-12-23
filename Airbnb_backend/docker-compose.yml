@@ -86,6 +86,33 @@ services:
       - ./acc-service/accomm-service.crt:/app/accomm-service.crt
       - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
 
+  notifications-server:
+    build:
+      context: ./notification-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${NOTIF_SERVICE_HOST}
+    hostname: ${NOTIF_SERVICE_HOST}
+    ports:
+      - ${NOTIF_SERVICE_PORT}:${NOTIF_SERVICE_PORT}
+      - "450:450"
+    environment:
+      - PORT=${NOTIF_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+      - SECRET_KEY=${SECRET_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - network
+    volumes:
+      - ./notification-service/notifications-service.crt:/app/notifications-service.crt
+      - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
+
   profile-server:
     build:
       context: ./profile-service/
