@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"rating-service/domain"
 	"rating-service/services"
+	"strconv"
 	"time"
 )
 
@@ -108,6 +110,42 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	err = s.hostRatingService.SaveRating(newRateHost)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
+		return
+	}
+
+	hostIDString := hostUser.ID.Hex()
+
+	notificationPayload := map[string]interface{}{
+		"host_id":           hostIDString,
+		"host_email":        hostUser.Email,
+		"notification_text": "Dear " + hostUser.Username + "\n you have been rated. You got " + strconv.Itoa(requestBody.Rating) + " stars",
+	}
+
+	notificationPayloadJSON, err := json.Marshal(notificationPayload)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification payload"})
+		return
+	}
+
+	notificationURL := "https://notifications-server:8089/api/notifications/create"
+
+	timeout = 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification request"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available."})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification"})
 		return
 	}
 
@@ -228,6 +266,27 @@ func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx cont
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
+	ctx context.Context, token string, url string, method string, requestBody []byte,
+) (*http.Response, error) {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}

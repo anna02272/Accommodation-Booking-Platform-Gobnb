@@ -121,8 +121,10 @@ export class AccommodationsComponent implements OnInit {
           let imageTest = this.sanitizer.bypassSecurityTrustUrl(objectURL);
           this.images[images.indexOf(im)] = imageTest;
         }
+
         if (this.images.length > 0) {
           accommodation.coverImage = this.images[0];
+
         } else {
           accommodation.coverImage = ''; 
         }

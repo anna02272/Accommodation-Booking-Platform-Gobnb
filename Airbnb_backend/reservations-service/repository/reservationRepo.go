@@ -13,7 +13,6 @@ import (
 	"time"
 )
 
-// NoSQL: ReservationRepo struct encapsulating Cassandra api client
 type ReservationRepo struct {
 	session *gocql.Session //connection towards CassandraDB
 	logger  *log.Logger
@@ -26,8 +25,6 @@ type ReservationRepo struct {
 func New(logger *log.Logger, tracer trace.Tracer) (*ReservationRepo, error) {
 	db := os.Getenv("CASS_DB")
 
-	// Connect to default keyspace
-	//keyspace -something like schema in RDBMS, similar tables are in one keyspace, logical group of tables
 	cluster := gocql.NewCluster(db)
 	cluster.Keyspace = "system"
 	session, err := cluster.CreateSession()
@@ -222,10 +219,24 @@ func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx contex
 
 }
 
+func (sr *ReservationRepo) GetReservationAccommodationID(reservationID string, guestID string) (string, error) {
+	var accommodationID string
+	query := `
+		SELECT accommodation_id FROM reservations_by_guest
+         WHERE guest_id = ? AND reservation_id_time_created = ?`
+	fmt.Println(reservationID)
+	fmt.Println("repo rsv id")
+	if err := sr.session.Query(query, guestID, reservationID).Scan(&accommodationID); err != nil {
+		sr.logger.Println("Error retrieving reservation details:", err)
+		return "", err
+	}
+	return accommodationID, nil
+
+}
+
 func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string) error {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CancelReservationByID")
 	defer span.End()
-
 	var checkInDate time.Time
 	query := `
         SELECT check_in_date
