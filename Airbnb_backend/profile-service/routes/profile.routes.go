@@ -15,6 +15,7 @@ func NewRouteProfileHandler(profileHandler handlers.ProfileHandler) ProfileRoute
 
 func (rc *ProfileRouteHandler) ProfileRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/profile")
+	router.Use(handlers.ExtractTraceInfoMiddleware())
 	router.POST("/createUser", rc.profileHandler.CreateProfile)
 	router.DELETE("/delete/:email", rc.profileHandler.DeleteProfile)
 	router.POST("/updateUser", rc.profileHandler.UpdateUser)

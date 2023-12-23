@@ -8,7 +8,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"log"
 	"net/http"
+	"notification-service/config"
 	"notification-service/handlers"
 	"notification-service/routes"
 	"notification-service/services"
@@ -40,10 +48,15 @@ func init() {
 	}
 
 	fmt.Println("MongoDB successfully connected...")
-
+	cfg := config.LoadConfig()
+	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+	tracer := tracerProvider.Tracer(cfg.ServiceName)
 	notificationCollection = mongoclient.Database("Gobnb").Collection("notification")
-	notificationService = services.NewNotificationServiceImpl(notificationCollection, ctx)
-	NotificationHandler = handlers.NewNotificationHandler(notificationService, notificationCollection)
+	notificationService = services.NewNotificationServiceImpl(notificationCollection, ctx, tracer)
+	NotificationHandler = handlers.NewNotificationHandler(notificationService, notificationCollection, tracer)
 	NotificationRouteHandler = routes.NewNotificationRouteHandler(NotificationHandler, notificationService)
 
 	server = gin.Default()
@@ -71,4 +84,23 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+}
+func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize exporter due: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp, nil
 }

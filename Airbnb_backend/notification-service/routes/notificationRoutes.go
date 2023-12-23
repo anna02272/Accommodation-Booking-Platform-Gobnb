@@ -21,6 +21,7 @@ func NewNotificationRouteHandler(notificationHandler handlers.NotificationHandle
 func (nr *NotificationRouteHandler) NotificationRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/notifications")
 	router.Use(MiddlewareContentTypeSet)
+	router.Use(handlers.ExtractTraceInfoMiddleware())
 	router.POST("/create", MiddlewareNotificationDeserialization, nr.notificationHandler.CreateNotification)
 	router.GET("/host", nr.notificationHandler.GetNoitifcationsForHost)
 

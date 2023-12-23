@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"profile-service/domain"
@@ -20,19 +22,23 @@ import (
 type UserServiceImpl struct {
 	collection *mongo.Collection
 	ctx        context.Context
+	Tracer     trace.Tracer
 }
 
-func NewUserServiceImpl(collection *mongo.Collection) *UserServiceImpl {
-	return &UserServiceImpl{collection: collection}
+func NewUserServiceImpl(collection *mongo.Collection, tr trace.Tracer) *UserServiceImpl {
+	return &UserServiceImpl{collection: collection, Tracer: tr}
 }
 
-func (uc *UserServiceImpl) Registration(user *domain.User) error {
-
+func (uc *UserServiceImpl) Registration(user *domain.User, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "ProfileService.Registration")
+	defer span.End()
 	newUser := *user
 
 	// Treba koristiti uc.collection umesto uc.ctx
-	res, err := uc.collection.InsertOne(uc.ctx, &newUser)
+	res, err := uc.collection.InsertOne(ctx, &newUser)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+
 		return err
 	}
 
@@ -41,28 +47,38 @@ func (uc *UserServiceImpl) Registration(user *domain.User) error {
 
 	err = uc.collection.FindOne(uc.ctx, query).Decode(&responseUser)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+
 		return err
 	}
 
 	return nil
 }
 
-func (uc *UserServiceImpl) DeleteUserProfile(email string) error {
+func (uc *UserServiceImpl) DeleteUserProfile(email string, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "ProfileService.DeleteUserProfile")
+	defer span.End()
+
 	filter := bson.M{"email": email}
-	_, err := uc.collection.DeleteOne(uc.ctx, filter)
+	_, err := uc.collection.DeleteOne(ctx, filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return fmt.Errorf("error deleting user: %v", err)
 	}
 
 	return nil
 }
 
-func (us *UserServiceImpl) FindUserByEmail(email string) error {
+func (us *UserServiceImpl) FindUserByEmail(email string, ctx context.Context) error {
+	ctx, span := us.Tracer.Start(ctx, "ProfileService.FindUserByEmail")
+	defer span.End()
+
 	var user *domain.User
 
 	// Improved email format validation using regular expression
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(email) {
+		span.SetStatus(codes.Error, "Invalid email format")
 		return errors.New("Invalid email format")
 	}
 
@@ -71,19 +87,26 @@ func (us *UserServiceImpl) FindUserByEmail(email string) error {
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			span.SetStatus(codes.Error, "User does not exist")
 			return errors.New("User does not exist") // No user found, return nil user and nil error
 		}
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
 	return nil
 }
-func (us *UserServiceImpl) FindProfileByEmail(email string) (*domain.User, error) {
+
+func (us *UserServiceImpl) FindProfileByEmail(email string, ctx context.Context) (*domain.User, error) {
+	ctx, span := us.Tracer.Start(ctx, "UserService.FindProfileByEmail")
+	defer span.End()
+
 	var user *domain.User
 
 	// Improved email format validation using regular expression
 	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 	if !emailRegex.MatchString(email) {
+		span.SetStatus(codes.Error, "Invalid email format")
 		return nil, errors.New("Invalid email format")
 	}
 
@@ -92,39 +115,50 @@ func (us *UserServiceImpl) FindProfileByEmail(email string) (*domain.User, error
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			span.SetStatus(codes.Error, "User does not exist")
 			return nil, errors.New("User does not exist") // No user found, return nil user and nil error
 		}
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-	err = us.SendUserToAuthService(user)
+	err = us.SendUserToAuthService(user, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	return user, nil
 }
 
-func (us *UserServiceImpl) SendUserToAuthService(user *domain.User) error {
+func (us *UserServiceImpl) SendUserToAuthService(user *domain.User, ctx context.Context) error {
+	ctx, span := us.Tracer.Start(ctx, "ProfileService.SendUserToAuthService")
+	defer span.End()
+
 	url := "https://auth-server:8080/api/users/currentProfile"
 
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	println("ovde")
 	println(user.Name)
 	println(url)
-	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
+	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctxx, user, url)
 
 	defer resp.Body.Close()
 
 	return nil
 }
-func (uc *UserServiceImpl) UpdateUser(user *domain.User) error {
+
+func (uc *UserServiceImpl) UpdateUser(user *domain.User, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "ProfileService.UpdateUser")
+	defer span.End()
+
 	filter := bson.M{"email": user.Email}
 
 	// Prvo provjeravamo postoji li korisnik s datim emailom
 	existingUser := uc.collection.FindOne(uc.ctx, filter)
 	if existingUser.Err() != nil {
+		span.SetStatus(codes.Error, existingUser.Err().Error())
 		return existingUser.Err()
 	}
 	log.Println(existingUser)
@@ -134,6 +168,7 @@ func (uc *UserServiceImpl) UpdateUser(user *domain.User) error {
 	log.Println(update)
 	_, err := uc.collection.UpdateOne(uc.ctx, filter, update)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 

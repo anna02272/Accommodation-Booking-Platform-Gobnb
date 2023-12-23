@@ -1,14 +1,15 @@
 package services
 
 import (
+	"context"
 	"profile-service/domain"
 )
 
 type ProfileService interface {
-	Registration(user *domain.User) error
-	DeleteUserProfile(email string) error
-	FindUserByEmail(email string) error
-	FindProfileByEmail(email string) (*domain.User, error)
-	UpdateUser(user *domain.User) error
-	SendUserToAuthService(user *domain.User) error
+	Registration(user *domain.User, ctx context.Context) error
+	DeleteUserProfile(email string, ctx context.Context) error
+	FindUserByEmail(email string, ctx context.Context) error
+	FindProfileByEmail(email string, ctx context.Context) (*domain.User, error)
+	UpdateUser(user *domain.User, ctx context.Context) error
+	SendUserToAuthService(user *domain.User, ctx context.Context) error
 }
