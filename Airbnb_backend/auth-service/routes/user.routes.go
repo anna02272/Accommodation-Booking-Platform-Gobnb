@@ -16,6 +16,7 @@ func NewRouteUserHandler(userHandler handlers.UserHandler) UserRouteHandler {
 func (uc *UserRouteHandler) UserRoute(rg *gin.RouterGroup) {
 
 	router := rg.Group("users")
+	router.Use(handlers.ExtractTraceInfoMiddleware())
 	router.GET("/currentUser", uc.userHandler.CurrentUser)
 	router.GET("/getById/:userId", uc.userHandler.GetUserById)
 

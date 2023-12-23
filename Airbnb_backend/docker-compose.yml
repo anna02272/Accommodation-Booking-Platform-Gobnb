@@ -112,6 +112,7 @@ services:
       - SMTP_PASS=${SMTP_PASS}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
     depends_on:
       mongo:
         condition: service_healthy
@@ -186,6 +187,7 @@ services:
       - acc-server
       - profile-server
       - rating-server
+      - notifications-server
     networks:
       - network
     volumes:

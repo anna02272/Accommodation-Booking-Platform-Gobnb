@@ -219,7 +219,10 @@ func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx contex
 
 }
 
-func (sr *ReservationRepo) GetReservationAccommodationID(reservationID string, guestID string) (string, error) {
+func (sr *ReservationRepo) GetReservationAccommodationID(ctx context.Context, reservationID string, guestID string) (string, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationAccommodationID")
+	defer span.End()
+
 	var accommodationID string
 	query := `
 		SELECT accommodation_id FROM reservations_by_guest
@@ -227,6 +230,7 @@ func (sr *ReservationRepo) GetReservationAccommodationID(reservationID string, g
 	fmt.Println(reservationID)
 	fmt.Println("repo rsv id")
 	if err := sr.session.Query(query, guestID, reservationID).Scan(&accommodationID); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
 		sr.logger.Println("Error retrieving reservation details:", err)
 		return "", err
 	}

@@ -17,7 +17,7 @@ func NewAuthRouteHandler(authHandler handlers.AuthHandler, authService services.
 
 func (rc *AuthRouteHandler) AuthRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/auth")
-	//router.Use(handlers.ExtractTraceInfoMiddleware)
+	router.Use(handlers.ExtractTraceInfoMiddleware())
 
 	router.POST("/login", rc.authHandler.Login)
 	router.POST("/register", rc.authHandler.Registration)

@@ -119,7 +119,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	accId := guestReservation.AccommodationId
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlAccommodationCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available")
@@ -257,13 +257,15 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	fmt.Println(responseAccommodation.AccommodationHostId)
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlHostCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Authorization service is not available.")
 		errorMsg := map[string]string{"error": "Authorization service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -273,6 +275,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	statusCodeHostCheck := resp.StatusCode
 	fmt.Println(statusCodeHostCheck)
 	if statusCodeHostCheck != 200 {
+		span.SetStatus(codes.Error, "Host with that id does not exist.")
 		errorMsg := map[string]string{"error": "Host with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -291,10 +294,12 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseHost); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Error decoding JSON response: "+err.Error())
 		fmt.Println("User has errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -309,6 +314,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error creating notification payload.")
 		errorMsg := map[string]string{"error": "Error creating notification payload."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -316,17 +322,15 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	notificationURL := "https://notifications-server:8089/api/notifications/create"
 
-	timeout = 2000 * time.Second
-	ctx, cancel = context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctxx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Error creating notification request.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Notification service is not available.")
 		errorMsg := map[string]string{"error": "Notification service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		fmt.Println(err)
@@ -335,6 +339,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 {
+		span.SetStatus(codes.Error, "Error creating notification.")
 		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -507,8 +512,9 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	fmt.Println("rsv ID")
 	fmt.Println(reservationIDString)
 
-	accommodationID, err := s.Repo.GetReservationAccommodationID(reservationIDString, guestID)
+	accommodationID, err := s.Repo.GetReservationAccommodationID(ctx, reservationIDString, guestID)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		errorMsg := map[string]string{"error": err.Error()}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -534,13 +540,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlAccommodationCheck)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service is not available.")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Accommodation service is not available.")
 		errorMsg := map[string]string{"error": "Accommodation service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -550,6 +558,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
+		span.SetStatus(codes.Error, "Accommodation with that id does not exist.")
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -567,10 +576,12 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
 		fmt.Println("Acommodaiton errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -578,13 +589,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlHostCheck)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Authorization service is not available.")
 		errorMsg := map[string]string{"error": "Authorization service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -594,6 +607,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	statusCodeHostCheck := resp.StatusCode
 	fmt.Println(statusCodeHostCheck)
 	if statusCodeHostCheck != 200 {
+		span.SetStatus(codes.Error, "Host with that id does not exist.")
 		errorMsg := map[string]string{"error": "Host with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -612,11 +626,13 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseHost); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
 		fmt.Println("User has errored")
+		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -630,6 +646,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error creating notification payload.")
 		errorMsg := map[string]string{"error": "Error creating notification payload."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -637,17 +654,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	notificationURL := "https://notifications-server:8089/api/notifications/create"
 
-	timeout = 2000 * time.Second
-	ctx, cancel = context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctxx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Notification service is not available.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		span.SetStatus(codes.Error, "Notification service is not available.")
 		errorMsg := map[string]string{"error": "Notification service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		fmt.Println(err)
@@ -656,6 +671,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 {
+		span.SetStatus(codes.Error, "Error creating notification.")
 		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return

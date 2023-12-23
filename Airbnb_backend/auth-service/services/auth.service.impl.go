@@ -30,7 +30,7 @@ func NewAuthService(collection *mongo.Collection, ctx context.Context, userServi
 }
 
 func (uc *AuthServiceImpl) Login(loginInput *domain.LoginInput, ctx context.Context) (*domain.User, error) {
-	ctx, span := uc.Tracer.Start(uc.ctx, "AuthService.Login")
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.Login")
 	defer span.End()
 
 	return nil, nil
@@ -55,7 +55,7 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 		VerificationCode: verificationCode,
 		VerifyAt:         time.Now().Add(time.Minute * 10),
 	}
-	res, err := uc.collection.InsertOne(uc.ctx, credentials)
+	res, err := uc.collection.InsertOne(ctx, credentials)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
@@ -77,7 +77,7 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 	var newUser *domain.UserResponse
 	query := bson.M{"_id": res.InsertedID}
 
-	err = uc.collection.FindOne(uc.ctx, query).Decode(&newUser)
+	err = uc.collection.FindOne(ctx, query).Decode(&newUser)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
@@ -87,7 +87,7 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 }
 
 func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials, ctx context.Context) error {
-	ctx, span := uc.Tracer.Start(uc.ctx, "AuthService.SendVerificationEmail")
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendVerificationEmail")
 	defer span.End()
 
 	var username = credentials.Username
@@ -105,7 +105,7 @@ func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials
 }
 
 func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credentials, ctx context.Context) error {
-	ctx, span := uc.Tracer.Start(uc.ctx, "AuthService.SendPasswordResetToken")
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendPasswordResetToken")
 	defer span.End()
 
 	var username = credentials.Username
