@@ -22,7 +22,7 @@ func (s *AccommodationRatingServiceImpl) SaveRating(rating *domain.RateAccommoda
 		"accommodationID": rating.Accommodation,
 		"guest._id":       rating.Guest.ID,
 	}
-
+	
 	existingRating := &domain.RateAccommodation{}
 	err := s.collection.FindOne(context.Background(), filter).Decode(existingRating)
 
