@@ -22,7 +22,7 @@ func (s *AccommodationRatingServiceImpl) SaveRating(rating *domain.RateAccommoda
 		"accommodationID": rating.Accommodation,
 		"guest._id":       rating.Guest.ID,
 	}
-	print("ovde")
+
 	existingRating := &domain.RateAccommodation{}
 	err := s.collection.FindOne(context.Background(), filter).Decode(existingRating)
 
@@ -127,3 +127,22 @@ func (s *AccommodationRatingServiceImpl) GetByAccommodationAndGuest(accommodatio
 
 	return ratings, nil
 }
+
+//func (s *AccommodationRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+//	tr := http.DefaultTransport.(*http.Transport).Clone()
+//	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+//
+//	req, err := http.NewRequest("GET", url, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//	req.Header.Set("Authorization", token)
+//
+//	client := &http.Client{Transport: tr}
+//	resp, err := client.Do(req.WithContext(ctx))
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return resp, nil
+//}
