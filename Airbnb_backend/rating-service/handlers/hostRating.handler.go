@@ -269,7 +269,7 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-
+	span.SetStatus(codes.Ok, "Got user by id from auth service")
 	user := domain.ConvertToDomainUser(userResponse)
 	return &user, nil
 }
@@ -300,7 +300,7 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c contex
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-
+	span.SetStatus(codes.Ok, "Got current user from auth service")
 	user := domain.ConvertToDomainUser(userResponse)
 	return &user, nil
 }

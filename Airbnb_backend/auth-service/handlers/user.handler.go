@@ -128,7 +128,7 @@ func (uh *UserHandler) GetUserById(ctx *gin.Context) {
 		return
 	}
 
-	span.SetStatus(codes.Error, "Get user by id successful")
+	span.SetStatus(codes.Ok, "Get user by id successful")
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
