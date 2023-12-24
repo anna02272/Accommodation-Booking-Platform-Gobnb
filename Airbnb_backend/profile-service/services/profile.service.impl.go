@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
@@ -137,12 +139,12 @@ func (us *UserServiceImpl) SendUserToAuthService(user *domain.User, ctx context.
 	url := "https://auth-server:8080/api/users/currentProfile"
 
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
-	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	println("ovde")
 	println(user.Name)
 	println(url)
-	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctxx, user, url)
+	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
 
 	defer resp.Body.Close()
 
@@ -188,7 +190,7 @@ func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx conte
 	if err != nil {
 		return nil, err
 	}
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))

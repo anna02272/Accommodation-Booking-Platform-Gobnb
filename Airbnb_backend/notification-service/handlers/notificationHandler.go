@@ -43,7 +43,7 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -136,7 +136,7 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -217,7 +217,7 @@ func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
@@ -234,7 +234,7 @@ func (s *NotificationHandler) performAuthorizationRequestWithContext(ctx context
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{}
 	resp, err := client.Do(req.WithContext(ctx))

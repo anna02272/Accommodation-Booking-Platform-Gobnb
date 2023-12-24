@@ -51,7 +51,7 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -212,7 +212,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -285,7 +285,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 
 	url = "https://res-server:8082/api/reservations/get/" + accId
 
-	resp, err = s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err = s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Reservation service is not available.")
@@ -364,7 +364,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -602,7 +602,7 @@ func (s *AccommodationHandler) HTTPSPerformAuthorizationRequestWithContext(ctx c
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {

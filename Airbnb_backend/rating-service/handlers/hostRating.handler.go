@@ -55,10 +55,10 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	urlCheckReservations := "https://res-server:8082/api/reservations/getAll"
 
 	timeout := 2000 * time.Second
-	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
+	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(ctxRest, token, urlCheckReservations)
+	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlCheckReservations)
 	if errRes != nil {
 		span.SetStatus(codes.Error, "Failed to get reservations. Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
@@ -151,7 +151,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBody(spanCtx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
 		span.SetStatus(codes.Error, "Error creating notification request")
 		if ctx.Err() == context.DeadlineExceeded {
@@ -243,16 +243,16 @@ func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
 }
 
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.Context) (*domain.User, error) {
-	_, span := s.Tracer.Start(c, "HostRatingHandler.getUserByIDFromAuthService")
+	spanCtx, span := s.Tracer.Start(c, "HostRatingHandler.getUserByIDFromAuthService")
 	defer span.End()
 
 	url := "https://auth-server:8080/api/users/getById/" + userID
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, "", url)
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, "", url)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
@@ -275,15 +275,15 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.
 }
 
 func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c context.Context) (*domain.User, error) {
-	_, span := s.Tracer.Start(c, "HostRatingHandler.getCurrentUserFromAuthService")
+	spanCtx, span := s.Tracer.Start(c, "HostRatingHandler.getCurrentUserFromAuthService")
 	defer span.End()
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 2000 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
@@ -317,7 +317,7 @@ func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx cont
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -342,7 +342,7 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {

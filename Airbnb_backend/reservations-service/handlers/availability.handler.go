@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
@@ -50,12 +52,12 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 1000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
@@ -184,12 +186,12 @@ func (s *AvailabilityHandler) GetAvailabilityByAccommodationId(rw http.ResponseW
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 1000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
@@ -269,7 +271,7 @@ func (s *AvailabilityHandler) HTTPSPerformAuthorizationRequestWithContext(ctx co
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {

@@ -423,7 +423,6 @@ func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.Ob
 		},
 	}
 	_, err := s.collection.UpdateMany(context.Background(), filter, update)
-	span.SetStatus(codes.Error, err.Error())
 	return err
 }
 

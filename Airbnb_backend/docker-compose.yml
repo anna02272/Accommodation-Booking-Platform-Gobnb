@@ -21,6 +21,7 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - RES_SERVICE_ADDRESS = https://res-server:8082/
     depends_on:
       mongo:
         condition: service_healthy
@@ -47,6 +48,7 @@ services:
       - CASS_DB=${CASS_DB}
       - MONGO_DB_URI=${MONGO_DB_URI}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - RES_SERVICE_ADDRESS = https://auth-server:8080/
     depends_on:
       cassandra:
         condition: service_healthy
