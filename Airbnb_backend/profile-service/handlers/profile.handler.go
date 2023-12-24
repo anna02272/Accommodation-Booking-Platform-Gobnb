@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"profile-service/domain"
 	"profile-service/services"
@@ -57,4 +58,37 @@ func (ph *ProfileHandler) DeleteProfile(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile deleted successfully"})
+}
+func (ph *ProfileHandler) UpdateUser(ctx *gin.Context) {
+	var user *domain.User
+	log.Println(user)
+	if err := ctx.ShouldBindJSON(&user); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	// Pozovi servis za unos korisnika
+	err := ph.profileService.UpdateUser(user)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile updated successfully"})
+}
+func (ph *ProfileHandler) FindUserByEmail(ctx *gin.Context) {
+	email := ctx.Param("email")
+
+	if email == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+		return
+	}
+
+	user, err := ph.profileService.FindProfileByEmail(email)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }

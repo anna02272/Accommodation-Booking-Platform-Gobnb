@@ -81,96 +81,106 @@
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
+            <p class="notif" *ngIf="notification2" [class]="notification2.msgType">
+              {{ notification2.msgBody }}
+            </p>
             <div class="row mb-3">
               <div class="col-sm-3">
-                <h6 class="mb-0">Username</h6>
+                <h6 class="mb-0">Role</h6>
               </div>
               <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Username" />
+                <input type="text" class="form-control" [(ngModel)]="currentRole" name="role" [disabled]="true" />
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Email</h6>
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Username</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input type="text" class="form-control" [(ngModel)]="currentUsername" name="username" [disabled]="true" />
+                </div>
               </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Email" />
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Email</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input type="text" class="form-control" [(ngModel)]="currentEmail" name="email" [disabled]="true"/>
+                </div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Name</h6>
+              <form #profileForm="ngForm" [formGroup]="changeInfoForm" (ngSubmit)="saveChanges()">
+
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Name</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input formControlName="name" type="text" class="form-control" [(ngModel)]="currentProfile.name"  name="name" />
+                </div>
               </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Name" />
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Last Name</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input formControlName="lastname" type="text" class="form-control" [(ngModel)]="currentProfile.lastname"  name="lastname" />
+                </div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Last Name</h6>
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Street</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input #streetInput type="text" class="form-control" [(ngModel)]="currentProfile.address.street"  formControlName="street" name="street" />
+                </div>
               </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Last Name" />
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">City</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input #cityInput type="text" class="form-control" [(ngModel)]="currentProfile.address.city" formControlName="city" name="city" />
+                </div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Street</h6>
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Country</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input #countryInput type="text" class="form-control" [(ngModel)]="currentProfile.address.country" formControlName="country"  name="county" />
+                </div>
               </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Street" />
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Age</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                  <input type="number" class="form-control" formControlName="age" [(ngModel)]="currentProfile.age" />
+                </div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">City</h6>
+              <div class="row mb-3">
+                <div class="col-sm-3">
+                  <h6 class="mb-0">Gender</h6>
+                </div>
+                <div class="col-sm-9 text-secondary">
+                    <input type="radio" id="male" name="gender" value="Male" formControlName="gender" [(ngModel)]="currentProfile.gender" [checked]="currentProfile.gender === 'Male'" />  
+                  <label for="male">Male</label><br />
+                   
+                  <input type="radio" id="female" name="gender" value="Female" formControlName="gender" [(ngModel)]="currentUser.gender" [checked]="currentProfile.gender === 'Female'"/>
+                    <label for="female">Female</label><br />
+                   
+                  <input type="radio" id="other" name="gender" value="Other" formControlName="gender" [(ngModel)]="currentUser.gender" [checked]="currentProfile.gender === 'Other'"/>  
+                  <label for="other">Other</label>
+                </div>
               </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="City" />
+              <div class="row">
+                <div class="col-sm-3"></div>
+                <div class="col-sm-9 text-secondary">
+                  <button class="btn btn-primary px-4" type="submit">Save Changes</button>
+
+                </div>
               </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Country</h6>
-              </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="text" class="form-control" value="Country" />
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Age</h6>
-              </div>
-              <div class="col-sm-9 text-secondary">
-                <input type="number" class="form-control" value="30" />
-              </div>
-            </div>
-            <div class="row mb-3">
-              <div class="col-sm-3">
-                <h6 class="mb-0">Gender</h6>
-              </div>
-              <div class="col-sm-9 text-secondary">
-                  <input type="radio" id="male" name="gender" value="Male" />  
-                <label for="male">Male</label><br />
-                 
-                <input type="radio" id="female" name="gender" value="Female" />
-                  <label for="female">Female</label><br />
-                 
-                <input type="radio" id="other" name="gender" value="Other" />  
-                <label for="other">Other</label>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-sm-3"></div>
-              <div class="col-sm-9 text-secondary">
-                <input
-                  type="button"
-                  class="btn btn-primary px-4"
-                  routerLink="/profile"
-                  value="Save Changes"
-                />
-              </div>
-            </div>
+            </form>
           </div>
         </div>
       </div>

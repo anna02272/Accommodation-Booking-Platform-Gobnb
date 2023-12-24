@@ -16,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -304,7 +305,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 
 func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 	accommodationID := c.Param("accId")
-
+	fmt.Println(accommodationID)
 	rw := c.Writer
 	h := c.Request
 
@@ -383,18 +384,19 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 		return
 	}
 
-	// Parse the multipart form
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
 		errorMsg := map[string]string{"error": "Error parsing multipart form."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
-
-	// Get the slice of files from the form
-	files := c.Request.MultipartForm.File["images"]
+	fmt.Println("Files ready")
+	files := c.Request.MultipartForm.File["image"]
+	fmt.Println(files)
+	fmt.Println("files here")
 
 	// Loop through each file
 	for _, fileHeader := range files {
+		fmt.Println("Entered loop")
 		// Open the uploaded file
 		file, err := fileHeader.Open()
 		if err != nil {
@@ -406,6 +408,8 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 
 		// Read the file content into a byte slice
 		imageData, err := ioutil.ReadAll(file)
+		fmt.Println("imageData here")
+		fmt.Println(imageData)
 		if err != nil {
 			errorMsg := map[string]string{"error": "Error reading file content."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -414,6 +418,8 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 
 		// Cache the image in Redis
 		imageID := cache.GenerateUniqueImageID()
+		fmt.Println(imageID)
+		fmt.Println("imageID HERE")
 		accID := accommodationID
 		if err := s.imageCache.PostImage(imageID, accID, imageData); err != nil {
 			errorMsg := map[string]string{"error": "Error caching image data."}
@@ -421,10 +427,10 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 			return
 		}
 
-		// Store the image in HDFS
-		_, err = s.hdfs.StoreImageInHDFS(imageData)
-		fmt.Println(imageData)
-		fmt.Println("image data")
+		filename := fmt.Sprintf("%s/%s-image-%d", accID, imageID, len(files))
+		err = s.hdfs.WriteFileBytes(imageData, filename, accID)
+		fmt.Println(filename)
+		fmt.Println("filename here")
 		if err != nil {
 			errorMsg := map[string]string{"error": "Error storing image in HDFS."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -435,6 +441,88 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Images cached in Redis and stored in HDFS",
 	})
+}
+
+//	func (ah *AccommodationHandler) CreateAccommodationImages(c *gin.Context) {
+//		var images cache.Images
+//		var accID string
+//		if err := c.BindJSON(&images); err != nil {
+//			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to decode request body"})
+//			return
+//		}
+//
+//		for _, image := range images {
+//			fmt.Println("loop")
+//			ah.hdfs.WriteFileBytes(image.Data, image.AccID+"-image-"+image.ID)
+//			fmt.Println(image)
+//			fmt.Println("HERE")
+//			accID = image.AccID
+//		}
+//		ah.imageCache.PostAll(accID, images)
+//
+//		c.JSON(http.StatusCreated, gin.H{"message": "Images created successfully"})
+//	}
+func (ah *AccommodationHandler) GetAccommodationImages(c *gin.Context) {
+	accID := c.Param("accId")
+
+	var images []*cache.Image
+	var root = "/hdfs/created/"
+	dirName := fmt.Sprintf("%s%s", root, accID)
+	fmt.Println(dirName)
+	fmt.Println("AFTER DIRNAME")
+
+	files, err := ah.hdfs.Client.ReadDir(dirName)
+	if err != nil {
+		errorMsg := map[string]string{"error": "Unable to read dir."}
+		error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
+		return
+
+	}
+
+	for _, filename := range files {
+		parts := strings.Split(filename.Name(), "-")
+		fmt.Println(parts)
+		fmt.Println("here parts")
+
+		data, err := ah.hdfs.ReadFileBytes(dirName + "/" + filename.Name())
+		if err != nil {
+			break
+		}
+
+		if len(parts) < 1 {
+			errorMsg := map[string]string{"error": "Unable to parse name of the file."}
+			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
+			return
+		}
+		parts = strings.Split(parts[0], "_")
+		// Convert the first part to an integer
+		id, err := strconv.Atoi(parts[1])
+		if err != nil {
+			errorMsg := map[string]string{"error": "Unable to parse name of the file."}
+			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
+			return
+		}
+
+		image := &cache.Image{
+			ID:    strconv.Itoa(id),
+			Data:  data,
+			AccID: accID,
+		}
+		images = append(images, image)
+	}
+
+	if len(images) > 0 {
+		fmt.Println(images)
+		fmt.Println("here images")
+		err := ah.imageCache.PostAll(accID, images)
+		if err != nil {
+			errorMsg := map[string]string{"error": "Unable to write to cache."}
+			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, images)
 }
 
 func (s *AccommodationHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {

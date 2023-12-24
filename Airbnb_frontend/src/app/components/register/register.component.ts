@@ -48,7 +48,6 @@ export class RegisterComponent {
             city: ['', Validators.required],
             country: ['', Validators.required],
       
-      
       age: ['', [Validators.maxLength(3)]],
       gender: [''],
       userRole: ['', [Validators.required]],
@@ -137,11 +136,7 @@ export class RegisterComponent {
     },
       (error) => {
               console.log(this.personalInfoForm.value)
-
-        // console.error('Registration error', error);
-        // this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again./Username alredy exists' };
-        // this.submitted = false;
-        // // Handle  error
+              
       if (error.status === 409) {
         if (error.error.message === 'Username already exists') {
           this.notification = { msgType: 'error', msgBody: 'Registration failed. Username already exists' };
@@ -159,9 +154,9 @@ export class RegisterComponent {
        else {
         this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
 
-  //         if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
-  //        this.notification.msgBody += 'Please check the reCAPTCHA. ';
-  // }  
+          if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
+         this.notification.msgBody += 'Please check the reCAPTCHA. ';
+  }  
   
       }
 

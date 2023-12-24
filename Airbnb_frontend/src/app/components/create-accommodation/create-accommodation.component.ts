@@ -12,6 +12,7 @@ import { UserService } from 'src/app/services';
 })
 export class CreateAccommodationComponent {
   notification = { msgType: '', msgBody: '' };
+  images: File[] = [];
 
   //@ViewChild('fileInput') fileInput: ElementRef; // Access the file input element
 
@@ -21,8 +22,14 @@ export class CreateAccommodationComponent {
   // }
   constructor(private dataService: AccDataService,
     private router: Router,
-    private userService: UserService
+    private userService: UserService,
+    private accService: AccommodationService
     ) {}
+
+    handleImageChange(event: any): void {
+    this.images = event.target.files;
+  }
+
 
 
   onSubmit() {
@@ -39,11 +46,6 @@ export class CreateAccommodationComponent {
       'WiFi': wifi,
       'AC': ac
     };
-    //alert(amenities);
-
-    const images = new Array<string>();
-    images.push('https://www.google.com/');
-
     
     //const files: FileList = this.fileInput.nativeElement.files;
 
@@ -53,7 +55,6 @@ export class CreateAccommodationComponent {
       accommodation_amenities: amenities,
       accommodation_min_guests: minGuests,
       accommodation_max_guests: maxGuests,
-      accommodation_images: images
     };
 
     // for (let i = 0; i < files.length; i++) {
@@ -65,6 +66,15 @@ export class CreateAccommodationComponent {
 
     this.dataService.sendData(accommodationData).subscribe(
       (response:any) => {
+
+        const formData = new FormData();
+
+        for (const image of this.images) {
+        formData.append('image', image, image.name);
+    }
+
+       this.uploadImages(response._id,formData);
+
         this.notification = { msgType: 'success', msgBody: `Successfully created accommodation;` };
         console.log('Response from server:', response);
         this.router.navigate(['/home']);
@@ -91,4 +101,19 @@ export class CreateAccommodationComponent {
   getUsername() {
     return this.userService.currentUser.user.username;
   }
+
+
+ uploadImages(accId: string, formData: any) {
+
+  this.accService.uploadAccImages(accId, formData ).subscribe(
+   (data: any) => {
+
+      
+    },
+    (error) => {
+    console.error('Error uploading images:', error);
+     
+    }
+  );
+}
 }

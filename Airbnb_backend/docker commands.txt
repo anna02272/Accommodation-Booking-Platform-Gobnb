@@ -72,3 +72,10 @@ nabrojanih polja O(n) gde je n broj polja
 DATANODE,NAMENODE
 docker exec -it <> sh
 
+
+
+
+docker exec <container_id> hadoop fs -ls /hdfs
+docker exec <container_id> hadoop fs -ls /hdfs/created
+docker exec <container_id> hadoop fs -ls /hdfs/copied-files
+

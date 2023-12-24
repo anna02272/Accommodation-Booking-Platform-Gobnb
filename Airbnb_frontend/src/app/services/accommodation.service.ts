@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import { ApiService } from './api.service';
 import { ConfigService } from './config.service';
+import { HttpHeaders, HttpParams } from '@angular/common/http';
 @Injectable()
 export class AccommodationService {
 
@@ -22,6 +23,22 @@ export class AccommodationService {
 
    deleteAccommodation(accId: string) {
     return this.apiService.delete(this.config.deleteAccommodation_url + accId)
+   }
+
+   uploadAccImages(accId: string, formData: any) {
+        const boundary = '<calculated when request is sent>';
+
+    const headers = new HttpHeaders();
+
+    const contentTypeHeader = `multipart/form-data; boundary=${boundary}`;
+    headers.set('Content-Type', contentTypeHeader);
+    let returnObject = this.apiService.post(this.config.imagesUpload_url + accId, formData, headers)
+    console.log(returnObject)
+    return returnObject
+   }
+
+   fetchAccImages(accId: string) {
+    return this.apiService.get(this.config.imagesFetch_url + accId);
    }
 
 }

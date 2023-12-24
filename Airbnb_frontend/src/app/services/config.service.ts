@@ -24,12 +24,16 @@ export class ConfigService {
 
   private _user_url = this._auth_api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
+  private _current_user_profile_url = this._user_url + '/currentUserProfile';
+
   private _changePassword_url = this._user_url + '/changePassword';
   private _deleteProfile_url = this._user_url + '/delete';
 
   private _acc_url = this._acc_api_url + '/accommodations';
   private _acc_delete = this._acc_url + '/delete/';
   private _host_accs = this._acc_url + '/get/host/';
+  private _img_acc_all = this.acc_url + '/images/';
+  private _img_acc_upload = this.acc_url + '/upload/images/';
 
   private _resv_url = this._resv_api_url + '/reservations';
   private _create_resv_url = this._resv_api_url + '/reservations/create';
@@ -70,6 +74,16 @@ export class ConfigService {
   }
   get currentUser_url(): string {
     return this._current_user_url;
+  }
+  get currentUserProfile_url(): string {
+    return this._current_user_profile_url;
+  }
+  get imagesUpload_url(): string {
+    return this._img_acc_upload;
+  }
+
+  get imagesFetch_url(): string {
+    return this._img_acc_all;
   }
 
   get createReservation_url(): string {

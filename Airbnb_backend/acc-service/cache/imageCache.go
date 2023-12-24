@@ -40,6 +40,19 @@ func (pc *ImageCache) Ping() {
 	pc.logger.Println(val)
 }
 
+//func (ic *ImageCache) PostImage(imageID string, accID string, imageData []byte) error {
+//	key := constructImageKey(imageID, accID)
+//
+//	encodedImage := base64.StdEncoding.EncodeToString(imageData)
+//
+//	err := ic.cli.Set(key, encodedImage, 300*time.Second).Err()
+//	if err != nil {
+//		fmt.Println("Error setting image in Redis:", err)
+//		return err
+//	}
+//	return err
+//}
+
 func (ic *ImageCache) PostImage(imageID string, accID string, imageData []byte) error {
 	key := constructImageKey(imageID, accID)
 
@@ -50,7 +63,7 @@ func (ic *ImageCache) PostImage(imageID string, accID string, imageData []byte) 
 		fmt.Println("Error setting image in Redis:", err)
 		return err
 	}
-	return err
+	return nil
 }
 
 func (ic *ImageCache) GetImage(imageID, accID string) ([]byte, error) {
@@ -89,4 +102,38 @@ func constructImageKey(imageID, accID string) string {
 
 func GenerateUniqueImageID() string {
 	return fmt.Sprintf("image_%d", time.Now().UnixNano())
+}
+
+func (ic *ImageCache) GetAccommodationImages(accommodationID string) ([]string, error) {
+	cacheKey := fmt.Sprintf(cacheAll, accommodationID)
+
+	images, err := ic.cli.LRange(cacheKey, 0, -1).Result()
+	if err == nil {
+		return images, nil
+	}
+
+	return []string{}, nil
+}
+
+func (ic *ImageCache) PostAll(accID string, images []*Image) error {
+	cacheKey := fmt.Sprintf(cacheAll, accID)
+
+	for _, image := range images {
+		key := constructImageKey(image.ID, accID)
+		encodedImage := base64.StdEncoding.EncodeToString(image.Data)
+
+		err := ic.cli.RPush(cacheKey, encodedImage).Err()
+		if err != nil {
+			fmt.Println("Error posting image to Redis:", err)
+			return err
+		}
+
+		err = ic.cli.Set(key, encodedImage, 300*time.Second).Err()
+		if err != nil {
+			fmt.Println("Error setting image in Redis:", err)
+			return err
+		}
+	}
+
+	return nil
 }

@@ -1,6 +1,10 @@
 <section id="inner">
   <div class="overview">
-    <img class="img" src="assets/images/car.jpg" />
+    <div *ngIf="images && images.length > 0">
+      <img class="img" [src]="currentImage" />
+      <i (click)="nextImage()" *ngIf="currentIndex < images.length - 1" class="fa-solid fa-arrow-right"></i>
+      <i (click)="prevImage()" *ngIf="currentIndex > 0" class="fa-solid fa-arrow-left"></i>
+    </div>    
     <div class="head">
       <div class="name">
         <h2>{{ accommodation?.accommodation_name }}</h2>
@@ -42,6 +46,11 @@
     <app-rate-host [hostId]="hostId"></app-rate-host>
     </div>
     <br>
+    <div *ngIf="getRole() === 'Guest'">
+      <app-rate-accommodation [accommodationId]="accommodationId"></app-rate-accommodation>
+      </div>
+      <br>
+
     <!-- <div *ngIf="getRole() === 'Host'">
       <button class="btn" routerLink="/availability-create/{{accId}}">Add Availability</button>
     </div> -->

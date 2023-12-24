@@ -7,12 +7,16 @@ import (
 )
 
 type RatingRouteHandler struct {
-	hostRatingHandler handlers.HostRatingHandler
-	hostRatingService services.HostRatingService
+	hostRatingHandler          handlers.HostRatingHandler
+	hostRatingService          services.HostRatingService
+	accommodationRatingHandler handlers.AccommodationRatingHandler
+	accommodationRatingService services.AccommodationRatingService
 }
 
-func NewRatingRouteHandler(hostRatingHandler handlers.HostRatingHandler, hostRatingService services.HostRatingService) RatingRouteHandler {
-	return RatingRouteHandler{hostRatingHandler, hostRatingService}
+func NewRatingRouteHandler(hostRatingHandler handlers.HostRatingHandler, hostRatingService services.HostRatingService,
+	accommodationRatingHandler handlers.AccommodationRatingHandler, accommodationRatingService services.AccommodationRatingService) RatingRouteHandler {
+	return RatingRouteHandler{hostRatingHandler, hostRatingService,
+		accommodationRatingHandler, accommodationRatingService}
 }
 
 func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
@@ -21,4 +25,8 @@ func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router.DELETE("/deleteRating/:hostId", rc.hostRatingHandler.DeleteRating)
 	router.GET("/getAll", rc.hostRatingHandler.GetAllRatings)
 	router.GET("/get/:hostId", rc.hostRatingHandler.GetByHostAndGuest)
+	router.POST("/rateAccommodation/:accommodationId", rc.accommodationRatingHandler.RateAccommodation)
+	router.DELETE("/deleteRatingAccommodation/:accommodationId", rc.accommodationRatingHandler.DeleteRatingAccommodation)
+	router.GET("/getAccommodation/:accommodationId", rc.accommodationRatingHandler.GetByAccommodationAndGuest)
+
 }
