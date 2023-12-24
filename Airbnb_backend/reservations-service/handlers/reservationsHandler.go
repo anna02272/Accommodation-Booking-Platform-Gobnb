@@ -53,9 +53,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -119,9 +119,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	accId := guestReservation.AccommodationId
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -257,9 +257,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	fmt.Println(responseAccommodation.AccommodationHostId)
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -322,9 +322,9 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	notificationURL := "https://notifications-server:8089/api/notifications/create"
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctxx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Error creating notification request.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -370,7 +370,7 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
@@ -455,9 +455,9 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available. Try again later")
 			errorMsg := map[string]string{"error": "Authorization service not available. Try again later"}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -540,9 +540,9 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available.")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -589,7 +589,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
@@ -654,7 +654,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	notificationURL := "https://notifications-server:8089/api/notifications/create"
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctxx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Notification service is not available.")
@@ -692,9 +692,9 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -786,9 +786,9 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctxx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -944,7 +944,7 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
@@ -966,7 +966,7 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBody
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
@@ -982,7 +982,7 @@ func (s *ReservationsHandler) performAuthorizationRequestWithContext(ctx context
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{}
 	resp, err := client.Do(req.WithContext(ctx))

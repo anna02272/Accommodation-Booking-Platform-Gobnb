@@ -13,7 +13,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	_ "io/ioutil"
 	"log"
@@ -171,12 +173,12 @@ func (us *UserServiceImpl) SendUserToProfileService(rw http.ResponseWriter, user
 	url := "https://profile-server:8084/api/profile/createUser"
 
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resp, err := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
 	if err != nil {
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Profile service not available..")
 			errorMsg := map[string]string{"error": "Profile service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -296,7 +298,7 @@ func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx conte
 	if err != nil {
 		return nil, err
 	}
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
@@ -316,7 +318,7 @@ func (us *UserServiceImpl) HTTPSperformRequestWithContext(ctx context.Context, u
 	if err != nil {
 		return nil, err
 	}
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))

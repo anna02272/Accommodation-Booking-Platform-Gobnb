@@ -254,7 +254,7 @@ func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName
 
 	err = file.Close()
 	if err != nil {
-		span.SetStatus(codes.Error, "Error in closing file on HDFS:"+err.Error())
+		//span.SetStatus(codes.Error, "Error in closing file on HDFS:"+err.Error())
 		fs.logger.Println("Error in closing file on HDFS:", err)
 		return err
 	}

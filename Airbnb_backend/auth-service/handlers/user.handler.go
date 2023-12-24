@@ -128,7 +128,7 @@ func (uh *UserHandler) GetUserById(ctx *gin.Context) {
 		return
 	}
 
-	span.SetStatus(codes.Error, "Get user by id successful")
+	span.SetStatus(codes.Ok, "Get user by id successful")
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
@@ -240,16 +240,10 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		ctxRest, cancel := context.WithTimeout(spanCtx, timeout)
 		defer cancel()
 
-		req, err := http.NewRequest(http.MethodGet, urlCheckReservations, nil)
-		if err != nil {
-			span.RecordError(err)
-		}
-		otel.GetTextMapPropagator().Inject(ctxRest, propagation.HeaderCarrier(req.Header))
-
-		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
 		if errRes != nil {
 			fmt.Println(err)
-			if ctx.Err() == context.DeadlineExceeded {
+			if ctxRest.Err() == context.DeadlineExceeded {
 				span.SetStatus(codes.Error, "Failed to fetch user reservations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
 				return
@@ -280,10 +274,10 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlCheckReservations, "GET")
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
 		if errRes != nil {
 			fmt.Println(err)
-			if ctx.Err() == context.DeadlineExceeded {
+			if ctxRest.Err() == context.DeadlineExceeded {
 				span.SetStatus(codes.Error, "Failed to fetch host accommodations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
 				return
@@ -321,10 +315,10 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(ctxRest, tokenStringHeader, urlProfile, "DELETE")
+	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlProfile, "DELETE")
 	if err != nil {
 		fmt.Println(err)
-		if ctx.Err() == context.DeadlineExceeded {
+		if ctxRest.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Failed to delete user credentials")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 			return
@@ -360,7 +354,7 @@ func (ac *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.C
 		return nil, err
 	}
 	req.Header.Set("Authorization", token)
-
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	// Perform the request with the provided context
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))

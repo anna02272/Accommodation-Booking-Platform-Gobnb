@@ -87,7 +87,6 @@ func (sr *ReservationRepo) CreateTable() {
 	).Exec()
 
 	if err != nil {
-		//span.SetStatus(codes.Error, err.Error())
 		sr.logger.Println(err)
 	}
 

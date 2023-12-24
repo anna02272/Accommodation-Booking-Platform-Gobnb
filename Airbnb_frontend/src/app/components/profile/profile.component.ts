@@ -72,4 +72,8 @@ deleteProfile() {
       }
     );
   }
+  
+  getRole() {
+    return this.userService.currentUser?.user.userRole;
+  }
 }
