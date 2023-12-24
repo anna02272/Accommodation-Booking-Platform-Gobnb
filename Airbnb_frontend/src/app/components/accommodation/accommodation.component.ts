@@ -13,6 +13,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 export class AccommodationComponent implements OnInit {
   accId!: string; 
   hostId!: string;
+  accommodationId! : string;
   accommodation!: Accommodation;
   tv!: boolean;
   wifi!: boolean;
@@ -35,6 +36,7 @@ export class AccommodationComponent implements OnInit {
     this.accId = this.route.snapshot.paramMap.get('id')!;
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
+      this.accommodationId=accommodation._id
       this.hostId = accommodation.host_id;
       this.am_map = new Map<string, boolean>();
       this.am_map = Object.entries(this.accommodation.accommodation_amenities).reduce((map, [key, value]) => map.set(key, value), new Map<string, boolean>());

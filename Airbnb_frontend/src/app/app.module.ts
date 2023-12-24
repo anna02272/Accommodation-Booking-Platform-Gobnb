@@ -40,6 +40,7 @@ import { RefreshService } from './services/refresh.service';
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 import { RatingsComponent } from './components/ratings/ratings.component';
 import { RateHostComponent } from './components/rate-host/rate-host.component';
+import { RateAccommodationComponent } from './components/rate-accommodation/rate-accommodation.component';
 import { RatingService } from './services/rating.service';
 import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
 import { AvailabilityService } from './services/availability-service';
@@ -68,6 +69,7 @@ import { AvailabilityService } from './services/availability-service';
     RatingsComponent,
     RateHostComponent,
     CreateAvailabilityComponent,
+    RateAccommodationComponent
   ],
   imports: [
     HttpClientModule,

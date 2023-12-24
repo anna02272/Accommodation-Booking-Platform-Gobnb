@@ -10,7 +10,7 @@ import { RatingService } from 'src/app/services/rating.service';
 })
 export class RateHostComponent implements AfterViewInit {
   @Input() hostId!: string;
-  notification = { msgType: '', msgBody: '' };
+  notification1 = { msgType: '', msgBody: '' };
   selectedRating: number | null = null;
   ratings: RatingItem[] = [];
 
@@ -82,14 +82,14 @@ export class RateHostComponent implements AfterViewInit {
 
     this.ratingService.rateHost(this.hostId, this.selectedRating).subscribe(
       response => {
-        this.notification = { msgType: 'success', msgBody: 'Rating successfully submitted' };
+        this.notification1 = { msgType: 'success', msgBody: 'Rating successfully submitted' };
       },
     error => {
       if (error.status === 400 && error.error && error.error.error) {
         const errorMessage = error.error.error;
-        this.notification = { msgType: 'error', msgBody: errorMessage };
+        this.notification1 = { msgType: 'error', msgBody: errorMessage };
       } else {
-        this.notification = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
+        this.notification1 = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
       }
     }
   );
@@ -109,14 +109,14 @@ export class RateHostComponent implements AfterViewInit {
     }
     this.ratingService.deleteRating(this.hostId).subscribe(
       response => {
-        this.notification = { msgType: 'success', msgBody: 'Rating successfully deleted' };
+        this.notification1 = { msgType: 'success', msgBody: 'Rating successfully deleted' };
       },
       error => {
         if (error.status === 400 && error.error && error.error.error) {
           const errorMessage = error.error.error;
-          this.notification = { msgType: 'error', msgBody: errorMessage };
+          this.notification1 = { msgType: 'error', msgBody: errorMessage };
         } else {
-          this.notification = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
+          this.notification1 = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
         }
       }
     );
