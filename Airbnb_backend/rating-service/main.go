@@ -64,8 +64,8 @@ func init() {
 
 	hostRatingService = services.NewHostRatingServiceImpl(hostRatingCollection, ctx, tracer)
 	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer)
-	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx)
-	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection)
+	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx, tracer)
+	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection, tracer)
 	RatingRouteHandler = routes.NewRatingRouteHandler(HostRatingHandler, hostRatingService, AccommodationRatingHandler, accommodationRatingService)
 
 	server = gin.Default()
