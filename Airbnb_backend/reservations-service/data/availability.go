@@ -36,6 +36,11 @@ type AvailabilityType string
 
 type PriceType string
 
+type PriceResponse struct {
+	Price     float64   `json:"price"`
+	PriceType PriceType `json:"price_type"`
+}
+
 const (
 	Available   AvailabilityType = "Available"
 	Unavailable AvailabilityType = "Unavailable"

@@ -4,6 +4,8 @@ import (
 	"acc-service/domain"
 	"context"
 	"errors"
+	"strconv"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel/codes"
@@ -157,4 +159,77 @@ func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, h
 	_, err = s.collection.DeleteOne(context.Background(), filter)
 	span.SetStatus(codes.Error, err.Error())
 	return err
+}
+
+func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool) ([]*domain.Accommodation, error) {
+
+	filter := bson.M{}
+
+	if location != "" {
+		filter["accommodation_location"] = location
+	}
+
+	// if guests != "" {
+	// 	guests, err := strconv.Atoi(guests)
+	// 	if err != nil {
+	// 		return nil, errors.New("failed to parse guests")
+	// 	}
+
+	// 	filter["accommodation_min_guests"] = bson.M{"$gte": guests}
+	// }
+
+	// if guests != "" {
+	// 	guests, err := strconv.Atoi(guests)
+	// 	if err != nil {
+	// 		return nil, errors.New("failed to parse maxGuests")
+	// 	}
+
+	// 	filter["accommodation_max_guests"] = bson.M{"$lte": guests}
+	// }
+
+	if guests != "" {
+		guests, err := strconv.Atoi(guests)
+		if err != nil {
+			return nil, errors.New("failed to parse guests")
+		}
+
+		filter["accommodation_min_guests"] = bson.M{"$lte": guests}
+		filter["accommodation_max_guests"] = bson.M{"$gte": guests}
+	}
+
+	// if amenitiesExist {
+	// 	var tv = amenities["tv"]
+	// 	var wifi = amenities["wifi"]
+	// 	var ac = amenities["ac"]
+	// 	filter["accommodation_amenities"] = bson.M{
+	// 		"TV":   tv,
+	// 		"Wifi": wifi,
+	// 		"AC":   ac,
+	// 	}
+	// }
+
+	cursor, err := s.collection.Find(context.Background(), filter)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	var accommodations []*domain.Accommodation
+	for cursor.Next(context.Background()) {
+		var acc domain.Accommodation
+		if err := cursor.Decode(&acc); err != nil {
+			return nil, err
+		}
+
+		accommodations = append(accommodations, &acc)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return accommodations, nil
+
 }

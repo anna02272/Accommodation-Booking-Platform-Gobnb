@@ -5,6 +5,7 @@ import { AccommodationService } from 'src/app/services/accommodation.service';
 import { RefreshService } from 'src/app/services/refresh.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
+import { ReservationService } from 'src/app/services/reservation.service';
 
 @Component({
   selector: 'app-accommodations',
@@ -26,7 +27,8 @@ export class AccommodationsComponent implements OnInit {
     private accService: AccommodationService,
     private refreshService: RefreshService,
     private userService: UserService,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private reservationService: ReservationService,
   ) {}
 
   ngOnInit() {
@@ -63,10 +65,81 @@ export class AccommodationsComponent implements OnInit {
   }
 
   load() {
+    if (window.location.search){
+      //alert("here")
+      //get the params from the url
+      var urlParams = new URLSearchParams(window.location.search);
+      //get the values from the params
+      var location = urlParams.get('location');
+      var guests = urlParams.get('guests');
+      var start_date = urlParams.get('start_date');
+      var end_date = urlParams.get('end_date');
+      var tv = urlParams.get('tv');
+      var wifi = urlParams.get('wifi');
+      var ac = urlParams.get('ac');
+      var min_price = urlParams.get('min_price');
+      var max_price = urlParams.get('max_price');
+      this.accService.getSearch(location, guests, start_date, end_date, tv, wifi, ac, min_price, max_price).subscribe((data: Accommodation[]) => {
+        var arr = data;
+        var arr2: Accommodation[] = [];
+        
+        if(start_date != null && end_date != null){
+        for (let acc of arr){
+          var check = this.checkAvailability(acc, start_date, end_date)
+        }
+      }
+
+        //this.loadAccommodationImages();
+
+        //this.accommodations = arr2;
+      });
+    }
+    else{
     this.accService.getAll().subscribe((data: Accommodation[]) => {
       this.accommodations = data;
       this.loadAccommodationImages();
     });
+    }
+  }
+
+  checkAvailability(acc: any, startDate: any, endDate: any): boolean {
+
+    var errorCheck = false;
+
+    const checkAvailabilityData = {
+      check_in_date: startDate + "T00:00:00Z",
+      check_out_date: endDate + "T00:00:00Z",
+    };
+
+    this.reservationService.checkAvailability(checkAvailabilityData, acc._id).subscribe(
+      {
+        next: (response) => {
+          console.log('Dates are available.', response);
+          //alert(acc._Id + " is available")
+          this.accommodations.push(acc);
+          //this.showDivSuccessAvailability = true;
+          errorCheck = true;
+        //    setTimeout(() => {
+        //   //this.showDivSuccessAvailability = false;
+        //   errorCheck = false;
+        // }, 5000);
+
+        },
+        error: (error) => {
+            //this.showDiv = true;
+            //this.errorMessage = error.error.error;
+            console.log(error);
+            //alert(acc._Id + " is not available")
+        //       setTimeout(() => {
+        //   //this.showDiv = false;
+        //   errorCheck = false;
+        // }, 5000);
+            
+        }
+      });
+
+    return errorCheck;
+
   }
 
  loadAccommodationImages() {

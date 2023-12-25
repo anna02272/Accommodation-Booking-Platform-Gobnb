@@ -11,6 +11,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,11 +24,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type AccommodationHandler struct {
@@ -142,6 +143,58 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationHandler.GetAllAccommodations")
 	defer span.End()
+
+	location := c.Query("location")
+	fmt.Println(location)
+	guests := c.Query("guests")
+	fmt.Println(guests)
+	tv := c.Query("tv")
+	fmt.Println(tv)
+	wifi := c.Query("wifi")
+	fmt.Println(wifi)
+	ac := c.Query("ac")
+	fmt.Println(ac)
+
+	var amenitiesExist bool = false
+
+	//amenities is a map of amenities and their values from tv, wifi, ac
+	amenities := make(map[string]bool)
+	if tv == "true" {
+		amenities["tv"], _ = strconv.ParseBool(tv)
+		amenitiesExist = true
+	} else {
+		amenities["tv"] = false
+	}
+	if wifi == "true" {
+		amenities["wifi"], _ = strconv.ParseBool(wifi)
+		amenitiesExist = true
+	} else {
+		amenities["wifi"] = false
+	}
+	if ac == "true" {
+		amenities["ac"], _ = strconv.ParseBool(ac)
+		amenitiesExist = true
+	} else {
+		amenities["ac"] = false
+	}
+
+	fmt.Println(amenitiesExist)
+	fmt.Println(amenities)
+	// startDate := c.Query("start_date")
+	// fmt.Println(startDate)
+	// endDate := c.Query("end_date")
+	// fmt.Println(endDate)
+
+	if location != "" || guests != "" {
+		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist)
+		if err != nil {
+			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		c.JSON(http.StatusOK, accommodations)
+		return
+	}
 
 	accommodations, err := s.accommodationService.GetAllAccommodations(spanCtx)
 	if err != nil {
