@@ -1,19 +1,19 @@
 <div class="host-rating">
     <h3>Rate Host:</h3>
-    <p class="notif" *ngIf="notification" [class]="notification.msgType">
-        {{ notification.msgBody }}
+    <p class="notif" *ngIf="notification1" [class]="notification1.msgType">
+        {{ notification1.msgBody }}
       </p>
     <div class="rate">
-        <input type="radio" id="star5" name="hostRating" value="5" />
-        <label for="star5" title="5 stars">5 stars</label>
-        <input type="radio" id="star4" name="hostRating" value="4" />
-        <label for="star4" title="4 stars">4 stars</label>
-        <input type="radio" id="star3" name="hostRating" value="3" />
-        <label for="star3" title="3 stars">3 stars</label>
-        <input type="radio" id="star2" name="hostRating" value="2" />
-        <label for="star2" title="2 stars">2 stars</label>
-        <input type="radio" id="star1" name="hostRating" value="1" />
-        <label for="star1" title="1 star">1 star</label>
+        <input type="radio" id="stars5" name="hostRating" value="5" />
+        <label for="stars5" title="5 stars">5 stars</label>
+        <input type="radio" id="stars4" name="hostRating" value="4" />
+        <label for="stars4" title="4 stars">4 stars</label>
+        <input type="radio" id="stars3" name="hostRating" value="3" />
+        <label for="stars3" title="3 stars">3 stars</label>
+        <input type="radio" id="stars2" name="hostRating" value="2" />
+        <label for="stars2" title="2 stars">2 stars</label>
+        <input type="radio" id="stars1" name="hostRating" value="1" />
+        <label for="stars1" title="1 star">1 star</label>
     </div>
     <button (click)="deleteRating()" id="resetStars">delete rating </button>
 </div>
