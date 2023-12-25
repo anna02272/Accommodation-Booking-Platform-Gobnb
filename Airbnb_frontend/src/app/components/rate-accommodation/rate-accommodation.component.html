@@ -1,0 +1,19 @@
+<div class="accommodation-rating">
+    <h3>Rate Accommodation:</h3>
+    <p class="notif2" *ngIf="notification2" [class]="notification2.msgType">
+        {{ notification2.msgBody }}
+      </p>
+    <div class="rate2">
+        <input type="radio" id="starr5" name="accommodationRating" value="5" />
+        <label for="starr5" title="5 stars">5 stars</label>
+        <input type="radio" id="starr4" name="accommodationRating" value="4" />
+        <label for="starr4" title="4 stars">4 stars</label>
+        <input type="radio" id="starr3" name="accommodationRating" value="3" />
+        <label for="starr3" title="3 stars">3 stars</label>
+        <input type="radio" id="starr2" name="accommodationRating" value="2" />
+        <label for="starr2" title="2 stars">2 stars</label>
+        <input type="radio" id="starr1" name="accommodationRating" value="1" />
+        <label for="starr1" title="1 star">1 star</label>
+    </div>
+    <button (click)="deleteRatingAccommodation()" id="resetStar">delete rating </button>
+</div>

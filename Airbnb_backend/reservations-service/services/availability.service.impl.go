@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"reservations-service/data"
 	"time"
+
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -444,4 +445,27 @@ func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodation
 		return nil, err
 	}
 	return availabilities, nil
+}
+
+func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID) ([]*data.PriceResponse, error) {
+	filter := bson.M{
+		"accommodation_id": accId,
+	}
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+	var availabilities []*data.Availability
+	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		return nil, err
+	}
+	var prices []*data.PriceResponse
+	for _, availability := range availabilities {
+		var price data.PriceResponse
+		price.Price = availability.Price
+		price.PriceType = availability.PriceType
+		prices = append(prices, &price)
+	}
+
+	return prices, nil
 }

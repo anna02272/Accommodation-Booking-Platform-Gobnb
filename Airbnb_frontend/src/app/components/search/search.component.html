@@ -1,44 +1,65 @@
-
-
 <div class="site-content">
-    <h2 class="title">
-      <span>Gobnb.</span> Book unique homes <br />and travel with us!
-    </h2>
+  <h2 class="title">
+    <span>Gobnb.</span> Book unique homes <br />and travel with us!
+  </h2>
+
+  <input class="search-input" type="text" placeholder="Where to?" id="location" />
+
+  <div class="checks-input">
+ 
+    <!-- <label class="check-in">Check In </label> -->
+    <input type="date" class="check-in" id="startDate">
   
-    <input class="search-input" type="text" placeholder="Where to?" />
+    <svg
+      class="right-arrow"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="#000000"
+      height="24"
+      viewBox="0 0 24 24"
+      width="24">
+      <path d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+    </svg>
+
+    <!-- <label class="check-out">Check Out</label> -->
+    <input type="date" class="check-out" id="endDate">
+  </div> 
+
+  <input class="guests" id="guests" placeholder="Guests" type="number" min="1">
+    <!-- <option value="1">1 Guest</option>
+    <option value="2">2 Guests</option>
+    <option value="3">3 Guests</option>
+    <option value="4">4 Guests</option>
+    <option value="5">5 Guests</option>
+    <option value="6">6 Guests</option>
+    <option value="7">7 Guests</option>
+    <option value="8">8 Guests</option>
+    <option value="9">9 Guests</option>
+    <option value="10">10 Guests</option>
+  </select> -->
+
+  <button class="search-btn" id="search-btn" (click)="search()">Search</button>
   
-    <div class="checks-input">
-   
-      <!-- <label class="check-in">Check In </label> -->
-      <input type="date" class="check-in" >
-    
-      <svg
-        class="right-arrow"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="#000000"
-        height="24"
-        viewBox="0 0 24 24"
-        width="24">
-        <path d="M0 0h24v24H0z" fill="none" />
-        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
-      </svg>
-  
-      <!-- <label class="check-out">Check Out</label> -->
-      <input type="date" class="check-out">
-    </div> 
-  
-    <select class="guests">
-      <option>1 Guest</option>
-      <option>2 Guests</option>
-      <option>3 Guests</option>
-      <option>4 Guests</option>
-      <option>5 Guests</option>
-      <option>6 Guests</option>
-      <option>7 Guests</option>
-      <option>8 Guests</option>
-      <option>9 Guests</option>
-      <option>10+ Guests</option>
-    </select>
-  
-    <button class="search-btn">Search</button>
+  <button *ngIf="isButtonVisible()" class="reset-btn" (click)="goHome()">Reset</button>
+
+  <button class="reset-btn" id="advanced-btn" (click)="advanced()" style="margin-left: 5px;">Advanced Filters</button>
+  <div id="advanced_search" style="display: none;">
+    <br>
+    <br>
+    <br>
+    <label>
+      <input type="checkbox" name="TV" id="tv" /> TV
+    </label>
+    <label>
+      <input type="checkbox" name="Wifi" id="wifi" style="margin-left: 5px;"/> Wifi
+    </label>
+    <label>
+      <input type="checkbox" name="AC" id="ac" style="margin-left: 5px;"/> AC
+    </label>
+    <input class="" id="min_price" placeholder="Min Price" type="number" min="0">
+    <input class="" id="max_price" placeholder="Max Price" type="number" min="0">
+    <label>
+      <input type="checkbox" name="featured_host" id="featured_host" /> Featured host
+    </label>
   </div>
+</div>
