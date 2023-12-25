@@ -11,6 +11,7 @@ export enum RequestMethod {
   Delete = 'DELETE',
   Options = 'OPTIONS',
   Patch = 'PATCH'
+
 }
 
 @Injectable()
@@ -51,6 +52,7 @@ export class ApiService {
   patch(path: string, body?: any): Observable<any> {
     return this.request(path, body, RequestMethod.Patch);
   }
+  
   
   private request(path: string, body: any, method = RequestMethod.Post, customHeaders?: HttpHeaders): Observable<any> {
     const req = new HttpRequest(method, path, body, {

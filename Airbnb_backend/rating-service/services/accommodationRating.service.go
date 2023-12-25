@@ -1,10 +1,13 @@
 package services
 
-import "rating-service/domain"
+import (
+	"context"
+	"rating-service/domain"
+)
 
 type AccommodationRatingService interface {
-	SaveRating(rating *domain.RateAccommodation) error
-	DeleteRating(accommodationID, guestID string) error
-	GetAllRatings() ([]*domain.RateAccommodation, float64, error)
-	GetByAccommodationAndGuest(accommodationID, guestID string) ([]domain.RateAccommodation, error)
+	SaveRating(rating *domain.RateAccommodation, ctx context.Context) error
+	DeleteRating(accommodationID, guestID string, ctx context.Context) error
+	GetAllRatings(ctx context.Context) ([]*domain.RateAccommodation, float64, error)
+	GetByAccommodationAndGuest(accommodationID, guestID string, ctx context.Context) ([]domain.RateAccommodation, error)
 }

@@ -10,6 +10,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"strings"
@@ -20,17 +22,24 @@ type AuthServiceImpl struct {
 	collection  *mongo.Collection
 	ctx         context.Context
 	userService UserService
+	Tracer      trace.Tracer
 }
 
-func NewAuthService(collection *mongo.Collection, ctx context.Context, userService UserService) AuthService {
-	return &AuthServiceImpl{collection, ctx, userService}
+func NewAuthService(collection *mongo.Collection, ctx context.Context, userService UserService, tr trace.Tracer) AuthService {
+	return &AuthServiceImpl{collection, ctx, userService, tr}
 }
 
-func (uc *AuthServiceImpl) Login(*domain.LoginInput) (*domain.User, error) {
+func (uc *AuthServiceImpl) Login(loginInput *domain.LoginInput, ctx context.Context) (*domain.User, error) {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.Login")
+	defer span.End()
+
 	return nil, nil
 }
 
-func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.User) (*domain.UserResponse, error) {
+func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.User, ctx context.Context) (*domain.UserResponse, error) {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.Registration")
+	defer span.End()
+
 	hashedPassword, _ := utils.HashPassword(user.Password)
 	user.Password = hashedPassword
 	code := randstr.String(20)
@@ -46,18 +55,21 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 		VerificationCode: verificationCode,
 		VerifyAt:         time.Now().Add(time.Minute * 10),
 	}
-	res, err := uc.collection.InsertOne(uc.ctx, credentials)
+	res, err := uc.collection.InsertOne(ctx, credentials)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
-	err = uc.userService.SendUserToProfileService(rw, user)
+	err = uc.userService.SendUserToProfileService(rw, user, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	// Send Verification Email
-	if err := uc.SendVerificationEmail(credentials); err != nil {
+	if err := uc.SendVerificationEmail(credentials, ctx); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		log.Printf("Error sending verification email: %v", err)
 		return nil, err
 	}
@@ -65,15 +77,19 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 	var newUser *domain.UserResponse
 	query := bson.M{"_id": res.InsertedID}
 
-	err = uc.collection.FindOne(uc.ctx, query).Decode(&newUser)
+	err = uc.collection.FindOne(ctx, query).Decode(&newUser)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	return newUser, nil
 
 }
 
-func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials) error {
+func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendVerificationEmail")
+	defer span.End()
+
 	var username = credentials.Username
 	if strings.Contains(username, " ") {
 		username = strings.Split(username, " ")[1]
@@ -88,7 +104,10 @@ func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials
 	return utils.SendEmail(credentials, &emailData, config)
 }
 
-func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credentials) error {
+func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credentials, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendPasswordResetToken")
+	defer span.End()
+
 	var username = credentials.Username
 	if strings.Contains(username, " ") {
 		username = strings.Split(username, " ")[1]
@@ -104,14 +123,20 @@ func (uc *AuthServiceImpl) SendPasswordResetToken(credentials *domain.Credential
 }
 
 func (uc *AuthServiceImpl) ResendVerificationEmail(ctx *gin.Context) {
+	spanCtx, span := uc.Tracer.Start(ctx.Request.Context(), "AuthService.ResendVerificationEmail")
+	defer span.End()
+	ctx.Request = ctx.Request.WithContext(spanCtx)
+
 	email := ctx.Param("email")
 
-	user, err := uc.userService.FindCredentialsByEmail(email)
+	user, err := uc.userService.FindCredentialsByEmail(email, ctx)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
+			span.SetStatus(codes.Error, "User not found")
 			ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "User not found"})
 			return
 		}
+		span.SetStatus(codes.Error, "Internal Server Error")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
 		return
 	}
@@ -127,6 +152,7 @@ func (uc *AuthServiceImpl) ResendVerificationEmail(ctx *gin.Context) {
 		bson.M{"$set": bson.M{"verificationCode": verificationCode, "verifyAt": verifyAt, "verified": false}},
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, "Internal Server Error")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Internal Server Error"})
 		return
 	}
@@ -134,7 +160,8 @@ func (uc *AuthServiceImpl) ResendVerificationEmail(ctx *gin.Context) {
 	user.VerificationCode = verificationCode
 
 	// Send the verification email
-	if err := uc.SendVerificationEmail(user); err != nil {
+	if err := uc.SendVerificationEmail(user, ctx); err != nil {
+		span.SetStatus(codes.Error, "Error sending verification email")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"status": "fail", "message": "Error sending verification email"})
 		return
 	}

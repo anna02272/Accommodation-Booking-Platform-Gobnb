@@ -12,20 +12,17 @@
                 width="150"
               />
               <div class="mt-3">
-                <h4 class="username">Username</h4>
+                <h4 class="username">{{currentProfile.username}}</h4>
               </div>
             </div>
           </div>
         </div>
+  <h5 *ngIf="getRole() === 'Host'" class="d-flex align-items-center mb-3">Notifications:</h5>
+<div *ngFor="let notification of notifications" class="align-items-center card mt-3">
+  <h6> {{notification.date_and_time }}</h6>
+  <p>{{ notification.notification_text }}</p>
+</div>
 
-        <div class="align-items-center card mt-3">
-            <h5 class="d-flex align-items-center mb-3">Reservations:</h5>
-            <h6>Reservation 1</h6>
-            <p>info</p>
-
-            <h6>Reservation 1</h6>
-            <p>info</p>
-        </div>
       </div>
       <div class="col-md-8">
         <div class="card mb-3">

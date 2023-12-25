@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reservations-service/config"
 	"reservations-service/handlers"
 	"reservations-service/repository"
 	"reservations-service/services"
@@ -18,6 +19,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 var (
@@ -27,12 +34,18 @@ var (
 	availabilityCollection *mongo.Collection
 	availabilityService    services.AvailabilityService
 	AvailabilityHandler    handlers.AvailabilityHandler
-	//AvailabilityRouteHandler routes.AvailabilityRouteHandler
-	logger2 *log.Logger
+	logger2                *log.Logger
 )
 
 func init() {
 	ctx = context.TODO()
+
+	cfg := config.GetConfig()
+	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+	tracer := tracerProvider.Tracer(cfg.ServiceName)
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
@@ -49,20 +62,16 @@ func init() {
 
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
-	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx)
-
-	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2)
 	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
-	//AvailabilityRouteHandler = routes.NewAvailabilityRouteHandler(AvailabilityHandler, availabilityService)
+	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx, tracer)
+	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2, tracer)
 
 	server2 = gin.Default()
 }
 
 func main() {
 	defer mongoclient.Disconnect(ctx)
-	//Reading from environment, if not set we will default it to 8080.
-	//This allows flexibility in different environments
-	//(for eg. when running multiple docker api's and want to override the default port)
+
 	port := os.Getenv("PORT")
 	if len(port) == 0 {
 		port = "8080"
@@ -73,11 +82,23 @@ func main() {
 	defer cancel()
 
 	//Initialize the logger we are going to use, with prefix and datetime for every log
-	logger := log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
+	logger := log.New(os.Stdout, "[reservation-`ap`i] ", log.LstdFlags)
 	storeLogger := log.New(os.Stdout, "[reservation-store] ", log.LstdFlags)
 
+	cfg := config.GetConfig()
+	cnt := context.Background()
+	exp, err := newExporter(cfg.JaegerAddress)
+	if err != nil {
+		log.Fatalf("failed to initialize exporter: %v", err)
+	}
+	tp := newTraceProvider(exp)
+	defer func() { _ = tp.Shutdown(cnt) }()
+	otel.SetTracerProvider(tp)
+	tracer := tp.Tracer("reservations-service")
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
 	// NoSQL: Initialize Reservation Repository store
-	store, err := repository.New(storeLogger)
+	store, err := repository.New(storeLogger, tracer)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -90,14 +111,12 @@ func main() {
 	defer store.CloseSession()
 	store.CreateTable()
 
-	//availabilityServiceImpl := services.NewAvailabilityServiceImpl(availabilityCollection, ctx)
-
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection)
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection, tracer)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
+	router.Use(handlers.ExtractTraceInfoMiddleware)
 	router.Use(reservationsHandler.MiddlewareContentTypeSet)
-	//router.Use(AvailabilityHandler.MiddlewareContentTypeSet)
 
 	postReservationForGuest := router.Methods(http.MethodPost).Subrouter()
 	postReservationForGuest.HandleFunc("/api/reservations/create", reservationsHandler.CreateReservationForGuest)
@@ -118,17 +137,11 @@ func main() {
 	getAvailabilityByAccId := router.Methods(http.MethodGet).Subrouter()
 	getAvailabilityByAccId.HandleFunc("/api/availability/get/{id}", AvailabilityHandler.GetAvailabilityByAccommodationId)
 
-	// getAllAvailability := router.Methods(http.MethodGet).Subrouter()
-	// getAllAvailability.HandleFunc("/api/availability/getAll", AvailabilityHandler.GetAllAvailability)
-
-	// editAvailability := router.Methods(http.MethodPut).Subrouter()
-	// editAvailability.HandleFunc("/api/availability/edit/{id}", AvailabilityHandler.EditAvailability)
-
-	// deleteAvailability := router.Methods(http.MethodDelete).Subrouter()
-	// deleteAvailability.HandleFunc("/api/availability/delete/{id}", AvailabilityHandler.DeleteAvailability)
-
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	getPrices := router.Methods(http.MethodGet).Subrouter()
+	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
@@ -154,28 +167,6 @@ func main() {
 		return
 	}
 
-	// defer mongoclient.Disconnect(ctx)
-
-	// corsConfig := cors.DefaultConfig()
-	// corsConfig.AllowOrigins = []string{"https://localhost:4200"}
-	// corsConfig.AllowCredentials = true
-	// corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
-
-	// server2.Use(cors.New(corsConfig))
-
-	// router2 := server2.Group("/api")
-	// router2.GET("/healthchecker", func(ctx *gin.Context) {
-	// 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Message"})
-	// })
-
-	// AvailabilityRouteHandler.AvailabilityRoute(router2)
-
-	// err2 := server2.RunTLS(":8082", "/app/reservation-service.crt", "/app/reservation-service.key")
-	// if err2 != nil {
-	// 	fmt.Println(err2)
-	// 	return
-	// }
-
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, os.Interrupt)
 	signal.Notify(sigCh, os.Kill)
@@ -183,10 +174,55 @@ func main() {
 	sig := <-sigCh
 	logger.Println("Received terminate, graceful shutdown", sig)
 
-	//Try to shutdown gracefully
 	if server.Shutdown(timeoutContext) != nil {
 		logger.Fatal("Cannot gracefully shutdown...")
 	}
 	logger.Println("Server stopped")
 
+}
+
+func newExporter(address string) (*jaeger.Exporter, error) {
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(address)))
+	if err != nil {
+		return nil, err
+	}
+	return exp, nil
+}
+
+func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
+	r, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("reservations-service"),
+		),
+	)
+
+	if err != nil {
+		log.Printf("Error merging resources: %v", err)
+	}
+
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exp),
+		sdktrace.WithResource(r),
+	)
+}
+func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize exporter due: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp, nil
 }

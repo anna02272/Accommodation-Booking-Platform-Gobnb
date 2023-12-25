@@ -7,6 +7,9 @@ import (
 	"reservations-service/data"
 	"time"
 
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,18 +18,21 @@ import (
 type AvailabilityServiceImpl struct {
 	collection *mongo.Collection
 	ctx        context.Context
+	Tracer     trace.Tracer
 }
 
-func NewAvailabilityServiceImpl(collection *mongo.Collection, ctx context.Context) AvailabilityService {
-	return &AvailabilityServiceImpl{collection, ctx}
+func NewAvailabilityServiceImpl(collection *mongo.Collection, ctx context.Context, tr trace.Tracer) AvailabilityService {
+	return &AvailabilityServiceImpl{collection, ctx, tr}
 }
 
-func (s *AvailabilityServiceImpl) InsertAvailability(accomm *data.Availability) (*data.Availability, error) {
-
+func (s *AvailabilityServiceImpl) InsertAvailability(accomm *data.Availability, ctx context.Context) (*data.Availability, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.InsertAvailability")
+	defer span.End()
 	//accomm.Date = primitive.NewDateTimeFromTime(accomm.Date)
 
 	_, err := s.collection.InsertOne(context.Background(), accomm)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -35,7 +41,10 @@ func (s *AvailabilityServiceImpl) InsertAvailability(accomm *data.Availability) 
 	return accomm, nil
 }
 
-func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.AvailabilityPeriod, accId primitive.ObjectID) ([]*data.Availability, error) {
+func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.AvailabilityPeriod, accId primitive.ObjectID, ctx context.Context) ([]*data.Availability, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.InsertMulitipleAvailability")
+	defer span.End()
+
 	var insertedAvailabilities []*data.Availability
 	var startDate1 = accomm.StartDate
 	startDate := time.Unix(int64(startDate1)/1000, (int64(startDate1)%1000)*1000000)
@@ -58,12 +67,14 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 	// 		return nil, errors.New("Accommodation is already defined and available for the given date range.")
 	// 	}
 	// }
-	isBooked, err := s.IsBooked(accId, startDate, endDate)
+	isBooked, err := s.IsBooked(accId, startDate, endDate, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	if isBooked {
+		span.SetStatus(codes.Error, "Accommodation is already defined and booked for the given date range.")
 		return nil, errors.New("Accommodation is already defined and booked for the given date range.")
 	}
 
@@ -72,6 +83,7 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 	// }
 
 	if startDate.After(endDate) {
+		span.SetStatus(codes.Error, "Start date is after end date.")
 		return nil, errors.New("Start date is after end date.")
 	}
 
@@ -84,8 +96,9 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 		dt := primitive.DateTime(d.UnixNano() / 1000000)
 		newAccomm.Date = dt
 
-		exists, err := s.Exists(accId, d)
+		exists, err := s.Exists(accId, d, ctx)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
 
@@ -104,6 +117,7 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 			}
 			_, err := s.collection.UpdateOne(context.Background(), filter, update)
 			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
 				return nil, err
 			}
 
@@ -114,6 +128,7 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 
 		_, err2 := s.collection.InsertOne(context.Background(), newAccomm)
 		if err2 != nil {
+			span.SetStatus(codes.Error, err2.Error())
 			return nil, err2
 		}
 
@@ -125,40 +140,53 @@ func (s *AvailabilityServiceImpl) InsertMulitipleAvailability(accomm data.Availa
 	return insertedAvailabilities, nil
 }
 
-func (s *AvailabilityServiceImpl) GetAllAvailability(accommodationID primitive.ObjectID) ([]*data.Availability, error) {
+func (s *AvailabilityServiceImpl) GetAllAvailability(accommodationID primitive.ObjectID, ctx context.Context) ([]*data.Availability, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.GetAllAvailability")
+	defer span.End()
+
 	filter := bson.M{
 		"accommodation_id": accommodationID,
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	var availabilities []*data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	return availabilities, nil
 }
 
-func (s *AvailabilityServiceImpl) GetAvailabilityByID(availabilityID primitive.ObjectID) (*data.Availability, error) {
+func (s *AvailabilityServiceImpl) GetAvailabilityByID(availabilityID primitive.ObjectID, ctx context.Context) (*data.Availability, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.GetAvailabilityByID")
+	defer span.End()
+
 	filter := bson.M{
 		"_id": availabilityID,
 	}
 	var availability data.Availability
 	err := s.collection.FindOne(context.Background(), filter).Decode(&availability)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	return &availability, nil
 }
 
-func (s *AvailabilityServiceImpl) EditAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, availabilityType data.AvailabilityType) error {
+func (s *AvailabilityServiceImpl) EditAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, availabilityType data.AvailabilityType, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.EditAvailability")
+	defer span.End()
 
-	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate)
+	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if !isAvailable {
+		span.SetStatus(codes.Error, "Accommodation is not available for the given date range.")
 		return errors.New("Accommodation is not available for the given date range.")
 	}
 
@@ -176,19 +204,24 @@ func (s *AvailabilityServiceImpl) EditAvailability(accommodationID primitive.Obj
 	}
 	result, err := s.collection.UpdateMany(context.Background(), filter, update)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	result = result
 	return nil
 }
 
-func (s *AvailabilityServiceImpl) DeleteAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error {
+func (s *AvailabilityServiceImpl) DeleteAvailability(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.DeleteAvailability")
+	defer span.End()
 
-	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate)
+	isAvailable, err := s.IsAvailable(accommodationID, startDate, endDate, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	if !isAvailable {
+		span.SetStatus(codes.Error, "Accommodation is not available for the given date range.")
 		return errors.New("Accommodation is not available for the given date range.")
 	}
 
@@ -203,7 +236,10 @@ func (s *AvailabilityServiceImpl) DeleteAvailability(accommodationID primitive.O
 	return err
 }
 
-func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error) {
+func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.IsAvailable")
+	defer span.End()
+
 	fmt.Println(startDate.String())
 	fmt.Println(endDate.String())
 	filter := bson.M{
@@ -215,12 +251,14 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		fmt.Println("Database Query Error:", err)
 		return false, err
 	}
 
 	var availabilities []data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
@@ -243,16 +281,21 @@ func (s *AvailabilityServiceImpl) IsAvailable(accommodationID primitive.ObjectID
 
 	if counter != days {
 		if counter == 0 {
+			span.SetStatus(codes.Error, "Availability not defined for accommodation.")
 			return false, errors.New("Availability not defined for accommodation.")
 			fmt.Println("Zero availability in the database.")
 		}
+		span.SetStatus(codes.Error, "Not all dates are defined in the database.")
 		return false, errors.New("Not all dates are defined in the database.")
 	}
 
 	return true, nil
 }
 
-func (s *AvailabilityServiceImpl) IsNotDefined(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error) {
+func (s *AvailabilityServiceImpl) IsNotDefined(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.IsNotDefined")
+	defer span.End()
+
 	filter := bson.M{
 		"accommodation_id": accommodationID,
 		"date": bson.M{
@@ -262,11 +305,13 @@ func (s *AvailabilityServiceImpl) IsNotDefined(accommodationID primitive.ObjectI
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
 	var availabilities []data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
@@ -277,11 +322,13 @@ func (s *AvailabilityServiceImpl) IsNotDefined(accommodationID primitive.ObjectI
 	if counter == 0 {
 		return true, nil
 	}
-
+	span.SetStatus(codes.Error, "Dates are already defined in the database.")
 	return false, errors.New("Dates are already defined in the database.")
 }
 
-func (s *AvailabilityServiceImpl) IsBooked(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) (bool, error) {
+func (s *AvailabilityServiceImpl) IsBooked(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.IsBooked")
+	defer span.End()
 
 	filter := bson.M{
 		"accommodation_id": accommodationID,
@@ -293,11 +340,13 @@ func (s *AvailabilityServiceImpl) IsBooked(accommodationID primitive.ObjectID, s
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
 	var availabilities []data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
@@ -325,7 +374,10 @@ func (s *AvailabilityServiceImpl) IsBooked(accommodationID primitive.ObjectID, s
 
 }
 
-func (s *AvailabilityServiceImpl) Exists(accommodationID primitive.ObjectID, startDate time.Time) (bool, error) {
+func (s *AvailabilityServiceImpl) Exists(accommodationID primitive.ObjectID, startDate time.Time, ctx context.Context) (bool, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.Exists")
+	defer span.End()
+
 	filter := bson.M{
 		"accommodation_id": accommodationID,
 		"date":             startDate,
@@ -338,6 +390,7 @@ func (s *AvailabilityServiceImpl) Exists(accommodationID primitive.ObjectID, sta
 
 	var availabilities []data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return false, err
 	}
 
@@ -354,7 +407,10 @@ func (s *AvailabilityServiceImpl) Exists(accommodationID primitive.ObjectID, sta
 	return true, nil
 }
 
-func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time) error {
+func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.BookAccommodation")
+	defer span.End()
+
 	filter := bson.M{
 		"accommodation_id": accommodationID,
 		"date": bson.M{
@@ -371,9 +427,29 @@ func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.Ob
 	return err
 }
 
-func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID) ([]*data.Availability, error) {
+func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID, ctx context.Context) ([]*data.Availability, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.GetAvailabilityByAccommodationId")
+	defer span.End()
+
 	filter := bson.M{
 		"accommodation_id": accommodationID,
+	}
+	cursor, err := s.collection.Find(context.Background(), filter)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+	var availabilities []*data.Availability
+	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+	return availabilities, nil
+}
+
+func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID) ([]*data.PriceResponse, error) {
+	filter := bson.M{
+		"accommodation_id": accId,
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
@@ -383,5 +459,13 @@ func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodation
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
 		return nil, err
 	}
-	return availabilities, nil
+	var prices []*data.PriceResponse
+	for _, availability := range availabilities {
+		var price data.PriceResponse
+		price.Price = availability.Price
+		price.PriceType = availability.PriceType
+		prices = append(prices, &price)
+	}
+
+	return prices, nil
 }

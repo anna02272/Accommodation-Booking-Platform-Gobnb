@@ -2,8 +2,11 @@ package hdfs_store
 
 import (
 	"acc-service/cache"
+	"context"
 	"fmt"
 	"github.com/colinmarc/hdfs/v2"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"io"
 	"log"
 	"os"
@@ -14,9 +17,10 @@ import (
 type FileStorage struct {
 	Client *hdfs.Client
 	logger *log.Logger
+	Tracer trace.Tracer
 }
 
-func New(logger *log.Logger) (*FileStorage, error) {
+func New(logger *log.Logger, tracer trace.Tracer) (*FileStorage, error) {
 	// Local instance
 	hdfsUri := os.Getenv("HDFS_URI")
 
@@ -30,6 +34,7 @@ func New(logger *log.Logger) (*FileStorage, error) {
 	return &FileStorage{
 		Client: client,
 		logger: logger,
+		Tracer: tracer,
 	}, nil
 }
 
@@ -97,12 +102,16 @@ func (fs *FileStorage) CopyLocalFile(localFilePath, fileName string) error {
 	return nil
 }
 
-func (fs *FileStorage) WriteFile(fileContent string, fileName string) error {
+func (fs *FileStorage) WriteFile(fileContent string, fileName string, ctx context.Context) error {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.WriteFile")
+	defer span.End()
+
 	filePath := hdfsWriteDir + fileName
 
 	// Create file on HDFS with default replication and block size
 	file, err := fs.Client.Create(filePath)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in creating file on HDFS:"+err.Error())
 		fs.logger.Println("Error in creating file on HDFS:", err)
 		return err
 	}
@@ -113,6 +122,7 @@ func (fs *FileStorage) WriteFile(fileContent string, fileName string) error {
 
 	_, err = file.Write(fileContentByteArray)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in writing file on HDFS:"+err.Error())
 		fs.logger.Println("Error in writing file on HDFS:", err)
 		return err
 	}
@@ -124,7 +134,9 @@ func (fs *FileStorage) WriteFile(fileContent string, fileName string) error {
 	return nil
 }
 
-func (fs *FileStorage) ReadFile(fileName string, isCopied bool) (string, error) {
+func (fs *FileStorage) ReadFile(fileName string, isCopied bool, ctx context.Context) (string, error) {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.ReadFile")
+	defer span.End()
 	var filePath string
 	if isCopied {
 		filePath = hdfsCopyDir + fileName
@@ -135,6 +147,7 @@ func (fs *FileStorage) ReadFile(fileName string, isCopied bool) (string, error) 
 	// Open file for reading
 	file, err := fs.Client.Open(filePath)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in opening file for reding on HDFS:"+err.Error())
 		fs.logger.Println("Error in opening file for reding on HDFS:", err)
 		return "", err
 	}
@@ -143,6 +156,7 @@ func (fs *FileStorage) ReadFile(fileName string, isCopied bool) (string, error) 
 	buffer := make([]byte, 1024)
 	n, err := file.Read(buffer)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in reading file on HDFS:"+err.Error())
 		fs.logger.Println("Error in reading file on HDFS:", err)
 		return "", err
 	}
@@ -157,12 +171,16 @@ func extractFileNameFromURL(url string) string {
 	return parts[len(parts)-1]
 }
 
-func (fs *FileStorage) StoreImageInHDFS(imageData []byte) (string, error) {
+func (fs *FileStorage) StoreImageInHDFS(imageData []byte, ctx context.Context) (string, error) {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.StoreImageInHDFS")
+	defer span.End()
+
 	fileName := cache.GenerateUniqueImageID()
 
 	localFilePath := "/tmp/" + fileName
-	err := fs.WriteLocalFile(localFilePath, imageData)
+	err := fs.WriteLocalFile(localFilePath, imageData, ctx)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error writing local file:"+err.Error())
 		fs.logger.Printf("Error writing local file: %v\n", err)
 		return "", fmt.Errorf("error writing local file: %v", err)
 	}
@@ -170,6 +188,7 @@ func (fs *FileStorage) StoreImageInHDFS(imageData []byte) (string, error) {
 	hdfsFilePath := hdfsCopyDir + fileName
 	err = fs.Client.CopyToRemote(localFilePath, hdfsFilePath)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error copying file to HDFS:"+err.Error())
 		fs.logger.Printf("Error copying file to HDFS: %v\n", err)
 		return "", fmt.Errorf("error copying file to HDFS: %v", err)
 	}
@@ -181,9 +200,13 @@ func (fs *FileStorage) StoreImageInHDFS(imageData []byte) (string, error) {
 	return hdfsFilePath, nil
 }
 
-func (fs *FileStorage) WriteLocalFile(filePath string, data []byte) error {
+func (fs *FileStorage) WriteLocalFile(filePath string, data []byte, ctx context.Context) error {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.WriteLocalFile")
+	defer span.End()
+
 	file, err := os.Create(filePath)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error creating local file:"+err.Error())
 		fs.logger.Printf("Error creating local file: %v\n", err)
 		return err
 	}
@@ -191,6 +214,7 @@ func (fs *FileStorage) WriteLocalFile(filePath string, data []byte) error {
 
 	_, err = file.Write(data)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error writing local file:"+err.Error())
 		fs.logger.Printf("Error writing local file: %v\n", err)
 		return err
 	}
@@ -198,7 +222,10 @@ func (fs *FileStorage) WriteLocalFile(filePath string, data []byte) error {
 	return nil
 }
 
-func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName string) error {
+func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName string, ctx context.Context) error {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.WriteFileBytes")
+	defer span.End()
+
 	filePath := hdfsWriteDir + fileName
 	fmt.Println(filePath)
 	fmt.Println("here filePath")
@@ -206,24 +233,28 @@ func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName
 	// If the directory doesn't exist, create it
 	err := fs.Client.Mkdir(hdfsWriteDir+dirName, 0777) // You can adjust the permission mode as needed
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		fmt.Println(err)
 		fmt.Println("Ok")
 	}
 
 	file, err := fs.Client.Create(filePath + ".jpg")
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in creating file on HDFS:"+err.Error())
 		fs.logger.Println("Error in creating file on HDFS:", err)
 		return err
 	}
 
 	_, err = file.Write(imageData)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in writing image to file on HDFS:"+err.Error())
 		fs.logger.Println("Error in writing image to file on HDFS:", err)
 		return err
 	}
 
 	err = file.Close()
 	if err != nil {
+		//span.SetStatus(codes.Error, "Error in closing file on HDFS:"+err.Error())
 		fs.logger.Println("Error in closing file on HDFS:", err)
 		return err
 	}
@@ -231,9 +262,13 @@ func (fs *FileStorage) WriteFileBytes(imageData []byte, fileName string, dirName
 	return nil
 }
 
-func (fs *FileStorage) ReadFileBytes(fileName string) ([]byte, error) {
+func (fs *FileStorage) ReadFileBytes(fileName string, ctx context.Context) ([]byte, error) {
+	ctx, span := fs.Tracer.Start(ctx, "FileStorage.ReadFileBytes")
+	defer span.End()
+
 	file, err := fs.Client.Open(fileName)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in opening file for reading on HDFS:"+err.Error())
 		fs.logger.Println("Error in opening file for reading on HDFS:", err)
 		return nil, err
 	}
@@ -241,6 +276,7 @@ func (fs *FileStorage) ReadFileBytes(fileName string) ([]byte, error) {
 
 	fileContent, err := io.ReadAll(file)
 	if err != nil {
+		span.SetStatus(codes.Error, "Error in reading file on HDFS:"+err.Error())
 		fs.logger.Println("Error in reading file on HDFS:", err)
 		return nil, err
 	}
