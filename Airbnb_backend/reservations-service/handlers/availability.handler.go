@@ -5,10 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -16,6 +12,11 @@ import (
 	"reservations-service/services"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -259,6 +260,35 @@ func (s *AvailabilityHandler) GetAvailabilityByAccommodationId(rw http.ResponseW
 		return
 	}
 	span.SetStatus(codes.Ok, "Get availability by accommodation id successful")
+	rw.Write(jsonResponse)
+}
+
+func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request) {
+	// rw := c.Writer
+	// h := c.Request
+	vars := mux.Vars(h)
+	accIdParam := vars["accId"]
+	accId, err := primitive.ObjectIDFromHex(accIdParam)
+	if err != nil {
+		panic(err)
+	}
+
+	prices, err := s.availabilityService.GetPrices(accId)
+
+	if err != nil {
+		//span.SetStatus(codes.Error, err.Error())
+		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	jsonResponse, err1 := json.Marshal(prices)
+	if err1 != nil {
+		//span.SetStatus(codes.Error, "Error marshaling JSON"+err1.Error())
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
+		return
+	}
+	//span.SetStatus(codes.Ok, "Get availability by accommodation id successful")
 	rw.Write(jsonResponse)
 }
 

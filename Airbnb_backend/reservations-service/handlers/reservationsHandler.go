@@ -6,10 +6,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -19,6 +15,11 @@ import (
 	"reservations-service/utils"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -779,66 +780,66 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.CheckAvailability")
 	defer span.End()
 
-	token := h.Header.Get("Authorization")
-	url := "https://auth-server:8080/api/users/currentUser"
+	// token := h.Header.Get("Authorization")
+	// url := "https://auth-server:8080/api/users/currentUser"
 
-	timeout := 2000 * time.Second
-	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	// timeout := 2000 * time.Second
+	// ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	// defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
-	if err != nil {
-		if ctxx.Err() == context.DeadlineExceeded {
-			span.SetStatus(codes.Error, "Authorization service not available.")
-			errorMsg := map[string]string{"error": "Authorization service not available."}
-			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
-			return
-		}
-		span.SetStatus(codes.Error, "Authorization service not available.")
-		errorMsg := map[string]string{"error": "Authorization service not available."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
-		return
-	}
-	defer resp.Body.Close()
+	// resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	// if err != nil {
+	// 	if ctxx.Err() == context.DeadlineExceeded {
+	// 		span.SetStatus(codes.Error, "Authorization service not available.")
+	// 		errorMsg := map[string]string{"error": "Authorization service not available."}
+	// 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+	// 		return
+	// 	}
+	// 	span.SetStatus(codes.Error, "Authorization service not available.")
+	// 	errorMsg := map[string]string{"error": "Authorization service not available."}
+	// 	error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+	// 	return
+	// }
+	// defer resp.Body.Close()
 
-	statusCode := resp.StatusCode
-	if statusCode != 200 {
-		span.SetStatus(codes.Error, "Unauthorized")
-		errorMsg := map[string]string{"error": "Unauthorized."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
-		return
-	}
+	// statusCode := resp.StatusCode
+	// if statusCode != 200 {
+	// 	span.SetStatus(codes.Error, "Unauthorized")
+	// 	errorMsg := map[string]string{"error": "Unauthorized."}
+	// 	error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+	// 	return
+	// }
 
-	decoder := json.NewDecoder(resp.Body)
+	// decoder := json.NewDecoder(resp.Body)
 
-	var response struct {
-		LoggedInUser struct {
-			ID       string        `json:"id"`
-			UserRole data.UserRole `json:"userRole"`
-		} `json:"user"`
-		Message string `json:"message"`
-	}
+	// var response struct {
+	// 	LoggedInUser struct {
+	// 		ID       string        `json:"id"`
+	// 		UserRole data.UserRole `json:"userRole"`
+	// 	} `json:"user"`
+	// 	Message string `json:"message"`
+	// }
 
-	if err := decoder.Decode(&response); err != nil {
-		if strings.Contains(err.Error(), "cannot parse") {
-			span.SetStatus(codes.Error, "Invalid date format in the response")
-			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
-			return
-		}
+	// if err := decoder.Decode(&response); err != nil {
+	// 	if strings.Contains(err.Error(), "cannot parse") {
+	// 		span.SetStatus(codes.Error, "Invalid date format in the response")
+	// 		error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
+	// 		return
+	// 	}
 
-		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
-		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
-		return
-	}
+	// 	span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
+	// 	error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+	// 	return
+	// }
 
-	userRole := response.LoggedInUser.UserRole
+	// userRole := response.LoggedInUser.UserRole
 
-	if userRole != data.Guest {
-		span.SetStatus(codes.Error, "Permission denied. Only guests can check availability of accommodations.")
-		errorMsg := map[string]string{"error": "Permission denied. Only guests can check availability of accommodations."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
-		return
-	}
+	// if userRole != data.Guest {
+	// 	span.SetStatus(codes.Error, "Permission denied. Only guests can check availability of accommodations.")
+	// 	errorMsg := map[string]string{"error": "Permission denied. Only guests can check availability of accommodations."}
+	// 	error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
+	// 	return
+	// }
 
 	vars := mux.Vars(h)
 	accIDString, ok := vars["accId"]

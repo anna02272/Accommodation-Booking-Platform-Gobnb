@@ -3,6 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -15,15 +25,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
 )
 
 var (
@@ -138,6 +139,9 @@ func main() {
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	getPrices := router.Methods(http.MethodGet).Subrouter()
+	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
