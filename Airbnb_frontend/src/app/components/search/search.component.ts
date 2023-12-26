@@ -76,18 +76,18 @@ export class SearchComponent {
     var x = document.getElementById("advanced_search");
     if(x){
     if (x.style.display === "none") {
-      x.style.display = "block";
+      x.style.display = "inline-block";
       //change button text
       var advancedBtn = document.getElementById("advanced-btn");
       if (advancedBtn !== null) {
-        advancedBtn.innerHTML = "Advanced UP";
+        //advancedBtn.innerHTML = "Advanced";
       }
     } else {
       x.style.display = "none";
       //change button text
       var advancedBtn = document.getElementById("advanced-btn");
       if (advancedBtn !== null) {
-        advancedBtn.innerHTML = "Advanced DOWN";
+        //advancedBtn.innerHTML = "Advanced DOWN";
       }
     }
   }

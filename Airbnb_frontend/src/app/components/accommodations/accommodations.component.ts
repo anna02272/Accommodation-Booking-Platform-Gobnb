@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Accommodation } from 'src/app/models/accommodation';
 import { UserService } from 'src/app/services';
 import { AccommodationService } from 'src/app/services/accommodation.service';
@@ -29,6 +29,7 @@ export class AccommodationsComponent implements OnInit {
     private userService: UserService,
     private sanitizer: DomSanitizer,
     private reservationService: ReservationService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -83,11 +84,17 @@ export class AccommodationsComponent implements OnInit {
         var arr = data;
         var arr2: Accommodation[] = [];
         
-        if(start_date != null && end_date != null){
+        if(start_date != "" && end_date != ""){
         for (let acc of arr){
           var check = this.checkAvailability(acc, start_date, end_date)
         }
       }
+      this.accommodations = arr;
+      this.loadAccommodationImages()
+      //this.accommodations = [...this.accommodations];
+      this.cdr.detectChanges();
+      
+
 
         //this.loadAccommodationImages();
 
@@ -117,6 +124,7 @@ export class AccommodationsComponent implements OnInit {
           console.log('Dates are available.', response);
           //alert(acc._Id + " is available")
           this.accommodations.push(acc);
+          
           //this.showDivSuccessAvailability = true;
           errorCheck = true;
         //    setTimeout(() => {
