@@ -1,19 +1,23 @@
     <section id="testimonials">
         <div class="testimonial-heading">
-            <h1>Accommodation Reviews</h1>
+            <h1>Accommodation Reviews (average: {{ ratingResponse2?.averageRating }})</h1>
+            <p class="notif" *ngIf="notification" [class]="notification.msgType">
+                {{ notification.msgBody }}
+              </p>
+
         </div>
         <div class="testimonial-box-container">
             <!-- one review -->
-            <div class="testimonial-box">
+            <div class="testimonial-box" *ngFor="let rating of ratingResponse2?.ratings; let i = index">
                 <div class="box-top">
                     <div class="profile">
                         <div class="name-user">
-                            <strong>Username</strong>
-                            <span>email@gmail.com</span>
+                            <strong>{{ rating.guest.username }}</strong>
+                            <span>{{ rating.guest.email }}</span>
                         </div>
                     </div>
                     <div class="name-user">
-                        <span>mm.dd.yyyy</span>
+                        <span>{{ rating.dateAndTime }}</span>
                     </div>
                     <div class="reviews">
                         <i class="fa fa-star"></i>
@@ -21,7 +25,7 @@
                         <i class="fa fa-star"></i>
                         <i class="fa fa-star"></i>
                         <i class="fa fa-star"></i>
-                        <i> 5.0</i>
+                        <i> {{ rating.rating }}</i>
                     </div>
                     
                 </div>
@@ -30,13 +34,6 @@
         </div>
     </section>
     <section id="testimonials">
-        <div class="testimonial-heading">
-            <h1>Accommodation Reviews (average: {{ ratingResponse2?.averageRating }})</h1>
-            <p class="notif" *ngIf="notification" [class]="notification.msgType">
-                {{ notification.msgBody }}
-              </p>
-
-        </div>
         <div class="testimonial-heading">
             <h1>Host Reviews (average: {{ ratingResponse?.averageRating }})</h1>
             <p class="notif" *ngIf="notification" [class]="notification.msgType">

@@ -94,6 +94,11 @@
         font-size: 16px;
         padding: 10px;
     }
+    .priceinput{
+        width: 130px;
+        border: 1px solid #757575;
+        background-color: #fff;
+    }
     .search-btn{
         float: left;
         width: 150px;
@@ -110,4 +115,41 @@
     .search-btn:hover{
         background-color: #5D8AA8;
         cursor: pointer;
+    }
+    .reset-btn{
+        float: left;
+        width: 100px;
+        height: 30px;
+        border: 1px solid #72A0C1;
+        margin: 0 0 3px 0;
+        background-color: #72A0C1;
+        color: #fff;
+        font-weight: bold;
+        font-size: 14px;
+        border-radius: 3px;
+    }
+    .reset-btn:hover{
+        background-color: #5D8AA8;
+        cursor: pointer;
+    }
+    .advanced-btn{
+        float: left;
+        width: 100px;
+        height: 30px;
+        border: 1px solid #72A0C1;
+        margin: 0 0 0 0;
+        background-color: #fff;
+        color: #72A0C1;
+        font-weight: bold;
+        font-size: 14px;
+        border-radius: 3px;
+    }
+    .advanced-btn:hover{
+        background-color: #72A0C1;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .advanced_search1 > * {
+        margin-left: 10px;
     }

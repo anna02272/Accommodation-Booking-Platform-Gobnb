@@ -1,28 +1,30 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"os"
 	"reservations-service/data"
 	"time"
 )
 
-// NoSQL: ReservationRepo struct encapsulating Cassandra api client
 type ReservationRepo struct {
 	session *gocql.Session //connection towards CassandraDB
-	logger  *log.Logger    //write messages inside Console
+	logger  *log.Logger
+	ctx     context.Context
+	Tracer  trace.Tracer
 }
 
 // NoSQL: Constructor which reads db configuration from environment and creates a keyspace
 // if CassandrDB exists, this function connects to DB,if not it tries to create cassandraDB
-func New(logger *log.Logger) (*ReservationRepo, error) {
+func New(logger *log.Logger, tracer trace.Tracer) (*ReservationRepo, error) {
 	db := os.Getenv("CASS_DB")
 
-	// Connect to default keyspace
-	//keyspace -something like schema in RDBMS, similar tables are in one keyspace, logical group of tables
 	cluster := gocql.NewCluster(db)
 	cluster.Keyspace = "system"
 	session, err := cluster.CreateSession()
@@ -55,6 +57,7 @@ func New(logger *log.Logger) (*ReservationRepo, error) {
 	return &ReservationRepo{
 		session: session,
 		logger:  logger,
+		Tracer:  tracer,
 	}, nil
 }
 
@@ -65,6 +68,8 @@ func (sr *ReservationRepo) CloseSession() {
 
 // Create reservations_by_guest table
 func (sr *ReservationRepo) CreateTable() {
+	//ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CreateTable")
+	//defer span.End()
 
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS reservations_by_guest (
@@ -77,6 +82,7 @@ func (sr *ReservationRepo) CreateTable() {
         check_in_date timestamp,
         check_out_date timestamp,
         number_of_guests int,
+        isCanceled boolean ,
         PRIMARY KEY ((guest_id, reservation_id_time_created),check_in_date)
     ) WITH CLUSTERING ORDER BY (check_in_date ASC);`,
 	).Exec()
@@ -94,26 +100,32 @@ func (sr *ReservationRepo) CreateTable() {
 	).Exec()
 
 	if err != nil {
+		//span.SetStatus(codes.Error, err.Error())
 		sr.logger.Println(err)
 	}
 }
 
-func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.ReservationByGuestCreate,
+func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestReservation *data.ReservationByGuestCreate,
 	guestId string, accommodationName string, accommodationLocation string, accommodationHostId string) error {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.InsertReservationByGuest")
+	defer span.End()
+
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
 		`SELECT COUNT(*) FROM reservations_by_guest 
          WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? ALLOW FILTERING`,
 		guestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
-	).Scan(&existingReservationCount)
+	).WithContext(ctx).Scan(&existingReservationCount)
 
 	if errSameReservation != nil {
+		span.SetStatus(codes.Error, errSameReservation.Error())
 		sr.logger.Println(errSameReservation)
 		return errSameReservation
 	}
 
 	if existingReservationCount > 0 {
+		span.SetStatus(codes.Error, "Guest already has a reservation for the same accommodation and check-in date")
 		return fmt.Errorf("Guest already has a reservation for the same accommodation and check-in date")
 	}
 
@@ -125,8 +137,8 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
          (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, accommodation_host_id,
-          check_in_date, check_out_date,number_of_guests) 
-         VALUES (?, ?, ?, ?, ?, ?, ?,?, ?)`,
+          check_in_date, check_out_date,number_of_guests, isCanceled) 
+         VALUES (?, ?, ?, ?, ?, ?, ?,?, ?, false)`,
 		reservationIdTimeCreated,
 		guestId,
 		guestReservation.AccommodationId,
@@ -136,9 +148,10 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 		guestReservation.CheckInDate,
 		guestReservation.CheckOutDate,
 		guestReservation.NumberOfGuests,
-	).Exec()
+	).WithContext(ctx).Exec()
 
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		sr.logger.Println(err)
 		return err
 	}
@@ -146,11 +159,15 @@ func (sr *ReservationRepo) InsertReservationByGuest(guestReservation *data.Reser
 	return nil
 }
 
-func (sr *ReservationRepo) GetAllReservations(guestID string) (data.ReservationsByGuest, error) {
-	query := `SELECT  reservation_id_time_created, guest_id, accommodation_id,
-        accommodation_location, accommodation_host_id, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`
+func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID string) (data.ReservationsByGuest, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetAllReservations")
+	defer span.End()
 
-	iterable := sr.session.Query(query, guestID).Iter()
+	query := `SELECT  reservation_id_time_created, guest_id, accommodation_id,
+        accommodation_location, accommodation_host_id, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ?  AND isCanceled = false ALLOW FILTERING`
+
+	//iterable := sr.session.Query(query, guestID).Iter()
+	iterable := sr.session.Query(query, guestID).WithContext(ctx).Iter()
 
 	var reservations data.ReservationsByGuest
 	m := map[string]interface{}{}
@@ -174,6 +191,7 @@ func (sr *ReservationRepo) GetAllReservations(guestID string) (data.Reservations
 	}
 
 	if err := iterable.Close(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		sr.logger.Println(err)
 		return nil, err
 	}
@@ -181,46 +199,122 @@ func (sr *ReservationRepo) GetAllReservations(guestID string) (data.Reservations
 	return reservations, nil
 }
 
-func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(accommodationId string) int {
+func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx context.Context, accommodationId string) int {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationByAccommodationIDAndCheckOut")
+	defer span.End()
+
 	var countVariable int
 	var checkOutNow = time.Now()
 
 	query := `
 		SELECT COUNT(*) FROM reservations_by_guest 
-         WHERE check_out_date >= ? AND accommodation_id = ? ALLOW FILTERING`
+         WHERE check_out_date >= ? AND accommodation_id = ?  AND isCanceled = false ALLOW FILTERING`
 
-	if err := sr.session.Query(query, checkOutNow, accommodationId).Scan(&countVariable); err != nil {
-		sr.logger.Println("Error retrieving reservation details:", err)
+	if err := sr.session.Query(query, checkOutNow, accommodationId).WithContext(ctx).Scan(&countVariable); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
+		sr.logger.Println("Error retrieving reservation details:" + err.Error())
 		return -1
 	}
 	return countVariable
 
 }
 
-func (sr *ReservationRepo) CancelReservationByID(guestID string, reservationID string) error {
-	var checkInDate time.Time
-	query := `
-        SELECT check_in_date
-        FROM reservation.reservations_by_guest
-        WHERE guest_id = ? AND reservation_id_time_created = ?`
+func (sr *ReservationRepo) GetReservationAccommodationID(ctx context.Context, reservationID string, guestID string) (string, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationAccommodationID")
+	defer span.End()
 
-	if err := sr.session.Query(query, guestID, reservationID).Scan(&checkInDate); err != nil {
+	var accommodationID string
+	query := `
+		SELECT accommodation_id FROM reservations_by_guest
+         WHERE guest_id = ? AND reservation_id_time_created = ?  AND isCanceled = false ALLOW FILTERING`
+	fmt.Println(reservationID)
+	fmt.Println("repo rsv id")
+	if err := sr.session.Query(query, guestID, reservationID).Scan(&accommodationID); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
 		sr.logger.Println("Error retrieving reservation details:", err)
+		return "", err
+	}
+	return accommodationID, nil
+
+}
+
+func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string, checkInDate time.Time) error {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CancelReservationByID")
+	defer span.End()
+
+	var isCanceled bool
+	checkQuery := `SELECT isCanceled FROM reservations_by_guest 
+        WHERE guest_id = ? AND reservation_id_time_created = ? AND check_in_date = ?`
+	if err := sr.session.Query(checkQuery, guestID, reservationID, checkInDate).WithContext(ctx).Scan(&isCanceled); err != nil {
+		span.SetStatus(codes.Error, "Error checking reservation status: "+err.Error())
+		sr.logger.Println("Error checking reservation status:", err)
 		return err
 	}
 
-	currentTime := time.Now()
-	if currentTime.After(checkInDate) {
-		return errors.New("cannot cancel reservation, check-in date has already started")
+	if isCanceled {
+		return errors.New("reservation is already canceled")
 	}
 
-	deleteQuery := ` DELETE FROM reservations_by_guest 
-        WHERE guest_id = ? AND reservation_id_time_created = ?`
+	updateQuery := `UPDATE reservations_by_guest SET isCanceled = true
+        WHERE guest_id = ? AND reservation_id_time_created = ? AND check_in_date = ?`
 
-	if err := sr.session.Query(deleteQuery, guestID, reservationID).Exec(); err != nil {
+	if err := sr.session.Query(updateQuery, guestID, reservationID, checkInDate).WithContext(ctx).Exec(); err != nil {
+		span.SetStatus(codes.Error, "Error canceling reservation: "+err.Error())
 		sr.logger.Println("Error canceling reservation:", err)
 		return err
 	}
 
 	return nil
 }
+
+func (sr *ReservationRepo) GetReservationCheckInDate(ctx context.Context, reservationID string, guestID string) (time.Time, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationCheckInDate")
+	defer span.End()
+
+	var checkInDate time.Time
+
+	query := `
+        SELECT check_in_date FROM reservations_by_guest
+        WHERE guest_id = ? AND reservation_id_time_created = ?`
+
+	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkInDate); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving check-in date: "+err.Error())
+		sr.logger.Println("Error retrieving check-in date:", err)
+		return time.Time{}, err
+	}
+
+	return checkInDate, nil
+}
+
+//func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string) error {
+//	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CancelReservationByID")
+//	defer span.End()
+//	var checkInDate time.Time
+//	query := `
+//        SELECT check_in_date
+//        FROM reservation.reservations_by_guest
+//        WHERE guest_id = ? AND reservation_id_time_created = ?`
+//
+//	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkInDate); err != nil {
+//		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
+//		sr.logger.Println("Error retrieving reservation details:", err)
+//		return err
+//	}
+//
+//	currentTime := time.Now()
+//	if currentTime.After(checkInDate) {
+//		span.SetStatus(codes.Error, "cannot cancel reservation, check-in date has already started")
+//		return errors.New("cannot cancel reservation, check-in date has already started")
+//	}
+//
+//	deleteQuery := ` DELETE FROM reservations_by_guest
+//        WHERE guest_id = ? AND reservation_id_time_created = ?`
+//
+//	if err := sr.session.Query(deleteQuery, guestID, reservationID).WithContext(ctx).Exec(); err != nil {
+//		span.SetStatus(codes.Error, "Error canceling reservation: "+err.Error())
+//		sr.logger.Println("Error canceling reservation:", err)
+//		return err
+//	}
+//
+//	return nil
+//}

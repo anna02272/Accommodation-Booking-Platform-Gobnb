@@ -2,6 +2,7 @@ package main
 
 import (
 	"acc-service/cache"
+	"acc-service/config"
 	"acc-service/handlers"
 	hdfs_store "acc-service/hdfs-store"
 	"acc-service/routes"
@@ -14,6 +15,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"log"
 	"net/http"
 	"os"
@@ -37,14 +44,21 @@ func init() {
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
+	cfg := config.GetConfig()
+	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
+	if err != nil {
+		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+	}
+	tracer := tracerProvider.Tracer(cfg.ServiceName)
+
 	hdfsLogger := log.New(os.Stdout, "HDFS: ", log.LstdFlags)
-	fileStorage, err := hdfs_store.New(hdfsLogger)
+	fileStorage, err := hdfs_store.New(hdfsLogger, tracer)
 	if err != nil {
 		panic(err)
 	}
 
 	redisLogger := log.New(os.Stdout, "REDIS CACHE: ", log.LstdFlags)
-	imageCache = cache.New(redisLogger)
+	imageCache = cache.New(redisLogger, tracer)
 	imageCache.Ping()
 
 	if err != nil {
@@ -59,8 +73,8 @@ func init() {
 
 	// Collections
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
-	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx)
-	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection)
+	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer)
+	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
 
 	server = gin.Default()
@@ -88,4 +102,23 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+}
+func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
+	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize exporter due: %w", err)
+	}
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(serviceName),
+			semconv.DeploymentEnvironmentKey.String("development"),
+		)),
+	)
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+
+	return tp, nil
 }

@@ -21,6 +21,7 @@ func NewAccommodationRouteHandler(accommodationHandler handlers.AccommodationHan
 func (rc *AccommodationRouteHandler) AccommodationRoute(rg *gin.RouterGroup) {
 	router := rg.Group("/accommodations")
 	router.Use(MiddlewareContentTypeSet)
+	router.Use(handlers.ExtractTraceInfoMiddleware())
 	router.POST("/create", MiddlewareAccommodationDeserialization, rc.accommodationHandler.CreateAccommodations)
 	router.GET("/get/:id", rc.accommodationHandler.GetAccommodationByID)
 	router.GET("/get", rc.accommodationHandler.GetAllAccommodations)

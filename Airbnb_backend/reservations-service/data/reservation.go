@@ -23,6 +23,7 @@ type ReservationByGuest struct {
 	CheckInDate              time.Time
 	CheckOutDate             time.Time
 	NumberOfGuests           int
+	IsCanceled               bool
 }
 
 type ReservationByGuestCreate struct {
