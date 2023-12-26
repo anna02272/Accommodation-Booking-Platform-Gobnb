@@ -94,6 +94,12 @@
         font-size: 16px;
         padding: 10px;
     }
+    .priceinput{
+        width: 130px;
+        border: 1px solid #757575;
+        border-right-color: transparent;
+        background-color: #fff;
+    }
     .search-btn{
         float: left;
         width: 150px;
@@ -121,10 +127,29 @@
         color: #fff;
         font-weight: bold;
         font-size: 14px;
-        border-top-right-radius: 3px;
-        border-bottom-right-radius: 3px;
+        border-radius: 3px;
     }
     .reset-btn:hover{
         background-color: #5D8AA8;
         cursor: pointer;
+    }
+    .advanced-btn{
+        float: left;
+        width: 100px;
+        height: 30px;
+        border: 1px solid #72A0C1;
+        margin: 0 0 0 0;
+        background-color: #fff;
+        color: #72A0C1;
+        font-weight: bold;
+        font-size: 14px;
+        border-radius: 3px;
+    }
+    .advanced-btn:hover{
+        background-color: #5D8AA8;
+        cursor: pointer;
+    }
+
+    .advanced_search1 > * {
+        margin-left: 10px;
     }

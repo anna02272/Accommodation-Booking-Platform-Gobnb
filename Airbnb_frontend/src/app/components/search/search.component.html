@@ -42,13 +42,10 @@
   
   <button *ngIf="isButtonVisible()" class="reset-btn" (click)="goHome()">Reset</button>
 
-  <button class="reset-btn" id="advanced-btn" (click)="advanced()" style="margin-left: 5px;">Advanced DOWN</button>
-  <div id="advanced_search" style="display: none;">
-    <br>
-    <br>
-    <br>
+  <button class="advanced-btn" id="advanced-btn" (click)="advanced()" [style.margin-left.px]="isButtonVisible() ? 3 : 0">Advanced</button>
+  <div id="advanced_search" class="advanced_search1" style="display: none;">
     <label>
-      <input type="checkbox" name="TV" id="tv" /> TV
+      <input type="checkbox" name="TV" id="tv" style="margin-left: 5px;"/> TV
     </label>
     <label>
       <input type="checkbox" name="Wifi" id="wifi" style="margin-left: 5px;"/> Wifi
@@ -56,8 +53,8 @@
     <label>
       <input type="checkbox" name="AC" id="ac" style="margin-left: 5px;"/> AC
     </label>
-    <input class="" id="min_price" placeholder="Min Price" type="number" min="0">
-    <input class="" id="max_price" placeholder="Max Price" type="number" min="0">
+    <input class="priceinput" id="min_price" placeholder="Min Price" type="number" min="0">
+    <input class="priceinput" id="max_price" placeholder="Max Price" type="number" min="0">
     <label>
       <input type="checkbox" name="featured_host" id="featured_host" /> Featured host
     </label>
