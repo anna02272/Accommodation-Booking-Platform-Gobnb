@@ -95,9 +95,6 @@ export class AccommodationsComponent implements OnInit {
         }
       }
       
-      
-
-
         //this.loadAccommodationImages();
 
         //this.accommodations = arr2;
