@@ -16,6 +16,9 @@ export class RatingService {
   getAll() {
     return this.apiService.get(this.configService.rating_url + "/getAll");
    }
+   getAllAccommodation() {
+    return this.apiService.get(this.configService.rating_url + "/getAllAccomodation");
+   }
 
    rateHost(hostId: string, rating: number): Observable<any> {
     const url = `${this.configService.rating_url}/rateHost/${hostId}`;

@@ -154,25 +154,6 @@ func (s *AccommodationRatingHandler) DeleteRatingAccommodation(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
 }
 
-func (s *AccommodationRatingHandler) GetAllRatings(c *gin.Context) {
-	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.GetAllRatings")
-	defer span.End()
-
-	ratings, averageRating, err := s.accommodationRatingService.GetAllRatings(spanCtx)
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	response := gin.H{
-		"ratings":       ratings,
-		"averageRating": averageRating,
-	}
-	span.SetStatus(codes.Ok, "Got all ratings successfully")
-	c.JSON(http.StatusOK, response)
-}
-
 func (s *AccommodationRatingHandler) GetByAccommodationAndGuest(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.GetByAccommodationAndGuest")
 	defer span.End()
@@ -283,4 +264,22 @@ func (s *AccommodationRatingHandler) HTTPSPerformAuthorizationRequestWithContext
 	}
 
 	return resp, nil
+}
+func (s *AccommodationRatingHandler) GetAllRatingsAccommodation(c *gin.Context) {
+	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.GetAllRatingsAccommodation")
+	defer span.End()
+
+	ratings, averageRating, err := s.accommodationRatingService.GetAllRatingsAccommodation(spanCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"ratings":       ratings,
+		"averageRating": averageRating,
+	}
+	span.SetStatus(codes.Ok, "Got all ratings successfully")
+	c.JSON(http.StatusOK, response)
 }
