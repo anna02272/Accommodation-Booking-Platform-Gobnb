@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -9,11 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"rating-service/domain"
 	"rating-service/services"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -125,6 +130,138 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
 		return
 	}
+	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
+
+	timeout = 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlAccommodationCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service is not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation service not available."})
+			return
+		}
+		span.SetStatus(codes.Error, "Accommodation service is not available.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation service not available."})
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeAccommodation := resp.StatusCode
+	fmt.Println(statusCodeAccommodation)
+	if statusCodeAccommodation != 200 {
+		span.SetStatus(codes.Error, "Accommodation with that id does not exist.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation with that id does not exist."})
+		return
+	}
+
+	var responseAccommodation struct {
+		AccommodationName      string `json:"accommodation_name"`
+		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationHostId    string `json:"host_id"`
+		AccommodationMinGuests int    `json:"accommodation_min_guests"`
+		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
+	}
+	decoder = json.NewDecoder(resp.Body)
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseAccommodation); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format."})
+			return
+		}
+		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error decoding json response."})
+		return
+	}
+
+	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
+
+	resp, err = s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlHostCheck)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Authorization service is not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization service not available."})
+			return
+		}
+		span.SetStatus(codes.Error, "Authorization service is not available.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization service not available."})
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeHostCheck := resp.StatusCode
+	fmt.Println(statusCodeHostCheck)
+	if statusCodeHostCheck != 200 {
+		span.SetStatus(codes.Error, "Host with that id does not exist.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Host with that id does not exist."})
+		return
+	}
+
+	decoder = json.NewDecoder(resp.Body)
+
+	// Define a struct to represent the JSON structure
+	var responseHost struct {
+		Host struct {
+			Email    string `json:"email"`
+			Username string `json:"username"`
+			HostID   string `json:"id"`
+		} `json:"user"`
+	}
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseHost); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format."})
+			return
+		}
+		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error decoding json response."})
+		return
+	}
+
+	notificationPayload := map[string]interface{}{
+		"host_id":           responseAccommodation.AccommodationHostId,
+		"host_email":        responseHost.Host.Email,
+		"notification_text": "Dear " + responseHost.Host.Username + ", \n your accommodation " + responseAccommodation.AccommodationName + " has been rated. It got " + strconv.Itoa(requestBody.Rating) + " stars",
+	}
+
+	notificationPayloadJSON, err := json.Marshal(notificationPayload)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error creating notification payload")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification payload"})
+		return
+	}
+
+	notificationURL := "https://notifications-server:8089/api/notifications/create"
+
+	timeout = 2000 * time.Second
+	ctx, cancel = context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, notificationURL, "POST", notificationPayloadJSON)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error creating notification request")
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification request"})
+			return
+		}
+		span.SetStatus(codes.Error, "Notification service not available.")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available."})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		span.SetStatus(codes.Error, "Error creating notification")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification"})
+		return
+	}
+
 	span.SetStatus(codes.Ok, "Rating successfully saved")
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateAccommodation})
 }
@@ -265,6 +402,32 @@ func (s *AccommodationRatingHandler) HTTPSPerformAuthorizationRequestWithContext
 
 	return resp, nil
 }
+
+func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAcc(
+	ctx context.Context, token string, url string, method string, requestBody []byte,
+) (*http.Response, error) {
+	_, span := s.Tracer.Start(ctx, "AccommodationRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBody")
+	defer span.End()
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func (s *AccommodationRatingHandler) GetAllRatingsAccommodation(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.GetAllRatingsAccommodation")
 	defer span.End()
