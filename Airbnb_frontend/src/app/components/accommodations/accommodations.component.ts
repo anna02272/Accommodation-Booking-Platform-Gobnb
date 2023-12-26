@@ -80,20 +80,28 @@ export class AccommodationsComponent implements OnInit {
       var ac = urlParams.get('ac');
       var min_price = urlParams.get('min_price');
       var max_price = urlParams.get('max_price');
+      //var price_type = urlParams.get('price_type');
       this.accService.getSearch(location, guests, start_date, end_date, tv, wifi, ac, min_price, max_price).subscribe((data: Accommodation[]) => {
-        var arr = data;
-        //var arr2: Accommodation[] = [];
-        this.accommodations = arr;
+      var arr = data;
+      //var arr2: Accommodation[] = [];
+      this.accommodations = arr;
+      if(this.accommodations.length){
+        var notif = document.getElementById("notif");
+        notif!.style.display = "none"; 
+      }
       this.loadAccommodationImages()
       //this.accommodations = [...this.accommodations];
       this.cdr.detectChanges();
         
-        if(start_date != "" && end_date != ""){
-          this.accommodations = [];
+      if(start_date != "" && end_date != ""){
+        this.accommodations = [];
         for (let acc of arr){
-          var check = this.checkAvailability(acc, start_date, end_date)
+          var check = this.checkAvailability(acc, start_date, end_date, min_price, max_price)
+          //, price_type)
         }
       }
+
+      
       
         //this.loadAccommodationImages();
 
@@ -103,12 +111,16 @@ export class AccommodationsComponent implements OnInit {
     else{
     this.accService.getAll().subscribe((data: Accommodation[]) => {
       this.accommodations = data;
+      if(this.accommodations.length){
+        var notif = document.getElementById("notif");
+        notif!.style.display = "none";
+      }
       this.loadAccommodationImages();
     });
     }
   }
 
-  checkAvailability(acc: any, startDate: any, endDate: any): boolean {
+  checkAvailability(acc: any, startDate: any, endDate: any, min_price: any, max_price: any): boolean {
 
     var errorCheck = false;
 
@@ -122,6 +134,12 @@ export class AccommodationsComponent implements OnInit {
         next: (response) => {
           console.log('Dates are available.', response);
           //alert(acc._Id + " is available")
+          if(min_price != "NaN" && max_price != "NaN"){
+            var check = this.checkPrice(acc, startDate, endDate, min_price, max_price)
+            return
+          }
+          var notif = document.getElementById("notif");
+          notif!.style.display = "none"; 
           this.accommodations.push(acc);
           this.loadAccommodationImages();
           this.cdr.detectChanges();
@@ -141,6 +159,74 @@ export class AccommodationsComponent implements OnInit {
         //       setTimeout(() => {
         //   //this.showDiv = false;
         //   errorCheck = false;
+        // }, 5000);
+            
+        }
+      });
+
+    return errorCheck;
+
+  }
+
+  checkPrice(acc: any, start_date: any, end_date: any, min_price: any, max_price: any): boolean {
+
+    //alert("hereTRIED")
+
+    var errorCheck = false;
+
+    const checkPriceData = {
+      check_in_date: start_date + "T00:00:00Z",
+      check_out_date: end_date + "T00:00:00Z",
+    };
+
+    this.reservationService.checkPrice(checkPriceData, acc._id).subscribe(
+      {
+        next: (response) => {
+          //response is an array of maps price:pricetype, i need an array with only the prices
+          var prices = [];
+          for (let res of response){
+            prices.push(res.price)
+          }
+          var min = Math.min(...prices)
+          //alert("min_price: " + min_price)
+          //alert("min: " + min)
+          var max = Math.max(...prices)
+          //alert("max_price: " + max_price)
+          //alert("max: " + max)
+          if(min_price <= min && max_price >= max){
+            //alert(acc._Id + " is available")
+            var notif = document.getElementById("notif");
+            notif!.style.display = "none"; 
+            this.accommodations.push(acc);
+            this.loadAccommodationImages();
+            this.cdr.detectChanges();
+            //this.showDivSuccessAvailability = true;
+            errorCheck = true;
+          }
+
+
+
+        //   console.log('Dates are available.', response);
+        //   //alert(acc._Id + " is available")
+        //   this.accommodations.push(acc);
+        //   this.loadAccommodationImages();
+        //   this.cdr.detectChanges();
+        //   //this.showDivSuccessAvailability = true;
+        //   errorCheck = true;
+        // //    setTimeout(() => {
+        // //   //this.showDivSuccessAvailability = false;
+        // //   errorCheck = false;
+        // // }, 5000);
+
+        },
+        error: (error) => {
+            //this.showDiv = true;
+            //this.errorMessage = error.error.error;
+            console.log(error);
+            //alert(acc._Id + " is not available")
+        //       setTimeout(() => {
+        //   //this.showDiv = false;
+            errorCheck = false;
         // }, 5000);
             
         }

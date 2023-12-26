@@ -447,9 +447,13 @@ func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodation
 	return availabilities, nil
 }
 
-func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID) ([]*data.PriceResponse, error) {
+func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID, startDate time.Time, endDate time.Time) ([]*data.PriceResponse, error) {
 	filter := bson.M{
 		"accommodation_id": accId,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {

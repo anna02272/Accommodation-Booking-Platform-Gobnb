@@ -140,7 +140,7 @@ func main() {
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
 
-	getPrices := router.Methods(http.MethodGet).Subrouter()
+	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})

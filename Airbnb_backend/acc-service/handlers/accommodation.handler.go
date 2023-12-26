@@ -159,24 +159,27 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 
 	//amenities is a map of amenities and their values from tv, wifi, ac
 	amenities := make(map[string]bool)
-	if tv == "true" {
-		amenities["tv"], _ = strconv.ParseBool(tv)
+	if tv != "" || wifi != "" || ac != "" {
 		amenitiesExist = true
-	} else {
-		amenities["tv"] = false
+		amenities["TV"], _ = strconv.ParseBool(tv)
+		amenities["WiFi"], _ = strconv.ParseBool(wifi)
+		amenities["AC"], _ = strconv.ParseBool(ac)
 	}
-	if wifi == "true" {
-		amenities["wifi"], _ = strconv.ParseBool(wifi)
-		amenitiesExist = true
-	} else {
-		amenities["wifi"] = false
-	}
-	if ac == "true" {
-		amenities["ac"], _ = strconv.ParseBool(ac)
-		amenitiesExist = true
-	} else {
-		amenities["ac"] = false
-	}
+	// } else {
+	// 	amenities["tv"] = false
+	// }
+	// if wifi == "true" {
+	// 	amenities["wifi"], _ = strconv.ParseBool(wifi)
+	// 	amenitiesExist = true
+	// } else {
+	// 	amenities["wifi"] = false
+	// }
+	// if ac == "true" {
+	// 	amenities["ac"], _ = strconv.ParseBool(ac)
+	// 	amenitiesExist = true
+	// } else {
+	// 	amenities["ac"] = false
+	// }
 
 	fmt.Println(amenitiesExist)
 	fmt.Println(amenities)
@@ -185,7 +188,7 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 	// endDate := c.Query("end_date")
 	// fmt.Println(endDate)
 
-	if location != "" || guests != "" {
+	if location != "" || guests != "" || amenitiesExist {
 		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist)
 		if err != nil {
 			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)

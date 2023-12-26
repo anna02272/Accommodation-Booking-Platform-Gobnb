@@ -15,7 +15,7 @@ type AvailabilityService interface {
 
 	IsAvailable(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) (bool, error)
 	BookAccommodation(accommodationID primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) error
-	GetPrices(accID primitive.ObjectID) ([]*data.PriceResponse, error)
+	GetPrices(accID primitive.ObjectID, startDate time.Time, endDate time.Time) ([]*data.PriceResponse, error)
 	// GetAvailabilityByID(availabilityID string, ctx context.Context) (*data.Availability, error)
 	// GetAvailabilitysByHostId(hostId string, ctx context.Context) ([]*data.Availability, error)
 	// GetAllAvailabilitys() ([]*data.Availability, error, ctx context.Context)

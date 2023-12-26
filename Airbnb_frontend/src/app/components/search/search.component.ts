@@ -28,6 +28,7 @@ export class SearchComponent {
     
     const minPrice = parseInt((document.getElementById('min_price') as HTMLInputElement).value, 10);
     const maxPrice = parseInt((document.getElementById('max_price') as HTMLInputElement).value, 10);
+    //const priceType = (document.getElementById('price_type') as HTMLInputElement).value;
     console.log(minPrice);
     console.log(maxPrice);
 
@@ -58,6 +59,7 @@ export class SearchComponent {
       return;
     }
     window.location.href = '/home?location=' + location + '&guests=' + guests + '&start_date=' + startDate + '&end_date=' + endDate + '&tv=' + tv + '&wifi=' + wifi + '&ac=' + ac + '&min_price=' + minPrice + '&max_price=' + maxPrice;
+    // + '&price_type=' + priceType;
   }
 
   isButtonVisible(){

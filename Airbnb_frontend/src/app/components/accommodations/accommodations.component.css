@@ -21,6 +21,7 @@
           color: #484848;
           margin-left: 5px;
       }
+      
       .img{
           display: inline-block;
           margin: 30px 5px 0 5px;
@@ -124,3 +125,11 @@
     color:red
 
   }
+
+  #notif{
+    font-weight: 100;
+    font-size: 20px;
+    padding-top: 20px;
+    color: #082e4a;
+    margin-left: 5px;
+}
