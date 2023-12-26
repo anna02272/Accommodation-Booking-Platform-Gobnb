@@ -86,7 +86,7 @@ func (s *AccommodationRatingServiceImpl) DeleteRating(accommodationID, guestID s
 	return nil
 }
 
-func (s *AccommodationRatingServiceImpl) GetAllRatings(ctx context.Context) ([]*domain.RateAccommodation, float64, error) {
+func (s *AccommodationRatingServiceImpl) GetAllRatingsAccommodation(ctx context.Context) ([]*domain.RateAccommodation, float64, error) {
 	ctx, span := s.Tracer.Start(ctx, "AccommodationRatingService.GetAllRatings")
 	defer span.End()
 	cursor, err := s.collection.Find(context.Background(), bson.M{})
@@ -151,3 +151,22 @@ func (s *AccommodationRatingServiceImpl) GetByAccommodationAndGuest(accommodatio
 
 	return ratings, nil
 }
+
+//func (s *AccommodationRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
+//	tr := http.DefaultTransport.(*http.Transport).Clone()
+//	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+//
+//	req, err := http.NewRequest("GET", url, nil)
+//	if err != nil {
+//		return nil, err
+//	}
+//	req.Header.Set("Authorization", token)
+//
+//	client := &http.Client{Transport: tr}
+//	resp, err := client.Do(req.WithContext(ctx))
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return resp, nil
+//}

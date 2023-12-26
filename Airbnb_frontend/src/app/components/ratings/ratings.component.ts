@@ -27,9 +27,10 @@ export class RatingsComponent implements OnInit{
     this.ratingService.getAll().subscribe((data: RateHost) => {
       this.ratingResponse = data;
       
+      
   });
-  this.ratingService.getAll().subscribe((data: RateAccommodation) => {
-    this.ratingResponse2 = data;
+  this.ratingService.getAllAccommodation().subscribe((data2: RateAccommodation) => {
+    this.ratingResponse2 = data2;
 });
   }
   

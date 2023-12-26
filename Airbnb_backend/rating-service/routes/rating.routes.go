@@ -29,5 +29,6 @@ func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router.POST("/rateAccommodation/:accommodationId", rc.accommodationRatingHandler.RateAccommodation)
 	router.DELETE("/deleteRatingAccommodation/:accommodationId", rc.accommodationRatingHandler.DeleteRatingAccommodation)
 	router.GET("/getAccommodation/:accommodationId", rc.accommodationRatingHandler.GetByAccommodationAndGuest)
+	router.GET("/getAllAccomodation", rc.accommodationRatingHandler.GetAllRatingsAccommodation)
 
 }
