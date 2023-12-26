@@ -203,9 +203,16 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 		var wifi = amenities["WiFi"]
 		var ac = amenities["AC"]
 		fmt.Println("in service: ", tv, wifi, ac)
-		filter["accommodation_amenities.TV"] = tv
-		filter["accommodation_amenities.WiFi"] = wifi
-		filter["accommodation_amenities.AC"] = ac
+		if tv == true {
+			filter["accommodation_amenities.TV"] = tv
+		}
+
+		if wifi == true {
+			filter["accommodation_amenities.WiFi"] = wifi
+		}
+		if ac == true {
+			filter["accommodation_amenities.AC"] = ac
+		}
 	}
 
 	cursor, err := s.collection.Find(context.Background(), filter)
