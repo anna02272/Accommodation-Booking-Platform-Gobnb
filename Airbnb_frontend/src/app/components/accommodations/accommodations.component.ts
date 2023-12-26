@@ -88,6 +88,9 @@ export class AccommodationsComponent implements OnInit {
       if(this.accommodations.length){
         var notif = document.getElementById("notif");
         notif!.style.display = "none"; 
+      } else{
+        var notif = document.getElementById("notif");
+        notif!.style.display = "block";
       }
       this.loadAccommodationImages()
       //this.accommodations = [...this.accommodations];
@@ -114,6 +117,9 @@ export class AccommodationsComponent implements OnInit {
       if(this.accommodations.length){
         var notif = document.getElementById("notif");
         notif!.style.display = "none";
+      } else{
+        var notif = document.getElementById("notif");
+        notif!.style.display = "block";
       }
       this.loadAccommodationImages();
     });
@@ -139,9 +145,16 @@ export class AccommodationsComponent implements OnInit {
             return
           }
           var notif = document.getElementById("notif");
-          notif!.style.display = "none"; 
+          //notif!.style.display = "none"; 
           this.accommodations.push(acc);
           this.loadAccommodationImages();
+          if(this.accommodations.length){
+            var notif = document.getElementById("notif");
+            notif!.style.display = "none"; 
+          } else{
+            var notif = document.getElementById("notif");
+            notif!.style.display = "block";
+          }
           this.cdr.detectChanges();
           //this.showDivSuccessAvailability = true;
           errorCheck = true;
@@ -155,6 +168,13 @@ export class AccommodationsComponent implements OnInit {
             //this.showDiv = true;
             //this.errorMessage = error.error.error;
             console.log(error);
+            if(this.accommodations.length){
+              var notif = document.getElementById("notif");
+              notif!.style.display = "none"; 
+            } else{
+              var notif = document.getElementById("notif");
+              notif!.style.display = "block";
+            }
             //alert(acc._Id + " is not available")
         //       setTimeout(() => {
         //   //this.showDiv = false;
@@ -196,9 +216,16 @@ export class AccommodationsComponent implements OnInit {
           if(min_price <= min && max_price >= max){
             //alert(acc._Id + " is available")
             var notif = document.getElementById("notif");
-            notif!.style.display = "none"; 
+            //notif!.style.display = "none"; 
             this.accommodations.push(acc);
             this.loadAccommodationImages();
+            if(this.accommodations.length){
+              var notif = document.getElementById("notif");
+              notif!.style.display = "none"; 
+            } else{
+              var notif = document.getElementById("notif");
+              notif!.style.display = "block";
+            }
             this.cdr.detectChanges();
             //this.showDivSuccessAvailability = true;
             errorCheck = true;
@@ -227,6 +254,13 @@ export class AccommodationsComponent implements OnInit {
         //       setTimeout(() => {
         //   //this.showDiv = false;
             errorCheck = false;
+            if(this.accommodations.length){
+              var notif = document.getElementById("notif");
+              notif!.style.display = "none"; 
+            } else{
+              var notif = document.getElementById("notif");
+              notif!.style.display = "block";
+            }
         // }, 5000);
             
         }
