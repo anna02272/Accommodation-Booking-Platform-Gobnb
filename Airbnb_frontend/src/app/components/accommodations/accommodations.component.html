@@ -12,7 +12,7 @@
       <div *ngFor="let accommodation of this.accommodations; let i = index" class="img" [ngClass]="{'new-row': i % 3 === 0}">
         <div class="img">
           <img  [src]="accommodation.coverImage || 'assets/images/car.jpg'" />
-          <div class="price-stamp">100$</div>
+          <div class="price-stamp">$</div>
 
           <div class="description">
             <h4><a [routerLink]="['/accommodation', accommodation._id]">{{ accommodation.accommodation_name }}</a></h4>
