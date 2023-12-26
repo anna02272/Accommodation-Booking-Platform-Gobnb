@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { RateHost } from 'src/app/models/rateHost';
+import { RateAccommodation } from 'src/app/models/rateAccommodation';
+
 import { RatingService } from 'src/app/services/rating.service';
 import { RefreshService } from 'src/app/services/refresh.service';
 
@@ -10,6 +12,7 @@ import { RefreshService } from 'src/app/services/refresh.service';
 })
 export class RatingsComponent implements OnInit{
   ratingResponse!: RateHost;
+  ratingResponse2!: RateAccommodation;
   notification = { msgType: '', msgBody: '' };
   
   constructor(
@@ -23,8 +26,13 @@ export class RatingsComponent implements OnInit{
   load() {
     this.ratingService.getAll().subscribe((data: RateHost) => {
       this.ratingResponse = data;
+      
   });
+  this.ratingService.getAll().subscribe((data: RateAccommodation) => {
+    this.ratingResponse2 = data;
+});
   }
+  
   private subscribeToRefresh() {
     this.refreshService.getRefreshObservable().subscribe(() => {
       this.load();

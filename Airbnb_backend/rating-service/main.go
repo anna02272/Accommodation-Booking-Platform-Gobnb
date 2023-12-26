@@ -28,10 +28,13 @@ var (
 	ctx         context.Context
 	mongoclient *mongo.Client
 
-	hostRatingCollection *mongo.Collection
-	hostRatingService    services.HostRatingService
-	HostRatingHandler    handlers.HostRatingHandler
-	RatingRouteHandler   routes.RatingRouteHandler
+	hostRatingCollection          *mongo.Collection
+	hostRatingService             services.HostRatingService
+	HostRatingHandler             handlers.HostRatingHandler
+	accommodationRatingCollection *mongo.Collection
+	accommodationRatingService    services.AccommodationRatingService
+	AccommodationRatingHandler    handlers.AccommodationRatingHandler
+	RatingRouteHandler            routes.RatingRouteHandler
 )
 
 func init() {
@@ -57,9 +60,13 @@ func init() {
 	tracer := tracerProvider.Tracer(cfg.ServiceName)
 	// Collections
 	hostRatingCollection = mongoclient.Database("Gobnb").Collection("host-rating")
+	accommodationRatingCollection = mongoclient.Database("Gobnb").Collection("accommodation-rating")
+
 	hostRatingService = services.NewHostRatingServiceImpl(hostRatingCollection, ctx, tracer)
 	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer)
-	RatingRouteHandler = routes.NewRatingRouteHandler(HostRatingHandler, hostRatingService)
+	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx, tracer)
+	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection, tracer)
+	RatingRouteHandler = routes.NewRatingRouteHandler(HostRatingHandler, hostRatingService, AccommodationRatingHandler, accommodationRatingService)
 
 	server = gin.Default()
 }
