@@ -520,8 +520,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
+	checkInDate, err := s.Repo.GetReservationCheckInDate(ctx, reservationIDString, guestID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error getting check-in date: "+err.Error())
+		s.logger.Println("Error getting check-in date:", err)
+		errorMsg := map[string]string{"error": "Error getting check-in date"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
 
-	if err := s.Repo.CancelReservationByID(ctx, guestID, reservationIDString); err != nil {
+	if err := s.Repo.CancelReservationByID(ctx, guestID, reservationIDString, checkInDate); err != nil {
 		span.SetStatus(codes.Error, "Error canceling reservation:"+err.Error())
 		s.logger.Println("Error canceling reservation:", err)
 		if strings.Contains(err.Error(), "Cannot cancel reservation, check-in date has already started") {
@@ -956,9 +964,7 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 	return resp, nil
 }
 
-func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
-	ctx context.Context, token string, url string, method string, requestBody []byte,
-) (*http.Response, error) {
+func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBody(ctx context.Context, token string, url string, method string, requestBody []byte) (*http.Response, error) {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 

@@ -79,7 +79,7 @@ export class CreateAccommodationComponent {
         console.log('Response from server:', response);
         setTimeout(() => {
         this.router.navigate(['/home']);
-        }, 1000) 
+        }, 2000) 
       },
       (error:any) => {
         this.notification = { msgType: 'error', msgBody: `Creating accommodation failed` };
