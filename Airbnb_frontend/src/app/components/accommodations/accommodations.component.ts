@@ -82,17 +82,19 @@ export class AccommodationsComponent implements OnInit {
       var max_price = urlParams.get('max_price');
       this.accService.getSearch(location, guests, start_date, end_date, tv, wifi, ac, min_price, max_price).subscribe((data: Accommodation[]) => {
         var arr = data;
-        var arr2: Accommodation[] = [];
+        //var arr2: Accommodation[] = [];
+        this.accommodations = arr;
+      this.loadAccommodationImages()
+      //this.accommodations = [...this.accommodations];
+      this.cdr.detectChanges();
         
         if(start_date != "" && end_date != ""){
+          this.accommodations = [];
         for (let acc of arr){
           var check = this.checkAvailability(acc, start_date, end_date)
         }
       }
-      this.accommodations = arr;
-      this.loadAccommodationImages()
-      //this.accommodations = [...this.accommodations];
-      this.cdr.detectChanges();
+      
       
 
 
@@ -124,7 +126,8 @@ export class AccommodationsComponent implements OnInit {
           console.log('Dates are available.', response);
           //alert(acc._Id + " is available")
           this.accommodations.push(acc);
-          
+          this.loadAccommodationImages();
+          this.cdr.detectChanges();
           //this.showDivSuccessAvailability = true;
           errorCheck = true;
         //    setTimeout(() => {
