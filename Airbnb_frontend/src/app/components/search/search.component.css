@@ -97,7 +97,6 @@
     .priceinput{
         width: 130px;
         border: 1px solid #757575;
-        border-right-color: transparent;
         background-color: #fff;
     }
     .search-btn{
@@ -120,7 +119,7 @@
     .reset-btn{
         float: left;
         width: 100px;
-        height: 42px;
+        height: 30px;
         border: 1px solid #72A0C1;
         margin: 0 0 3px 0;
         background-color: #72A0C1;
@@ -146,7 +145,8 @@
         border-radius: 3px;
     }
     .advanced-btn:hover{
-        background-color: #5D8AA8;
+        background-color: #72A0C1;
+        color: #fff;
         cursor: pointer;
     }
 

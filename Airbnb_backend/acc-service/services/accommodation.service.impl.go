@@ -4,6 +4,7 @@ import (
 	"acc-service/domain"
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -197,16 +198,15 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 		filter["accommodation_max_guests"] = bson.M{"$gte": guests}
 	}
 
-	// if amenitiesExist {
-	// 	var tv = amenities["tv"]
-	// 	var wifi = amenities["wifi"]
-	// 	var ac = amenities["ac"]
-	// 	filter["accommodation_amenities"] = bson.M{
-	// 		"TV":   tv,
-	// 		"Wifi": wifi,
-	// 		"AC":   ac,
-	// 	}
-	// }
+	if amenitiesExist {
+		var tv = amenities["TV"]
+		var wifi = amenities["WiFi"]
+		var ac = amenities["AC"]
+		fmt.Println("in service: ", tv, wifi, ac)
+		filter["accommodation_amenities.TV"] = tv
+		filter["accommodation_amenities.WiFi"] = wifi
+		filter["accommodation_amenities.AC"] = ac
+	}
 
 	cursor, err := s.collection.Find(context.Background(), filter)
 

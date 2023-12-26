@@ -273,7 +273,29 @@ func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request)
 		panic(err)
 	}
 
-	prices, err := s.availabilityService.GetPrices(accId)
+	var checkPriceRequest data.CheckAvailability
+	if err := json.NewDecoder(h.Body).Decode(&checkPriceRequest); err != nil {
+		//span.SetStatus(codes.Error, "Invalid request body. Check the request format.")
+		errorMsg := map[string]string{"error": "Invalid request body. Check the request format."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	//accIDConvert, err := primitive.ObjectIDFromHex(accIDString)
+	checkPriceRequest.CheckInDate = time.Date(
+		checkPriceRequest.CheckInDate.Year(),
+		checkPriceRequest.CheckInDate.Month(),
+		checkPriceRequest.CheckInDate.Day(),
+		0, 0, 0, 0,
+		checkPriceRequest.CheckInDate.Location())
+
+	checkPriceRequest.CheckOutDate = time.Date(
+		checkPriceRequest.CheckOutDate.Year(),
+		checkPriceRequest.CheckOutDate.Month(),
+		checkPriceRequest.CheckOutDate.Day(),
+		0, 0, 0, 0,
+		checkPriceRequest.CheckOutDate.Location())
+
+	prices, err := s.availabilityService.GetPrices(accId, checkPriceRequest.CheckInDate, checkPriceRequest.CheckOutDate)
 
 	if err != nil {
 		//span.SetStatus(codes.Error, err.Error())

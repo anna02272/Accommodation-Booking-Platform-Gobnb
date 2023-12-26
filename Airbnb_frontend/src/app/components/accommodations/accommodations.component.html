@@ -1,7 +1,8 @@
 <div class="site-content">
   <section class="gallery">
-    <div class="prices">
+    <div class="prices" id="main_acc_div">
       <h3>Explore Gobnb picks</h3>
+      <h4 id="notif"> No accommodations match your search criteria. </h4>
       <div *ngIf="showErrorDiv" class="error">
         {{ errorMsg }}
       </div>
