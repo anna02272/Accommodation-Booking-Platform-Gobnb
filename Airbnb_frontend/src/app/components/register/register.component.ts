@@ -154,9 +154,9 @@ export class RegisterComponent {
        else {
         this.notification = { msgType: 'error', msgBody: 'Registration failed. Please try again.' };
 
-  //         if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
-  //        this.notification.msgBody += 'Please check the reCAPTCHA. ';
-  // }  
+          if (this.personalInfoForm.get('captcha')?.invalid && this.personalInfoForm.get('captcha')?.untouched) {
+         this.notification.msgBody += 'Please check the reCAPTCHA. ';
+  }  
   
       }
 

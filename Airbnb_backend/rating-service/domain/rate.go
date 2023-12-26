@@ -12,6 +12,13 @@ type RateHost struct {
 	DateAndTime primitive.DateTime `bson:"date-and-time" json:"date-and-time"`
 	Rating      Rating             `bson:"rating" json:"rating"`
 }
+type RateAccommodation struct {
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Accommodation string             `bson:"accommodationID" json:"accommodationID"`
+	Guest         *User              `bson:"guest" json:"guest"`
+	DateAndTime   primitive.DateTime `bson:"date-and-time" json:"date-and-time"`
+	Rating        Rating             `bson:"rating" json:"rating"`
+}
 
 type Rating int
 
@@ -27,6 +34,12 @@ type User struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Username string             `bson:"username" json:"username"`
 	Email    string             `bson:"email" json:"email" validate:"required,email"`
+}
+
+type Accommodation struct {
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name     string             `bson:"name" json:"name"`
+	Location string             `bson:"location" json:"location"`
 }
 
 type ReservationByGuest struct {
@@ -55,6 +68,19 @@ type UserResponse struct {
 		UserRole UserRole           `json:"userRole"`
 	} `json:"user"`
 }
+type AccommodationResponse struct {
+	Message       string `json:"message"`
+	Accommodation struct {
+		ID        primitive.ObjectID `json:"_id"`
+		HostId    string             `json:"host_id"`
+		Name      string             ` json:"accommodation_name"`
+		Location  string             `json:"accommodation_location"`
+		Amenities map[string]bool    `json:"accommodation_amenities"`
+		MinGuests int                `json:"accommodation_min_guests"`
+		MaxGuests int                `json:"accommodation_max_guests"`
+		Active    bool               `json:"accommodation_active"`
+	} `json:"accommodation"`
+}
 
 type Address struct {
 	Street  string `json:"street"`
@@ -73,5 +99,12 @@ func ConvertToDomainUser(userResponse UserResponse) User {
 		ID:       userResponse.User.ID,
 		Username: userResponse.User.Username,
 		Email:    userResponse.User.Email,
+	}
+}
+func ConvertToDomainAccommodation(accommodationResponse AccommodationResponse) Accommodation {
+	return Accommodation{
+		ID:       accommodationResponse.Accommodation.ID,
+		Name:     accommodationResponse.Accommodation.Name,
+		Location: accommodationResponse.Accommodation.Location,
 	}
 }
