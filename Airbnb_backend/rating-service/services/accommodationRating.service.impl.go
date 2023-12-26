@@ -86,7 +86,7 @@ func (s *AccommodationRatingServiceImpl) DeleteRating(accommodationID, guestID s
 	return nil
 }
 
-func (s *AccommodationRatingServiceImpl) GetAllRatings(ctx context.Context) ([]*domain.RateAccommodation, float64, error) {
+func (s *AccommodationRatingServiceImpl) GetAllRatingsAccommodation(ctx context.Context) ([]*domain.RateAccommodation, float64, error) {
 	ctx, span := s.Tracer.Start(ctx, "AccommodationRatingService.GetAllRatings")
 	defer span.End()
 	cursor, err := s.collection.Find(context.Background(), bson.M{})
