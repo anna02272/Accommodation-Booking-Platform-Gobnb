@@ -124,7 +124,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 		Rating:        domain.Rating(requestBody.Rating),
 	}
 
-	err = s.accommodationRatingService.SaveRating(newRateAccommodation, spanCtx)
+	err, update := s.accommodationRatingService.SaveRating(newRateAccommodation, spanCtx)
 	if err != nil {
 		span.SetStatus(codes.Error, "Failed to save rating")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
@@ -163,6 +163,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 		AccommodationHostId    string `json:"host_id"`
 		AccommodationMinGuests int    `json:"accommodation_min_guests"`
 		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
+		AccommodationId        string `json:"_id"`
 	}
 	decoder = json.NewDecoder(resp.Body)
 
@@ -194,7 +195,6 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	defer resp.Body.Close()
 
 	statusCodeHostCheck := resp.StatusCode
-	fmt.Println(statusCodeHostCheck)
 	if statusCodeHostCheck != 200 {
 		span.SetStatus(codes.Error, "Host with that id does not exist.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Host with that id does not exist."})
@@ -263,6 +263,48 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	}
 
 	span.SetStatus(codes.Ok, "Rating successfully saved")
+
+	if update {
+		eventURL := "https://res-server:8082/api/event/store"
+
+		timeout = 2000 * time.Second
+		ctx, cancel = context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		eventPayload := map[string]interface{}{
+			"event":            "Accommodation rating",
+			"accommodation_id": responseAccommodation.AccommodationId,
+		}
+
+		eventPayloadJSON, err := json.Marshal(eventPayload)
+		if err != nil {
+			span.SetStatus(codes.Error, "Error creating notification payload")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification payload"})
+			return
+		}
+
+		resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, eventURL, "POST", eventPayloadJSON)
+		if err != nil {
+			span.SetStatus(codes.Error, "Error creating event request")
+			if ctx.Err() == context.DeadlineExceeded {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request"})
+				return
+			}
+			span.SetStatus(codes.Error, "Reservation service not available.")
+			fmt.Println(err)
+			fmt.Println("here")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Reservation service while event handling not available."})
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != 201 {
+			span.SetStatus(codes.Error, "Error creating event")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event"})
+			return
+		}
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateAccommodation})
 }
 
@@ -288,6 +330,46 @@ func (s *AccommodationRatingHandler) DeleteRatingAccommodation(c *gin.Context) {
 		return
 	}
 	span.SetStatus(codes.Ok, "Rating successfully deleted")
+
+	eventURL := "https://res-server:8082/api/event/store"
+
+	timeout := 2000 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	eventPayload := map[string]interface{}{
+		"event":            "Accommodation rating delete",
+		"accommodation_id": accommodationID,
+	}
+
+	eventPayloadJSON, err := json.Marshal(eventPayload)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error creating notification payload")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification payload"})
+		return
+	}
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, eventURL, "POST", eventPayloadJSON)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error creating event request")
+		if ctx.Err() == context.DeadlineExceeded {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request"})
+			return
+		}
+		span.SetStatus(codes.Error, "Reservation service not available.")
+		fmt.Println(err)
+		fmt.Println("here")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Reservation service while event handling not available."})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 201 {
+		span.SetStatus(codes.Error, "Error creating event")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
 }
 

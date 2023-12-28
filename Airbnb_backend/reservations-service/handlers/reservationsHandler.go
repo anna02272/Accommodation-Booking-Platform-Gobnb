@@ -34,13 +34,14 @@ type KeyProduct struct{}
 type ReservationsHandler struct {
 	logger    *log.Logger
 	Repo      *repository.ReservationRepo
+	EventRepo *repository.EventRepo
 	serviceAv services.AvailabilityService
 	DB        *mongo.Collection
 	Tracer    trace.Tracer
 }
 
-func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, db *mongo.Collection, tracer trace.Tracer) *ReservationsHandler {
-	return &ReservationsHandler{l, r, srv, db, tracer}
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer) *ReservationsHandler {
+	return &ReservationsHandler{l, r, er, srv, db, tracer}
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
@@ -356,6 +357,21 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	span.SetStatus(codes.Ok, "Created reservation")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusCreated)
+
+	event := &data.AccommodationEvent{
+		Event:           "Reserved",
+		GuestID:         response.LoggedInUser.ID,
+		AccommodationID: guestReservation.AccommodationId,
+	}
+
+	err = s.EventRepo.InsertEvent(ctx, event)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error storing reservation event")
+		errorMsg := map[string]string{"error": "Error storing reservation event"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
 	rw.Write(responseJSON)
 }
 
@@ -687,6 +703,21 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 
 	span.SetStatus(codes.Ok, "Canceled reservation")
+
+	event := &data.AccommodationEvent{
+		Event:           "Cancelled",
+		GuestID:         response.LoggedInUser.ID,
+		AccommodationID: accommodationID,
+	}
+
+	err = s.EventRepo.InsertEvent(ctx, event)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error storing reservation event")
+		errorMsg := map[string]string{"error": "Error storing reservation event"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
 	rw.WriteHeader(http.StatusNoContent)
 }
 

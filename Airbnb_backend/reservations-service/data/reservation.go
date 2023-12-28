@@ -26,6 +26,19 @@ type ReservationByGuest struct {
 	IsCanceled               bool
 }
 
+//// CQRS Event Store
+//type AccommodationEvent struct {
+//	EventIdTimeCreated TimeUUID
+//	Event              string
+//	GuestID            string
+//	AccommodationID    string
+//}
+//
+//type EventJson struct {
+//	Event           string `json:"event"`
+//	AccommodationID string `json:"accommodation_id"`
+//}
+
 type ReservationByGuestCreate struct {
 	AccommodationId string    `json:"accommodation_id"`
 	CheckInDate     time.Time `json:"check_in_date"`
@@ -44,6 +57,11 @@ func (o *ReservationByGuestCreate) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	return d.Decode(o)
 }
+
+//	func (o *EventJson) FromJSON(r io.Reader) error {
+//		d := json.NewDecoder(r)
+//		return d.Decode(o)
+//	}
 func (reservations ReservationsByGuest) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 	return e.Encode(reservations)

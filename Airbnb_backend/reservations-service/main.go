@@ -103,6 +103,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// NoSQL: Initialize Event Repository store
+	eventStore, err := repository.NewEventRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	//serviceAv, err := services.New(storeLogger)
 	//if err != nil {
 	//	logger.Fatal(err)
@@ -110,8 +115,10 @@ func main() {
 
 	defer store.CloseSession()
 	store.CreateTable()
+	eventStore.CreateTableEventStore()
 
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection, tracer)
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -139,6 +146,10 @@ func main() {
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	insertEvent := router.Methods(http.MethodPost).Subrouter()
+	insertEvent.HandleFunc("/api/event/store", eventHandler.InsertEventIntoEventStore)
+	insertEvent.Use(eventHandler.MiddlewareReservationForEventDeserialization)
 
 	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)

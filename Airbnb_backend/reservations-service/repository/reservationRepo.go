@@ -96,7 +96,7 @@ func (sr *ReservationRepo) CreateTable() {
 	).Exec()
 
 	err = sr.session.Query(
-		`CREATE INDEX IF NOT EXISTS idx_check_out_date ON reservations_by_guest (check_out_date);`,
+		`CREATE INDEX IF NOT EXISTS idx_check_in_date ON reservations_by_guest (check_in_date);`,
 	).Exec()
 
 	if err != nil {
