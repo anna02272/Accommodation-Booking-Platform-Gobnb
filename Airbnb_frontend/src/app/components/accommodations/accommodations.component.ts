@@ -21,6 +21,7 @@ export class AccommodationsComponent implements OnInit {
   images!: any[];
   coverImage: string = ''; 
   currentIndex: number = 0;
+  gtag?: Function;
 
 
   constructor(
@@ -358,5 +359,8 @@ export class AccommodationsComponent implements OnInit {
     }
     return 'data:image/jpeg;base64,' + btoa(binary);
   }
+
+
+  
 }
 

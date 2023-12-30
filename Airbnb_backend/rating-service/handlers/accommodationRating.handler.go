@@ -227,7 +227,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	notificationPayload := map[string]interface{}{
 		"host_id":           responseAccommodation.AccommodationHostId,
 		"host_email":        responseHost.Host.Email,
-		"notification_text": "Dear " + responseHost.Host.Username + ", \n your accommodation " + responseAccommodation.AccommodationName + " has been rated. It got " + strconv.Itoa(requestBody.Rating) + " stars",
+		"notification_text": "Dear " + responseHost.Host.Username + ", \n your accommodation " + responseAccommodation.AccommodationName + " has been rated. It got " + strconv.Itoa(requestBody.Rating) + " stars by " + currentUser.Username + "!",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)

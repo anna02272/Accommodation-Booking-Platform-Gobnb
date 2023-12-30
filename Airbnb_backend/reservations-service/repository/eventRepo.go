@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"reservations-service/data"
+	"time"
 )
 
 type EventRepo struct {
@@ -68,10 +69,11 @@ func (sr *EventRepo) CreateTableEventStore() {
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS event_store (
         event_id_time_created timeuuid,
+        event_date timestamp,
         event text,
         guest_id text,
         accommodation_id text,
-        PRIMARY KEY ((guest_id, event_id_time_created),accommodation_id)
+        PRIMARY KEY ((guest_id, event_date),accommodation_id)
     ) WITH CLUSTERING ORDER BY (accommodation_id ASC);`,
 	).Exec()
 
@@ -89,12 +91,14 @@ func (sr *EventRepo) InsertEvent(ctx context.Context, eventData *data.Accommodat
 	defer span.End()
 
 	eventID := gocql.TimeUUID()
+	eventDate := time.Now()
 
 	err := sr.session.Query(
 		`INSERT INTO event_store 
-         (event_id_time_created,event, guest_id,accommodation_id) 
-         VALUES (?, ?, ?, ?)`,
+         (event_id_time_created,event_date,event, guest_id,accommodation_id) 
+         VALUES (?, ?, ?, ?,?)`,
 		eventID,
+		eventDate,
 		eventData.Event,
 		eventData.GuestID,
 		eventData.AccommodationID,
@@ -107,4 +111,110 @@ func (sr *EventRepo) InsertEvent(ctx context.Context, eventData *data.Accommodat
 	}
 
 	return nil
+}
+
+func (sr *EventRepo) CountReservationsForCurrentDay(ctx context.Context, accommodationID string) (int, error) {
+	var count int
+	currentDate := time.Now().UTC().Truncate(24 * time.Hour)
+	startOfDay := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 0, 0, 0, 0, time.UTC)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	err := sr.session.Query(
+		`SELECT COUNT(*) FROM event_store 
+		WHERE event = 'Reserved' 
+		AND accommodation_id = ? 
+		AND event_date >= ? 
+		AND event_date < ? ALLOW FILTERING`,
+		accommodationID,
+		startOfDay,
+		endOfDay,
+	).WithContext(ctx).Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (sr *EventRepo) CountReservationsForCurrentMonth(ctx context.Context, accommodationID string) (int, error) {
+	var count int
+
+	currentDate := time.Now().UTC()
+	startOfMonth := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, time.UTC)
+	endOfMonth := startOfMonth.AddDate(0, 1, 0)
+	fmt.Println("RESERVATION QUERY")
+	fmt.Println(startOfMonth)
+	fmt.Println(endOfMonth)
+	fmt.Println(accommodationID)
+
+	err := sr.session.Query(
+		`SELECT COUNT(*) FROM event_store 
+		WHERE event = 'Reserved' 
+		AND accommodation_id = ? 
+		AND event_date >= ? 
+		AND event_date < ? ALLOW FILTERING`,
+		accommodationID,
+		startOfMonth,
+		endOfMonth,
+	).WithContext(ctx).Scan(&count)
+	fmt.Println(count)
+	fmt.Println("count reservations")
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (sr *EventRepo) CountRatingsForCurrentDay(ctx context.Context, accommodationID string) (int, error) {
+	var count int
+	currentDate := time.Now().UTC().Truncate(24 * time.Hour)
+	startOfDay := time.Date(currentDate.Year(), currentDate.Month(), currentDate.Day(), 0, 0, 0, 0, time.UTC)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	err := sr.session.Query(
+		`SELECT COUNT(*) FROM event_store 
+		WHERE event = 'Accommodation rating' 
+		AND accommodation_id = ? 
+		AND event_date >= ? 
+		AND event_date < ? ALLOW FILTERING `,
+		accommodationID,
+		startOfDay,
+		endOfDay,
+	).WithContext(ctx).Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (sr *EventRepo) CountRatingsForCurrentMonth(ctx context.Context, accommodationID string) (int, error) {
+	var count int
+	currentDate := time.Now().UTC()
+	startOfMonth := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, time.UTC)
+	endOfMonth := startOfMonth.AddDate(0, 1, 0)
+
+	fmt.Println("start and end of month")
+	fmt.Println(startOfMonth)
+	fmt.Println(endOfMonth)
+
+	err := sr.session.Query(
+		`SELECT COUNT(*) FROM event_store 
+		WHERE event = 'Accommodation rating' 
+		AND accommodation_id = ? 
+		AND event_date >= ?  
+		AND event_date < ? ALLOW FILTERING `,
+		accommodationID,
+		startOfMonth,
+		endOfMonth,
+	).WithContext(ctx).Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

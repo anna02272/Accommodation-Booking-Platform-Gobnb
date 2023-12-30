@@ -108,6 +108,12 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+
+	// NoSQL: Initialize Report Repository store
+	reportStore, err := repository.NewReportRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	//serviceAv, err := services.New(storeLogger)
 	//if err != nil {
 	//	logger.Fatal(err)
@@ -116,9 +122,11 @@ func main() {
 	defer store.CloseSession()
 	store.CreateTable()
 	eventStore.CreateTableEventStore()
-
+	reportStore.CreateTableDailyReport()
+	reportStore.CreateTableMonthlyReport()
 	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
 	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -146,6 +154,12 @@ func main() {
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	insertDailyReport := router.Methods(http.MethodPost).Subrouter()
+	insertDailyReport.HandleFunc("/api/report/daily/{accId}", reportHandler.GenerateDailyReportForAccommodation)
+
+	insertMonthlyReport := router.Methods(http.MethodPost).Subrouter()
+	insertMonthlyReport.HandleFunc("/api/report/monthly/{accId}", reportHandler.GenerateMonthlyReportForAccommodation)
 
 	insertEvent := router.Methods(http.MethodPost).Subrouter()
 	insertEvent.HandleFunc("/api/event/store", eventHandler.InsertEventIntoEventStore)

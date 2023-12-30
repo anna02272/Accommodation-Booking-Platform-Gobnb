@@ -87,6 +87,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		LoggedInUser struct {
 			ID       string        `json:"id"`
 			UserRole data.UserRole `json:"userRole"`
+			Username string        `json:"username"`
 		} `json:"user"`
 		Message string `json:"message"`
 	}
@@ -311,7 +312,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		"host_id":    responseAccommodation.AccommodationHostId,
 		"host_email": responseHost.Host.Email,
 		"notification_text": "Dear " + responseHost.Host.Username + "\n you have a new reservation! Your " +
-			responseAccommodation.AccommodationName + " has been reserved.",
+			responseAccommodation.AccommodationName + " has been reserved by " + response.LoggedInUser.Username + ".",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
@@ -501,6 +502,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		LoggedInUser struct {
 			ID       string        `json:"id"`
 			UserRole data.UserRole `json:"userRole"`
+			Username string        `json:"username"`
 		} `json:"user"`
 		Message string `json:"message"`
 	}
@@ -666,7 +668,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		"host_id":    responseAccommodation.AccommodationHostId,
 		"host_email": responseHost.Host.Email,
 		"notification_text": "Dear " + responseHost.Host.Username + "\n your reservation has been cancelled! Your " +
-			responseAccommodation.AccommodationName + " has been cancelled.",
+			responseAccommodation.AccommodationName + " has been cancelled by " + response.LoggedInUser.Username + ".",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)

@@ -135,7 +135,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	notificationPayload := map[string]interface{}{
 		"host_id":           hostIDString,
 		"host_email":        hostUser.Email,
-		"notification_text": "Dear " + hostUser.Username + "\n you have been rated. You got " + strconv.Itoa(requestBody.Rating) + " stars",
+		"notification_text": "Dear " + hostUser.Username + "\n you have been rated. You got " + strconv.Itoa(requestBody.Rating) + " stars from " + currentUser.Username + "!",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
