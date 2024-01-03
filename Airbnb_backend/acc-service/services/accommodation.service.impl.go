@@ -162,8 +162,9 @@ func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, h
 	return err
 }
 
-func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool) ([]*domain.Accommodation, error) {
-
+func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool, ctx context.Context) ([]*domain.Accommodation, error) {
+	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.GetAccommodationBySearch")
+	defer span.End()
 	filter := bson.M{}
 
 	if location != "" {
@@ -191,6 +192,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	if guests != "" {
 		guests, err := strconv.Atoi(guests)
 		if err != nil {
+			span.SetStatus(codes.Error, "failed to parse guests")
 			return nil, errors.New("failed to parse guests")
 		}
 
@@ -211,6 +213,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	cursor, err := s.collection.Find(context.Background(), filter)
 
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -220,6 +223,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	for cursor.Next(context.Background()) {
 		var acc domain.Accommodation
 		if err := cursor.Decode(&acc); err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
 
@@ -227,6 +231,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	}
 
 	if err := cursor.Err(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 

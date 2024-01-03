@@ -510,9 +510,6 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	vars := mux.Vars(h)
 	reservationIDString := vars["id"]
 
-	fmt.Println("rsv ID")
-	fmt.Println(reservationIDString)
-
 	accommodationID, err := s.Repo.GetReservationAccommodationID(ctx, reservationIDString, guestID)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -525,6 +522,14 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		span.SetStatus(codes.Error, "Error getting check-in date: "+err.Error())
 		s.logger.Println("Error getting check-in date:", err)
 		errorMsg := map[string]string{"error": "Error getting check-in date"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+	checkOutDate, err := s.Repo.GetReservationCheckOutDate(ctx, reservationIDString, guestID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error getting check-ou date: "+err.Error())
+		s.logger.Println("Error getting check-out date:", err)
+		errorMsg := map[string]string{"error": "Error getting check-out date"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 		return
 	}
@@ -543,9 +548,13 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println(accommodationID)
-	fmt.Println("ACCOMMODATION ID")
+	err1 := s.serviceAv.MakeAccommodationAvailable(accommodationID, checkInDate, checkOutDate, ctx)
+	if err1 != nil {
+		span.SetStatus(codes.Error, "Error making accommodation available.")
+		errorMsg := map[string]string{"error": "Error making accommodation available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
@@ -591,7 +600,6 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 			return
 		}
 		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
-		fmt.Println("Acommodaiton errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}

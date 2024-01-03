@@ -189,12 +189,13 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 	// fmt.Println(endDate)
 
 	if location != "" || guests != "" || amenitiesExist {
-		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist)
+		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist, spanCtx)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		span.SetStatus(codes.Ok, "Search success")
 		c.JSON(http.StatusOK, accommodations)
 		return
 	}
