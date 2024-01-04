@@ -264,18 +264,21 @@ func (s *AvailabilityHandler) GetAvailabilityByAccommodationId(rw http.ResponseW
 }
 
 func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request) {
+	spanCtx, span := s.Tracer.Start(h.Context(), "AvailabilityHandler.GetPrices")
+	defer span.End()
 	// rw := c.Writer
 	// h := c.Request
 	vars := mux.Vars(h)
 	accIdParam := vars["accId"]
 	accId, err := primitive.ObjectIDFromHex(accIdParam)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		panic(err)
 	}
 
 	var checkPriceRequest data.CheckAvailability
 	if err := json.NewDecoder(h.Body).Decode(&checkPriceRequest); err != nil {
-		//span.SetStatus(codes.Error, "Invalid request body. Check the request format.")
+		span.SetStatus(codes.Error, "Invalid request body. Check the request format.")
 		errorMsg := map[string]string{"error": "Invalid request body. Check the request format."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -295,10 +298,10 @@ func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request)
 		0, 0, 0, 0,
 		checkPriceRequest.CheckOutDate.Location())
 
-	prices, err := s.availabilityService.GetPrices(accId, checkPriceRequest.CheckInDate, checkPriceRequest.CheckOutDate)
+	prices, err := s.availabilityService.GetPrices(accId, checkPriceRequest.CheckInDate, checkPriceRequest.CheckOutDate, spanCtx)
 
 	if err != nil {
-		//span.SetStatus(codes.Error, err.Error())
+		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -306,11 +309,11 @@ func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request)
 	rw.WriteHeader(http.StatusOK)
 	jsonResponse, err1 := json.Marshal(prices)
 	if err1 != nil {
-		//span.SetStatus(codes.Error, "Error marshaling JSON"+err1.Error())
+		span.SetStatus(codes.Error, "Error marshaling JSON"+err1.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
 		return
 	}
-	//span.SetStatus(codes.Ok, "Get availability by accommodation id successful")
+	span.SetStatus(codes.Ok, "Get availability by accommodation id successful")
 	rw.Write(jsonResponse)
 }
 

@@ -11,7 +11,7 @@ services:
     hostname: ${AUTH_SERVICE_HOST}
     ports:
       - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
-      - "446:446"
+#      - "446:446"
     environment:
       - PORT=${AUTH_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -41,7 +41,7 @@ services:
     hostname: ${RES_SERVICE_HOST}
     ports:
       - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
-      - "448:448"
+#      - "448:448"
     environment:
       - PORT=${RES_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
@@ -69,7 +69,7 @@ services:
     hostname: ${ACC_SERVICE_HOST}
     ports:
       - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
-      - "447:447"
+#      - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -103,7 +103,7 @@ services:
     hostname: ${NOTIF_SERVICE_HOST}
     ports:
       - ${NOTIF_SERVICE_PORT}:${NOTIF_SERVICE_PORT}
-      - "450:450"
+#      - "450:450"
     environment:
       - PORT=${NOTIF_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -131,7 +131,7 @@ services:
     hostname: ${PROFILE_SERVICE_HOST}
     ports:
       - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
-      - "444:444"
+#      - "444:444"
     environment:
       - PORT=${PROFILE_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -156,7 +156,7 @@ services:
     hostname: ${RATING_SERVICE_HOST}
     ports:
       - ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
-      - "449:449"
+#      - "449:449"
     environment:
       - PORT=${RATING_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}

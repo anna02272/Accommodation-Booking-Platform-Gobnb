@@ -427,6 +427,31 @@ func (s *AvailabilityServiceImpl) BookAccommodation(accommodationID primitive.Ob
 	return err
 }
 
+func (s *AvailabilityServiceImpl) MakeAccommodationAvailable(accommodationID string, startDate time.Time, endDate time.Time, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.MakeAccommodationAvailable")
+	defer span.End()
+
+	accID, err := primitive.ObjectIDFromHex(accommodationID)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{
+		"accommodation_id": accID,
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"availability_type": data.Available,
+		},
+	}
+	_, err = s.collection.UpdateMany(context.Background(), filter, update)
+	return err
+}
+
 func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodationID primitive.ObjectID, ctx context.Context) ([]*data.Availability, error) {
 	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.GetAvailabilityByAccommodationId")
 	defer span.End()
@@ -447,7 +472,9 @@ func (s *AvailabilityServiceImpl) GetAvailabilityByAccommodationId(accommodation
 	return availabilities, nil
 }
 
-func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID, startDate time.Time, endDate time.Time) ([]*data.PriceResponse, error) {
+func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID, startDate time.Time, endDate time.Time, ctx context.Context) ([]*data.PriceResponse, error) {
+	ctx, span := s.Tracer.Start(ctx, "AvailabilityService.GetPrices")
+	defer span.End()
 	filter := bson.M{
 		"accommodation_id": accId,
 		"date": bson.M{
@@ -457,10 +484,12 @@ func (s *AvailabilityServiceImpl) GetPrices(accId primitive.ObjectID, startDate 
 	}
 	cursor, err := s.collection.Find(context.Background(), filter)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	var availabilities []*data.Availability
 	if err = cursor.All(context.Background(), &availabilities); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	var prices []*data.PriceResponse
