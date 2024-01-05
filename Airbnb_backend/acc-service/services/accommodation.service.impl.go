@@ -2,15 +2,22 @@ package services
 
 import (
 	"acc-service/domain"
+	error2 "acc-service/error"
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"net/http"
+	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -25,16 +32,38 @@ func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Conte
 	return &AccommodationServiceImpl{collection, ctx, tr}
 }
 
-func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodation, hostID string, ctx context.Context) (*domain.Accommodation, string, error) {
+func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context, token string) (*domain.Accommodation, string, error) {
 	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.InsertAccommodation")
 	defer span.End()
 
 	accomm.HostId = hostID
+	accommodation := &domain.Accommodation{
+		ID:        accomm.ID,
+		HostId:    hostID,
+		Name:      accomm.Name,
+		Location:  accomm.Location,
+		Amenities: accomm.Amenities,
+		MinGuests: accomm.MinGuests,
+		MaxGuests: accomm.MaxGuests,
+		Active:    false,
+	}
 
-	result, err := s.collection.InsertOne(context.Background(), accomm)
+	result, err := s.collection.InsertOne(context.Background(), accommodation)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, "", err
+	}
+
+	if accomm.StartDate != primitive.DateTime(0) &&
+		accomm.EndDate != primitive.DateTime(0) &&
+		accomm.Price != 0.0 &&
+		accomm.PriceType != "" &&
+		accomm.AvailabilityType != "" {
+		err = s.CreateAvailabilityInReservationService(rw, accomm, ctx, token)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return nil, "", err
+		}
 	}
 
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
@@ -44,8 +73,68 @@ func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodat
 	}
 
 	insertedID = result.InsertedID.(primitive.ObjectID)
+	return accommodation, insertedID.Hex(), nil
+}
 
-	return accomm, insertedID.Hex(), nil
+func (s *AccommodationServiceImpl) CreateAvailabilityInReservationService(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, ctx context.Context, token string) error {
+	ctx, span := s.Tracer.Start(ctx, "AccommodationService.CreateAvailabilityInReservationService")
+	defer span.End()
+
+	url := "https://res-server:8082/api/availability/create/" + accomm.ID.Hex()
+	timeout := 2000 * time.Second
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	availability := &domain.AvailabilityPeriod{
+		StartDate:        accomm.StartDate,
+		EndDate:          accomm.EndDate,
+		Price:            accomm.Price,
+		PriceType:        accomm.PriceType,
+		AvailabilityType: accomm.AvailabilityType,
+	}
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, availability, url, token)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Reservation service not available")
+			errorMsg := map[string]string{"error": "Reservation service not available"}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Reservation service not available")
+		errorMsg := map[string]string{"error": "Reservation service not available"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+
+func (us *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, availability *domain.AvailabilityPeriod, url string, token string) (*http.Response, error) {
+	reqBody, err := json.Marshal(availability)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling user JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (s *AccommodationServiceImpl) GetAllAccommodations(ctx context.Context) ([]*domain.Accommodation, error) {

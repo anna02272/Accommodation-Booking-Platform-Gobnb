@@ -3,10 +3,11 @@ package services
 import (
 	"acc-service/domain"
 	"context"
+	"net/http"
 )
 
 type AccommodationService interface {
-	InsertAccommodation(accomm *domain.Accommodation, hostID string, ctx context.Context) (*domain.Accommodation, string, error)
+	InsertAccommodation(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context, token string) (*domain.Accommodation, string, error)
 	GetAccommodationByID(accommodationID string, ctx context.Context) (*domain.Accommodation, error)
 	GetAccommodationByHostIdAndAccId(hostId string, accId string, ctx context.Context) (*domain.Accommodation, error)
 	GetAccommodationsByHostId(hostId string, ctx context.Context) ([]*domain.Accommodation, error)
