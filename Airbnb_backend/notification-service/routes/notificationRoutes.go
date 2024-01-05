@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"notification-service/domain"
@@ -36,21 +35,6 @@ func MiddlewareNotificationDeserialization(c *gin.Context) {
 	var notification domain.NotificationCreate
 
 	if err := c.ShouldBindJSON(&notification); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to decode JSON"})
-		c.Abort()
-		return
-	}
-
-	c.Set("notification", notification)
-	c.Next()
-}
-
-func MiddlewareNotificationDeserializationFetch(c *gin.Context) {
-	var notification domain.Notification
-
-	if err := c.ShouldBindJSON(&notification); err != nil {
-		fmt.Println(err)
-		fmt.Println("error json")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to decode JSON"})
 		c.Abort()
 		return

@@ -34,6 +34,7 @@ export class AccommodationComponent implements OnInit {
 
   ngOnInit(): void {
     this.accId = this.route.snapshot.paramMap.get('id')!;
+     this.trackPageView("accommodation/" + this.accId)
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
       this.accommodationId=accommodation._id
@@ -97,4 +98,9 @@ nextImage() {
   getRole() {
     return this.userService.currentUser?.user.userRole;
   }
+
+trackPageView(pageName: string) {
+   gtag('config', 'G-PL4352HXF1', 'auto', {'page_path': '/' + pageName});
+
+} 
 }

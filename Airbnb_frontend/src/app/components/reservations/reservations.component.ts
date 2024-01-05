@@ -25,6 +25,7 @@ load() {
     this.reservations = data;
 });
 }
+
 private subscribeToRefresh() {
   this.refreshService.getRefreshObservable().subscribe(() => {
     this.load();
@@ -33,8 +34,8 @@ private subscribeToRefresh() {
 cancelReservation(id: string): void {
   this.resService.cancelReservation(id).subscribe(
     () => {
-      this.refreshService.refresh();
-      this.notification = { msgType: 'success', msgBody: `Reservation canceled successfully.` };
+        this.refreshService.refresh();
+        this.notification = { msgType: 'success', msgBody: `Reservation canceled successfully.` };
     },
   error => {
     if (error.status === 400 && error.error && error.error.error) {

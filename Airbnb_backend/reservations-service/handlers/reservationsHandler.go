@@ -34,13 +34,14 @@ type KeyProduct struct{}
 type ReservationsHandler struct {
 	logger    *log.Logger
 	Repo      *repository.ReservationRepo
+	EventRepo *repository.EventRepo
 	serviceAv services.AvailabilityService
 	DB        *mongo.Collection
 	Tracer    trace.Tracer
 }
 
-func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, db *mongo.Collection, tracer trace.Tracer) *ReservationsHandler {
-	return &ReservationsHandler{l, r, srv, db, tracer}
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer) *ReservationsHandler {
+	return &ReservationsHandler{l, r, er, srv, db, tracer}
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
@@ -86,6 +87,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		LoggedInUser struct {
 			ID       string        `json:"id"`
 			UserRole data.UserRole `json:"userRole"`
+			Username string        `json:"username"`
 		} `json:"user"`
 		Message string `json:"message"`
 	}
@@ -310,7 +312,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 		"host_id":    responseAccommodation.AccommodationHostId,
 		"host_email": responseHost.Host.Email,
 		"notification_text": "Dear " + responseHost.Host.Username + "\n you have a new reservation! Your " +
-			responseAccommodation.AccommodationName + " has been reserved.",
+			responseAccommodation.AccommodationName + " has been reserved by " + response.LoggedInUser.Username + ".",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
@@ -356,6 +358,21 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	span.SetStatus(codes.Ok, "Created reservation")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusCreated)
+
+	event := &data.AccommodationEvent{
+		Event:           "Reserved",
+		GuestID:         response.LoggedInUser.ID,
+		AccommodationID: guestReservation.AccommodationId,
+	}
+
+	err = s.EventRepo.InsertEvent(ctx, event)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error storing reservation event")
+		errorMsg := map[string]string{"error": "Error storing reservation event"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
 	rw.Write(responseJSON)
 }
 
@@ -485,6 +502,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		LoggedInUser struct {
 			ID       string        `json:"id"`
 			UserRole data.UserRole `json:"userRole"`
+			Username string        `json:"username"`
 		} `json:"user"`
 		Message string `json:"message"`
 	}
@@ -510,9 +528,6 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	vars := mux.Vars(h)
 	reservationIDString := vars["id"]
 
-	fmt.Println("rsv ID")
-	fmt.Println(reservationIDString)
-
 	accommodationID, err := s.Repo.GetReservationAccommodationID(ctx, reservationIDString, guestID)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -525,6 +540,14 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		span.SetStatus(codes.Error, "Error getting check-in date: "+err.Error())
 		s.logger.Println("Error getting check-in date:", err)
 		errorMsg := map[string]string{"error": "Error getting check-in date"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+	checkOutDate, err := s.Repo.GetReservationCheckOutDate(ctx, reservationIDString, guestID)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error getting check-ou date: "+err.Error())
+		s.logger.Println("Error getting check-out date:", err)
+		errorMsg := map[string]string{"error": "Error getting check-out date"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 		return
 	}
@@ -543,9 +566,13 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println(accommodationID)
-	fmt.Println("ACCOMMODATION ID")
+	err1 := s.serviceAv.MakeAccommodationAvailable(accommodationID, checkInDate, checkOutDate, ctx)
+	if err1 != nil {
+		span.SetStatus(codes.Error, "Error making accommodation available.")
+		errorMsg := map[string]string{"error": "Error making accommodation available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
@@ -591,7 +618,6 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 			return
 		}
 		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
-		fmt.Println("Acommodaiton errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -650,7 +676,7 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		"host_id":    responseAccommodation.AccommodationHostId,
 		"host_email": responseHost.Host.Email,
 		"notification_text": "Dear " + responseHost.Host.Username + "\n your reservation has been cancelled! Your " +
-			responseAccommodation.AccommodationName + " has been cancelled.",
+			responseAccommodation.AccommodationName + " has been cancelled by " + response.LoggedInUser.Username + ".",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
@@ -687,6 +713,21 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 
 	span.SetStatus(codes.Ok, "Canceled reservation")
+
+	event := &data.AccommodationEvent{
+		Event:           "Cancelled",
+		GuestID:         response.LoggedInUser.ID,
+		AccommodationID: accommodationID,
+	}
+
+	err = s.EventRepo.InsertEvent(ctx, event)
+	if err != nil {
+		span.SetStatus(codes.Error, "Error storing reservation event")
+		errorMsg := map[string]string{"error": "Error storing reservation event"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
+		return
+	}
+
 	rw.WriteHeader(http.StatusNoContent)
 }
 

@@ -38,6 +38,7 @@ func NewAccommodationHandler(accommodationService services.AccommodationService,
 	hdfs *hdfs_store.FileStorage, db *mongo.Collection, tr trace.Tracer) AccommodationHandler {
 	return AccommodationHandler{accommodationService, db, hdfs, imageCache, tr}
 }
+
 func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationHandler.CreateAccommodations")
 	defer span.End()
@@ -72,7 +73,6 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
 		return
 	}
-
 	// Read the response body
 	// Create a JSON decoder for the response body
 	decoder := json.NewDecoder(resp.Body)
@@ -85,7 +85,6 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		} `json:"user"`
 		Message string `json:"message"`
 	}
-
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
@@ -108,27 +107,26 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	}
 
 	id := primitive.NewObjectID()
-
 	accommodation, exists := c.Get("accommodation")
 	if !exists {
 		span.SetStatus(codes.Error, "Accommodation not found in context")
 		error2.ReturnJSONError(rw, "Accommodation not found in context", http.StatusBadRequest)
 		return
 	}
-	acc, ok := accommodation.(domain.Accommodation)
+	acc, ok := accommodation.(domain.AccommodationWithAvailability)
 	if !ok {
 		span.SetStatus(codes.Error, "Invalid type for Accommodation")
 		error2.ReturnJSONError(rw, "Invalid type for Accommodation", http.StatusBadRequest)
 		return
 	}
 	acc.ID = id
-
-	insertedAcc, _, err := s.accommodationService.InsertAccommodation(&acc, response.LoggedInUser.ID, spanCtx)
+	insertedAcc, _, err := s.accommodationService.InsertAccommodation(rw, &acc, response.LoggedInUser.ID, spanCtx, token)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	rw.WriteHeader(http.StatusCreated)
 	jsonResponse, err1 := json.Marshal(insertedAcc)
 	if err1 != nil {
@@ -189,12 +187,13 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 	// fmt.Println(endDate)
 
 	if location != "" || guests != "" || amenitiesExist {
-		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist)
+		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist, spanCtx)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
+		span.SetStatus(codes.Ok, "Search success")
 		c.JSON(http.StatusOK, accommodations)
 		return
 	}

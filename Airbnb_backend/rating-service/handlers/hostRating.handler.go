@@ -69,7 +69,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	if respRes.StatusCode != http.StatusOK {
 		span.SetStatus(codes.Error, "You cannot rate this host. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this host. You don't have reservations from him"})
 		return
 	}
 
@@ -84,7 +84,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	if len(reservations) == 0 {
 		span.SetStatus(codes.Error, "You cannot rate this host. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this host. You don't have reservations from him"})
 		return
 	}
 
@@ -98,7 +98,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	if !canRate {
 		span.SetStatus(codes.Error, "You cannot rate this host. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this host. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this host. You don't have reservations from him"})
 		return
 	}
 
@@ -135,7 +135,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	notificationPayload := map[string]interface{}{
 		"host_id":           hostIDString,
 		"host_email":        hostUser.Email,
-		"notification_text": "Dear " + hostUser.Username + "\n you have been rated. You got " + strconv.Itoa(requestBody.Rating) + " stars",
+		"notification_text": "Dear " + hostUser.Username + "\n you have been rated. You got " + strconv.Itoa(requestBody.Rating) + " stars from " + currentUser.Username + "!",
 	}
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
