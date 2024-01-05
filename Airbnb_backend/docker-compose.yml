@@ -1,4 +1,4 @@
-version: "3.1"
+version: "3.8"
 
 services:
 
@@ -9,9 +9,6 @@ services:
     restart: always
     container_name: ${AUTH_SERVICE_HOST}
     hostname: ${AUTH_SERVICE_HOST}
-    ports:
-      - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
-#      - "446:446"
     environment:
       - PORT=${AUTH_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -39,9 +36,6 @@ services:
     restart: always
     container_name: ${RES_SERVICE_HOST}
     hostname: ${RES_SERVICE_HOST}
-    ports:
-      - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
-#      - "448:448"
     environment:
       - PORT=${RES_SERVICE_PORT}
       - CASS_DB=${CASS_DB}
@@ -67,9 +61,6 @@ services:
     restart: always
     container_name: ${ACC_SERVICE_HOST}
     hostname: ${ACC_SERVICE_HOST}
-    ports:
-      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
-#      - "447:447"
     environment:
       - PORT=${ACC_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -101,9 +92,6 @@ services:
     restart: always
     container_name: ${NOTIF_SERVICE_HOST}
     hostname: ${NOTIF_SERVICE_HOST}
-    ports:
-      - ${NOTIF_SERVICE_PORT}:${NOTIF_SERVICE_PORT}
-#      - "450:450"
     environment:
       - PORT=${NOTIF_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -129,9 +117,6 @@ services:
     restart: always
     container_name: ${PROFILE_SERVICE_HOST}
     hostname: ${PROFILE_SERVICE_HOST}
-    ports:
-      - ${PROFILE_SERVICE_PORT}:${PROFILE_SERVICE_PORT}
-#      - "444:444"
     environment:
       - PORT=${PROFILE_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -154,9 +139,6 @@ services:
     restart: always
     container_name: ${RATING_SERVICE_HOST}
     hostname: ${RATING_SERVICE_HOST}
-    ports:
-      - ${RATING_SERVICE_PORT}:${RATING_SERVICE_PORT}
-#      - "449:449"
     environment:
       - PORT=${RATING_SERVICE_PORT}
       - MONGO_DB_URI=${MONGO_DB_URI}
@@ -180,7 +162,6 @@ services:
     restart: on-failure
     ports:
       - ${GATEWAY_PORT}:${GATEWAY_PORT}
-      - "443:443"
     depends_on:
       - auth-server
       - res-server
@@ -281,7 +262,6 @@ services:
         - CLUSTER_NAME=gobnb
       env_file:
         - ./.env
-
       networks:
         - network
 
