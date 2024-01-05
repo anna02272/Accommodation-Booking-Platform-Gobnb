@@ -37,7 +37,7 @@ func MiddlewareContentTypeSet(c *gin.Context) {
 }
 
 func MiddlewareAccommodationDeserialization(c *gin.Context) {
-	var accommodation domain.Accommodation
+	var accommodation domain.AccommodationWithAvailability
 
 	if err := c.ShouldBindJSON(&accommodation); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to decode JSON"})

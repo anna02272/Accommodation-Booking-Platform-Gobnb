@@ -40,7 +40,6 @@ func NewAvailabilityHandler(availabilityService services.AvailabilityService, db
 func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "AvailabilityHandler.CreateMultipleAvailability")
 	defer span.End()
-
 	vars := mux.Vars(h)
 	accIdParam := vars["id"]
 	accId, err := primitive.ObjectIDFromHex(accIdParam)
@@ -49,13 +48,14 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 		panic(err)
 	}
 
+	log.Printf("Received request for availability creation. Accommodation ID: %s", accId.Hex())
+
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
 
 	timeout := 1000 * time.Second // Adjust the timeout duration as needed
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-
 	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
@@ -68,7 +68,6 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 		return
 	}
 	defer resp.Body.Close()
-
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
 		span.SetStatus(codes.Error, "Unauthorized.")
@@ -77,11 +76,8 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 		return
 	}
 
-	// Read the response body
-	// Create a JSON decoder for the response body
 	decoder := json.NewDecoder(resp.Body)
 
-	// Define a struct to represent the JSON structure
 	var response struct {
 		LoggedInUser struct {
 			ID       string        `json:"id"`
@@ -89,8 +85,6 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 		} `json:"user"`
 		Message string `json:"message"`
 	}
-
-	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
 			span.SetStatus(codes.Error, "Invalid date format in the response")
@@ -104,26 +98,11 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 
 	// Access the 'id' from the decoded struct
 	userRole := response.LoggedInUser.UserRole
-
 	if userRole != data.Host {
 		span.SetStatus(codes.Error, "Permission denied. Only hosts can create availabilities.")
 		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create availabilities.", http.StatusForbidden)
 		return
 	}
-
-	// availability, exists := c.Get("availability")
-	// if !exists {
-	// 	error2.ReturnJSONError(rw, "Availability not found in context", http.StatusBadRequest)
-	// 	return
-	// }
-	// avail, ok := availability.(data.Availability)
-	// if !ok {
-	// 	error2.ReturnJSONError(rw, "Invalid type for Availability", http.StatusBadRequest)
-	// 	return
-	// }
-
-	//avail := h.Context().Value(KeyProduct{}).(*data.AvailabilityPeriod)
-	//get body of a http request and place it in avail
 
 	var avail data.AvailabilityPeriod
 	err5 := json.NewDecoder(h.Body).Decode(&avail)
@@ -132,33 +111,12 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 		http.Error(rw, err5.Error(), http.StatusBadRequest)
 		return
 	}
-
-	//avail.AccommodationID = accId
 	insertedAvail, err := s.availabilityService.InsertMulitipleAvailability(avail, accId, ctx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	//set variable date1 of type time.Time to 2024-02-01T12:00:00.000Z
-	// date1, err := time.Parse(time.RFC3339, "2024-02-01T00:00:00.000Z")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// date2, err := time.Parse(time.RFC3339, "2024-02-05T00:00:00.000Z")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	//insertedAvail = insertedAvail
-
-	// isa, err10 := s.availabilityService.IsAvailable(accId, date1, date2)
-	// if err10 != nil {
-	// 	error2.ReturnJSONError(rw, err10.Error(), http.StatusBadRequest)
-	// 	return
-	// }
-
 	rw.WriteHeader(http.StatusCreated)
 	jsonResponse, err1 := json.Marshal(insertedAvail)
 	if err1 != nil {
