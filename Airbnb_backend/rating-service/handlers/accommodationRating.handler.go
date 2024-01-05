@@ -70,7 +70,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	if respRes.StatusCode != http.StatusOK {
 		span.SetStatus(codes.Error, "You cannot rate this accommodation. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this accommodation. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this accommodation. You don't have reservations from him"})
 		return
 	}
 
@@ -85,7 +85,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	if len(reservations) == 0 {
 		span.SetStatus(codes.Error, "You cannot rate this accommodation. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this accommodation. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this accommodation. You don't have reservations from him"})
 		return
 	}
 
@@ -99,7 +99,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	if !canRate {
 		span.SetStatus(codes.Error, "You cannot rate this accommodation. You don't have reservations from him")
-		c.JSON(http.StatusBadRequest, gin.H{"message": "You cannot rate this accommodation. You don't have reservations from him"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this accommodation. You don't have reservations from him"})
 		return
 	}
 
