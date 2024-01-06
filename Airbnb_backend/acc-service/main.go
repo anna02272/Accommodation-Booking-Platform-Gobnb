@@ -1,6 +1,7 @@
 package main
 
 import (
+	"acc-service/application"
 	"acc-service/cache"
 	"acc-service/config"
 	"acc-service/handlers"
@@ -12,6 +13,8 @@ import (
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	saga "github.com/tamararankovic/microservices_demo/common/saga/messaging"
+	"github.com/tamararankovic/microservices_demo/common/saga/messaging/nats"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -121,4 +124,33 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+func initPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		cfg.NatsHost, cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func initSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		cfg.NatsHost, cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func initCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) *application.CreateAccommodationOrchestrator {
+	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return orchestrator
 }

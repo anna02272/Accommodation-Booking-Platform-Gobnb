@@ -41,6 +41,10 @@ services:
       - CASS_DB=${CASS_DB}
       - MONGO_DB_URI=${MONGO_DB_URI}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - NATS_HOST =${NATS_HOST}
+      - NATS_PORT=${NATS_PORT}
+      - NATS_USER= ${NATS_USER}
+      - NATS_PASS=${NATS_PASS}
     depends_on:
       cassandra:
         condition: service_healthy
@@ -68,15 +72,21 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - NATS_HOST =${NATS_HOST}
+      - NATS_PORT=${NATS_PORT}
+      - NATS_USER= ${NATS_USER}
+      - NATS_PASS=${NATS_PASS}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ORDER_ACCOMMODATION_SUBJECT}
+      - CREATE_ACCOMMODATION_REPLY_SUBJECT= ${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       mongo:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      datanode:
-        condition: service_healthy
-      namenode:
-        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#      datanode:
+#        condition: service_healthy
+#      namenode:
+#        condition: service_healthy
       jaeger:
         condition: service_started
     networks:
@@ -85,74 +95,74 @@ services:
       - ./acc-service/accomm-service.crt:/app/accomm-service.crt
       - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
 
-  notifications-server:
-    build:
-      context: ./notification-service/
-      dockerfile: Dockerfile
-    restart: always
-    container_name: ${NOTIF_SERVICE_HOST}
-    hostname: ${NOTIF_SERVICE_HOST}
-    environment:
-      - PORT=${NOTIF_SERVICE_PORT}
-      - MONGO_DB_URI=${MONGO_DB_URI}
-      - SECRET_KEY=${SECRET_KEY}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PASS=${SMTP_PASS}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_USER=${SMTP_USER}
-      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-    depends_on:
-      mongo:
-        condition: service_healthy
-    networks:
-      - network
-    volumes:
-      - ./notification-service/notifications-service.crt:/app/notifications-service.crt
-      - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
-
-  profile-server:
-    build:
-      context: ./profile-service/
-      dockerfile: Dockerfile
-    restart: always
-    container_name: ${PROFILE_SERVICE_HOST}
-    hostname: ${PROFILE_SERVICE_HOST}
-    environment:
-      - PORT=${PROFILE_SERVICE_PORT}
-      - MONGO_DB_URI=${MONGO_DB_URI}
-      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-    depends_on:
-      mongo:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-    networks:
-      - network
-    volumes:
-      - ./profile-service/profile-service.crt:/app/profile-service.crt
-      - ./profile-service/profile-service.key:/app/profile-service.key
-
-  rating-server:
-    build:
-      context: ./rating-service/
-      dockerfile: Dockerfile
-    restart: always
-    container_name: ${RATING_SERVICE_HOST}
-    hostname: ${RATING_SERVICE_HOST}
-    environment:
-      - PORT=${RATING_SERVICE_PORT}
-      - MONGO_DB_URI=${MONGO_DB_URI}
-      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-    depends_on:
-      mongo:
-        condition: service_healthy
-      jaeger:
-        condition: service_started
-    networks:
-      - network
-    volumes:
-      - ./rating-service/rating-service.crt:/app/rating-service.crt
-      - ./rating-service/rating-service.key:/app/rating-service.key
+#  notifications-server:
+#    build:
+#      context: ./notification-service/
+#      dockerfile: Dockerfile
+#    restart: always
+#    container_name: ${NOTIF_SERVICE_HOST}
+#    hostname: ${NOTIF_SERVICE_HOST}
+#    environment:
+#      - PORT=${NOTIF_SERVICE_PORT}
+#      - MONGO_DB_URI=${MONGO_DB_URI}
+#      - SECRET_KEY=${SECRET_KEY}
+#      - SMTP_HOST=${SMTP_HOST}
+#      - SMTP_PASS=${SMTP_PASS}
+#      - SMTP_PORT=${SMTP_PORT}
+#      - SMTP_USER=${SMTP_USER}
+#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+#    depends_on:
+#      mongo:
+#        condition: service_healthy
+#    networks:
+#      - network
+#    volumes:
+#      - ./notification-service/notifications-service.crt:/app/notifications-service.crt
+#      - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
+#
+#  profile-server:
+#    build:
+#      context: ./profile-service/
+#      dockerfile: Dockerfile
+#    restart: always
+#    container_name: ${PROFILE_SERVICE_HOST}
+#    hostname: ${PROFILE_SERVICE_HOST}
+#    environment:
+#      - PORT=${PROFILE_SERVICE_PORT}
+#      - MONGO_DB_URI=${MONGO_DB_URI}
+#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+#    depends_on:
+#      mongo:
+#        condition: service_healthy
+#      jaeger:
+#        condition: service_started
+#    networks:
+#      - network
+#    volumes:
+#      - ./profile-service/profile-service.crt:/app/profile-service.crt
+#      - ./profile-service/profile-service.key:/app/profile-service.key
+#
+#  rating-server:
+#    build:
+#      context: ./rating-service/
+#      dockerfile: Dockerfile
+#    restart: always
+#    container_name: ${RATING_SERVICE_HOST}
+#    hostname: ${RATING_SERVICE_HOST}
+#    environment:
+#      - PORT=${RATING_SERVICE_PORT}
+#      - MONGO_DB_URI=${MONGO_DB_URI}
+#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+#    depends_on:
+#      mongo:
+#        condition: service_healthy
+#      jaeger:
+#        condition: service_started
+#    networks:
+#      - network
+#    volumes:
+#      - ./rating-service/rating-service.crt:/app/rating-service.crt
+#      - ./rating-service/rating-service.key:/app/rating-service.key
 
   api_gateway:
     build:
@@ -166,9 +176,9 @@ services:
       - auth-server
       - res-server
       - acc-server
-      - profile-server
-      - rating-server
-      - notifications-server
+#      - profile-server
+#      - rating-server
+#      - notifications-server
     networks:
       - network
     volumes:
@@ -231,56 +241,56 @@ services:
     networks:
       - network
 
-  redis:
-    container_name: ${REDIS_HOST}
-    image: redis
-    restart: always
-    ports:
-      - ${REDIS_PORT}:${REDIS_PORT}
-    command: "redis-server --save 20 1 --loglevel warning"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    networks:
-      - network
-
-    # HDFS - Namenode
-
-  namenode:
-      image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-      container_name: namenode
-      ports:
-        - "9870:9870"
-        - "9000:9000"
-      volumes:
-        - hadoop_namenode:/hadoop/dfs/name
-      environment:
-        - CLUSTER_NAME=gobnb
-      env_file:
-        - ./.env
-      networks:
-        - network
-
-  datanode:
-        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-        container_name: datanode
-        volumes:
-          - hadoop_datanode:/hadoop/dfs/data
-        environment:
-          SERVICE_PRECONDITION: "namenode:9870"
-        healthcheck:
-          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
-          interval: 15s
-          timeout: 5s
-          retries: 3
-        networks:
-          - network
-        env_file:
-          - ./.env
+#  redis:
+#    container_name: ${REDIS_HOST}
+#    image: redis
+#    restart: always
+#    ports:
+#      - ${REDIS_PORT}:${REDIS_PORT}
+#    command: "redis-server --save 20 1 --loglevel warning"
+#    volumes:
+#      - redis_data:/data
+#    healthcheck:
+#      test: [ "CMD", "redis-cli", "ping" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 3
+#    networks:
+#      - network
+#
+#    # HDFS - Namenode
+#
+#  namenode:
+#      image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+#      container_name: namenode
+#      ports:
+#        - "9870:9870"
+#        - "9000:9000"
+#      volumes:
+#        - hadoop_namenode:/hadoop/dfs/name
+#      environment:
+#        - CLUSTER_NAME=gobnb
+#      env_file:
+#        - ./.env
+#      networks:
+#        - network
+#
+#  datanode:
+#        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+#        container_name: datanode
+#        volumes:
+#          - hadoop_datanode:/hadoop/dfs/data
+#        environment:
+#          SERVICE_PRECONDITION: "namenode:9870"
+#        healthcheck:
+#          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
+#          interval: 15s
+#          timeout: 5s
+#          retries: 3
+#        networks:
+#          - network
+#        env_file:
+#          - ./.env
 
   jaeger:
     container_name: jaeger
@@ -302,6 +312,13 @@ services:
     command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
       - ./api-gateway/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    networks:
+      - network
+
+  nats:
+    image: nats
+    container_name: nats
+    restart: on-failure
     networks:
       - network
 
