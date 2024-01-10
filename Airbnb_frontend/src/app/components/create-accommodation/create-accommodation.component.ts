@@ -13,13 +13,6 @@ import { UserService } from 'src/app/services';
 export class CreateAccommodationComponent {
   notification = { msgType: '', msgBody: '' };
   images: File[] = [];
-
-  //@ViewChild('fileInput') fileInput: ElementRef; // Access the file input element
-
-  // constructor(
-  //   private accService: AccommodationService
-  // ) {
-  // }
   constructor(private dataService: AccDataService,
     private router: Router,
     private userService: UserService,
@@ -35,7 +28,6 @@ export class CreateAccommodationComponent {
   onSubmit() {
     const name = (document.getElementById('name') as HTMLInputElement).value;
     const location = (document.getElementById('location') as HTMLInputElement).value;
-    //const amenities = (document.getElementById('amenities') as HTMLTextAreaElement).value;
     const tv = (document.getElementById('tv') as HTMLInputElement).checked;
     const wifi = (document.getElementById('wifi') as HTMLInputElement).checked;
     const ac = (document.getElementById('ac') as HTMLInputElement).checked;
@@ -47,7 +39,18 @@ export class CreateAccommodationComponent {
       'AC': ac
     };
     
-    //const files: FileList = this.fileInput.nativeElement.files;
+    const startDate = (document.getElementById('startDate') as HTMLInputElement).value;
+    const endDate = (document.getElementById('endDate') as HTMLInputElement).value;
+    if(endDate < startDate){
+      this.notification = { msgType: 'error', msgBody: `End date must be after start date` };
+      return;
+    }
+    const startDateFormated = startDate +"T00:00:00Z"
+    const endDateFormated = endDate + "T00:00:00Z"
+    const price = parseInt((document.getElementById('price') as HTMLInputElement).value, 10);
+    const priceType = (document.getElementById('priceType') as HTMLInputElement).value;
+    const availabilityType = (document.getElementById('availabilityType') as HTMLInputElement).value;
+
 
     const accommodationData = {
       accommodation_name: name,
@@ -55,15 +58,13 @@ export class CreateAccommodationComponent {
       accommodation_amenities: amenities,
       accommodation_min_guests: minGuests,
       accommodation_max_guests: maxGuests,
+      ...(startDate && { start_date: startDateFormated }),
+      ...(endDate && { end_date: endDateFormated }),
+      ...(price && { price }),
+      ...(priceType && { price_type: priceType }),
+      ...(availabilityType && { availability_type: availabilityType })
     };
-
-    // for (let i = 0; i < files.length; i++) {
-    //   formData.append('images', files[i], files[i].name);
-    // }
-
-    //TODO:
-
-
+   
     this.dataService.sendData(accommodationData).subscribe(
       (response:any) => {
 
@@ -96,8 +97,11 @@ export class CreateAccommodationComponent {
     (document.getElementById('amenities') as HTMLTextAreaElement).value = '';
     (document.getElementById('minGuests') as HTMLInputElement).value = '';
     (document.getElementById('maxGuests') as HTMLInputElement).value = '';
-
-    //this.fileInput.nativeElement.value = '';
+    (document.getElementById('startDate') as HTMLInputElement).value = '';
+    (document.getElementById('endDate') as HTMLInputElement).value = '';
+    (document.getElementById('price') as HTMLTextAreaElement).value = '';
+    (document.getElementById('priceType') as HTMLInputElement).value = '';
+    (document.getElementById('availabilityType') as HTMLInputElement).value = '';
   
   }
   getUsername() {
@@ -109,8 +113,6 @@ export class CreateAccommodationComponent {
 
   this.accService.uploadAccImages(accId, formData ).subscribe(
    (data: any) => {
-
-      
     },
     (error) => {
     console.error('Error uploading images:', error);

@@ -4,57 +4,56 @@ import {Injectable} from '@angular/core';
   providedIn: 'root'
 })
 export class ConfigService {
+  private _api_url = 'https://localhost:8000/api';
+  // private _auth_api_url = 'https://localhost:8080/api';
+  // private _acc_api_url = 'https://localhost:8083/api';
+  // private _profile_api_url = 'https://localhost:8084/api';
+  // private _rec_api_url = 'https://localhost:8085/api';
+  // private _resv_api_url = 'https://localhost:8082/api';
+  // private _rating_api_url = 'https://localhost:8087/api';
+  // private _availability_api_url = 'https://localhost:8082/api';
+  // private _notifications_api_url = 'https://localhost:8089/api';
+   private _reports_api_url = 'https://localhost:8082/api';
 
-  private _auth_api_url = 'https://localhost:8080/api';
-  private _acc_api_url = 'https://localhost:8083/api';
-  private _profile_api_url = 'https://localhost:8084/api';
-  private _rec_api_url = 'https://localhost:8085/api';
-  private _resv_api_url = 'https://localhost:8082/api';
-  private _rating_api_url = 'https://localhost:8087/api';
-  private _availability_api_url = 'https://localhost:8082/api';
-  private _notifications_api_url = 'https://localhost:8089/api';
-  private _reports_api_url = 'https://localhost:8082/api';
-
-  private _auth_url = this._auth_api_url + '/auth';
-  private _reportsGenerate_url = this._reports_api_url + '/report'
+  private _auth_url = this._api_url + '/auth';
   private _login_url = this._auth_url + '/login';
   private _register_url = this._auth_url + '/register';
   private _verifyEmail_url = this._auth_url + '/verifyEmail';
   private _resendVerification_url = this._auth_url + '/resendVerification';
   private _forgotPassword_url = this._auth_url + '/forgotPassword';
   private _resetPassword_url = this._auth_url + '/resetPassword';
-
-  private _user_url = this._auth_api_url + '/users';
+  private _reportsGenerate_url = this._reports_api_url + '/report'
+  private _user_url = this._api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
   private _current_user_profile_url = this._user_url + '/currentUserProfile';
 
   private _changePassword_url = this._user_url + '/changePassword';
   private _deleteProfile_url = this._user_url + '/delete';
 
-  private _acc_url = this._acc_api_url + '/accommodations';
+  private _acc_url = this._api_url + '/accommodations';
   private _acc_delete = this._acc_url + '/delete/';
   private _host_accs = this._acc_url + '/get/host/';
   private _img_acc_all = this.acc_url + '/images/';
   private _img_acc_upload = this.acc_url + '/upload/images/';
 
 
-  private _notif_url = this._notifications_api_url + '/notifications';
+  private _notif_url = this._api_url + '/notifications';
   private _fetchNotifications_url = this._notif_url + '/host';
 
 
-  private _resv_url = this._resv_api_url + '/reservations';
-  private _create_resv_url = this._resv_api_url + '/reservations/create';
+  private _resv_url = this._api_url + '/reservations';
+  private _create_resv_url = this._api_url + '/reservations/create';
 
-  private _rating_url = this._rating_api_url + '/rating';
+  private _rating_url = this._api_url + '/rating';
 
+  private _availability_url = this._api_url + 'reservations/availability';
+  private _create_availability_period_url = this._api_url + 'reservations/availability/create';
+  private _get_availability_url = this._api_url + '/availability/get';
 
   private _dailyReport_url = this._reportsGenerate_url + '/daily/';
   private _monthlyReport_url = this._reportsGenerate_url + '/monthly/';
 
 
-  private _availability_url = this._availability_api_url + 'reservations/availability';
-  private _create_availability_period_url = this._availability_api_url + 'reservations/availability/create';
-  private _get_availability_url = this._availability_api_url + '/availability/get';
 
   get login_url(): string {
     return this._login_url;
@@ -113,7 +112,7 @@ export class ConfigService {
   get createReservation_url(): string {
     return this._create_resv_url;
   }
-  
+
   get changePassword_url(): string {
     return this._changePassword_url;
   }

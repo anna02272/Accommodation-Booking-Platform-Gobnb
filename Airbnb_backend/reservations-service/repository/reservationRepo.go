@@ -114,7 +114,7 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
 		`SELECT COUNT(*) FROM reservations_by_guest 
-         WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? ALLOW FILTERING`,
+         WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? AND isCanceled = false ALLOW FILTERING`,
 		guestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
 	).WithContext(ctx).Scan(&existingReservationCount)
 
@@ -284,6 +284,24 @@ func (sr *ReservationRepo) GetReservationCheckInDate(ctx context.Context, reserv
 	}
 
 	return checkInDate, nil
+}
+func (sr *ReservationRepo) GetReservationCheckOutDate(ctx context.Context, reservationID string, guestID string) (time.Time, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationCheckOutDate")
+	defer span.End()
+
+	var checkOutDate time.Time
+
+	query := `
+        SELECT check_out_date FROM reservations_by_guest
+        WHERE guest_id = ? AND reservation_id_time_created = ?`
+
+	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkOutDate); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving check-out date: "+err.Error())
+		sr.logger.Println("Error retrieving check-out date:", err)
+		return time.Time{}, err
+	}
+
+	return checkOutDate, nil
 }
 
 //func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string) error {

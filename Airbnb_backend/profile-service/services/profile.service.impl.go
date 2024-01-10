@@ -141,9 +141,6 @@ func (us *UserServiceImpl) SendUserToAuthService(user *domain.User, ctx context.
 	timeout := 2000 * time.Second // Adjust the timeout duration as needed
 	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	println("ovde")
-	println(user.Name)
-	println(url)
 	resp, _ := us.HTTPSperformAuthorizationRequestWithContext(ctx, user, url)
 
 	defer resp.Body.Close()
