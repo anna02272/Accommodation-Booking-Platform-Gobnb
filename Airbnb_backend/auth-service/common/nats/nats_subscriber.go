@@ -1,7 +1,7 @@
 package nats
 
 import (
-	"common/saga"
+	"auth-service/common/saga"
 	"github.com/nats-io/nats.go"
 )
 

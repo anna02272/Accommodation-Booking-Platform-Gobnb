@@ -41,7 +41,7 @@ const (
 	AddAccommodation CreateAccommodationCommandType = iota
 	RollbackAccommodation
 	AddAvailability
-	RollbackAvailability
+	CancelAvailability
 	UnknownCommand
 )
 
@@ -58,11 +58,10 @@ const (
 	AccommodationRolledBack
 	AvailabilityAdded
 	AvailabilityNotAdded
-	AvailabilityRolledBack
 	UnknownReply
 )
 
-type CreateOrderReply struct {
+type CreateAccommodationReply struct {
 	Accommodation AccommodationWithAvailability
 	Type          CreateAccommodationReplyType
 }

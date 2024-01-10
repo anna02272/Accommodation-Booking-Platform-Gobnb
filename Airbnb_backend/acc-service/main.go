@@ -41,6 +41,10 @@ var (
 	imageCache                *cache.ImageCache
 )
 
+const (
+	QueueGroup = "accommodation_service"
+)
+
 func init() {
 	ctx = context.TODO()
 
@@ -80,6 +84,11 @@ func init() {
 	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
 
+	//commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
+	//replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
+	//createOrderOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber)
+	//commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	//replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 	server = gin.Default()
 }
 
@@ -125,7 +134,7 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 
 	return tp, nil
 }
-func initPublisher(subject string) saga.Publisher {
+func InitPublisher(subject string) saga.Publisher {
 	cfg := config.GetConfig()
 	publisher, err := nats.NewNATSPublisher(
 		cfg.NatsHost, cfg.NatsPort,
@@ -136,7 +145,7 @@ func initPublisher(subject string) saga.Publisher {
 	return publisher
 }
 
-func initSubscriber(subject, queueGroup string) saga.Subscriber {
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
 	cfg := config.GetConfig()
 	subscriber, err := nats.NewNATSSubscriber(
 		cfg.NatsHost, cfg.NatsPort,
@@ -147,7 +156,7 @@ func initSubscriber(subject, queueGroup string) saga.Subscriber {
 	return subscriber
 }
 
-func initCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) *application.CreateAccommodationOrchestrator {
+func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) *application.CreateAccommodationOrchestrator {
 	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber)
 	if err != nil {
 		log.Fatal(err)
