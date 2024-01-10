@@ -13,8 +13,10 @@ export class ConfigService {
   private _rating_api_url = 'https://localhost:8087/api';
   private _availability_api_url = 'https://localhost:8082/api';
   private _notifications_api_url = 'https://localhost:8089/api';
+  private _reports_api_url = 'https://localhost:8082/api';
 
   private _auth_url = this._auth_api_url + '/auth';
+  private _reportsGenerate_url = this._reports_api_url + '/report'
   private _login_url = this._auth_url + '/login';
   private _register_url = this._auth_url + '/register';
   private _verifyEmail_url = this._auth_url + '/verifyEmail';
@@ -45,12 +47,25 @@ export class ConfigService {
 
   private _rating_url = this._rating_api_url + '/rating';
 
+
+  private _dailyReport_url = this._reportsGenerate_url + '/daily/';
+  private _monthlyReport_url = this._reportsGenerate_url + '/monthly/';
+
+
   private _availability_url = this._availability_api_url + 'reservations/availability';
   private _create_availability_period_url = this._availability_api_url + 'reservations/availability/create';
   private _get_availability_url = this._availability_api_url + '/availability/get';
 
   get login_url(): string {
     return this._login_url;
+  }
+
+  get dailyReport_url() {
+    return this._dailyReport_url;
+  }
+
+  get montlyReport_url() {
+    return this._monthlyReport_url;
   }
 
   get register_url(): string {

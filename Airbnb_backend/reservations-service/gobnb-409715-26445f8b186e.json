@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gobnb-409715",
+  "private_key_id": "26445f8b186e62829f1946cb5082e716e566ebb7",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC/1azPARe99AIX\njlu7YDkXEo/q0tKDLe+wg6kuAI6Xh6JXeHhkPFMYfEBSC/ua3fpWMJC0uu3YgA30\nuxUToRi16bp1fcIJNutM7OdAfIFhKnuqolS7roVrr68jV9TjGJmFZeG3JYUz4Miy\nZlbNvJOJKTFmAqNRG3JNiTEtOKsNR/dEeReGH+OdsatwkyUhJwU2yTTYkzWFlVI8\n7iE3ZT8XPFp8wn0PMtFvDSho5Pv52gqiNLIZaJp7JcoUEVzLb4e03M32T6oY1wZt\nNwwGCNISkXVmrIuFn4Eo1Ojf7imuFvEbSOSTgTIvTB8tLIhSooAgsZcmRrkIZ3Bs\nj+WByVajAgMBAAECggEAEF2TQ4mtU9g4QXg0nTSlSjGcM4VOzkAh/aYNzc3gXE8G\n631sj+iRkjovZpB9I4YicC3uemykE99A0YsQTj9lE0fgT1uuLQkRY9umEttMUlTE\nfhchMW2/FiPDxjkdAU688iNx8STzSyy3EnkmmKCo2X+5JiG9exLjWngEyP3XoedG\nw+2IMMGbWRUOE+mxrOqC84668AmKVOqG1ETf8kkH3YbsfT3jTj9B9wX7nDI+6o6i\n12ABe+a8XtgRJ6BzQ1ScHFUxDkWKly1E54ePxR7/r8TAqLfcV8y86SBoAN8Q3tqk\n94+Quj9UuSgqsfCiSCruCYT/lSf4yqHVKojO46otUQKBgQD4OnQiaX71pMv3BseP\n9uqSsIJm8BvbG0IkawvdDpAIaFtOQP4lG15rtu95yCXtyPeZdmvQRpfN5VRMiBGE\nlfdKFEYJCe3p9lPw409OukuT92AusFHTQgaEl8dLh4fQn4VHQyTWab8SAFBEbxKM\nl1X9PBQkYbf8m6AZHD/XaIsHeQKBgQDF1zocnRKpcSngJGQqriR16N9Yyxgkr2zg\nrTioeTEOo5RCwl21N1dLj7vCN4hJuWYQX/1oQs19b+6FHaswFfk0eOw8xlm+dBzK\nUYTepNpfW97iXpnbw+Q6tPtuTvbdwPsTSMzoZY35hCd/QOcC4jV4eoXc5aMFv9rm\n14aF8xlb+wKBgQC0erupsY6Px8xMxW8fq2WOVivZ8EYwnrcOh45OoaHzmvyX/wVJ\nsYaLRq0DnJSHORFdUQ6+ljUVjOIn6t7hya/M+sSZGdETxPfvMzachTMiWEBkceps\ncZsPmNNchSQoeXOMBrOn+abkzbmOqDuSYQ4yWxZCBZKiZfyXhUSdt/Mt8QKBgD4/\n+3P3ZGDWT5PMP4xCYQyMqoIY3U7lt792Iaa5A1uU0tiyqaOUdy46WpzAtmxkHp42\nZdjBdEDs0EMoU638q/37snFpA+HuTQTH46PegSuSD65wj77bg1uJiLdrtzeNOjMW\nLAtPsP16vKbIuCdrH+H5w1b/Fm1/sZQC6rwJAsizAoGBAJNQVG7MW4pz+tk6DpuE\nQ1vEyfCVkirCUEdnKhlRPwbOABzLa312Ra3+UebAjoyqx1f8oHY4IPa9Uzn6Hykk\n2qLwxgFYwDroBBSkS7NlRDzxO4VtrWJQPutn25aZJgFy1H7OcAYVkfbQ6F3lWxPb\nHkssjcvDpZkNgZMI07rvOPBw\n-----END PRIVATE KEY-----\n",
+  "client_email": "google-analytics@gobnb-409715.iam.gserviceaccount.com",
+  "client_id": "102810998803745492580",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/google-analytics%40gobnb-409715.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

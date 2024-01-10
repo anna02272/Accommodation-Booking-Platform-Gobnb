@@ -3,16 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -25,6 +15,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/analyticsReport"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
 )
 
 var (
@@ -118,6 +118,8 @@ func main() {
 	//if err != nil {
 	//	logger.Fatal(err)
 	//}
+
+	analyticsReport.GetPropertiesAnalytics()
 
 	defer store.CloseSession()
 	store.CreateTable()

@@ -12,8 +12,10 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	ga "google.golang.org/api/analyticsdata/v1beta"
 	"log"
 	"net/http"
+	"reservations-service/analyticsReport"
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"reservations-service/repository"
@@ -104,6 +106,61 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	vars := mux.Vars(h)
 	accID := vars["accId"]
 
+	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accID
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, urlAccommodationCheck)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service is not available")
+			errorMsg := map[string]string{"error": "Accommodation service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		span.SetStatus(codes.Error, "Accommodation service is not available")
+		errorMsg := map[string]string{"error": "Accommodation service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeAccommodation := resp.StatusCode
+	fmt.Println(statusCodeAccommodation)
+	if statusCodeAccommodation != 200 {
+		span.SetStatus(codes.Error, "Accommodation with that id does not exist")
+		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	var responseAccommodation struct {
+		AccommodationName      string `json:"accommodation_name"`
+		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationHostId    string `json:"host_id"`
+		AccommodationMinGuests int    `json:"accommodation_min_guests"`
+		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
+	}
+	decoder = json.NewDecoder(resp.Body)
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseAccommodation); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if responseAccommodation.AccommodationHostId != response.LoggedInUser.ID {
+		span.SetStatus(codes.Error, "Unauthorized")
+		errorMsg := map[string]string{"error": "Unauthorized: That is not your accommodation."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
 	countReservations, err := s.EventRepo.CountReservationsForCurrentDay(ctx, accID)
 	if err != nil {
 		fmt.Println(err)
@@ -120,6 +177,23 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 		return
 	}
 
+	var Metrics = []*ga.Metric{
+		{
+			Name: "screenPageViews",
+		},
+		{
+			Name: "averageSessionDuration",
+		},
+	}
+
+	users, avgTime := analyticsReport.GetNumberOfUsersPerPage("2024-01-07", "today",
+		"/accommodation/"+accID, Metrics)
+
+	fmt.Println(users)
+	fmt.Println("users report")
+	fmt.Println(avgTime)
+	fmt.Println("avg time report")
+
 	reportID := gocql.TimeUUID()
 
 	report := &data.DailyReport{
@@ -128,6 +202,8 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 		Date:             time.Now(),
 		ReservationCount: countReservations,
 		RatingCount:      countRatings,
+		AverageVisitTime: avgTime,
+		PageVisits:       int(users),
 	}
 
 	errReport := s.Repo.InsertDailyReport(ctx, report)
@@ -214,6 +290,61 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	vars := mux.Vars(h)
 	accID := vars["accId"]
 
+	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accID
+
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, urlAccommodationCheck)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service is not available")
+			errorMsg := map[string]string{"error": "Accommodation service is not available."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		span.SetStatus(codes.Error, "Accommodation service is not available")
+		errorMsg := map[string]string{"error": "Accommodation service is not available."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+
+	statusCodeAccommodation := resp.StatusCode
+	fmt.Println(statusCodeAccommodation)
+	if statusCodeAccommodation != 200 {
+		span.SetStatus(codes.Error, "Accommodation with that id does not exist")
+		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return
+	}
+
+	var responseAccommodation struct {
+		AccommodationName      string `json:"accommodation_name"`
+		AccommodationLocation  string `json:"accommodation_location"`
+		AccommodationHostId    string `json:"host_id"`
+		AccommodationMinGuests int    `json:"accommodation_min_guests"`
+		AccommodationMaxGuests int    `json:"accommodation_max_guests"`
+	}
+	decoder = json.NewDecoder(resp.Body)
+
+	// Decode the JSON response into the struct
+	if err := decoder.Decode(&responseAccommodation); err != nil {
+		if strings.Contains(err.Error(), "cannot parse") {
+			span.SetStatus(codes.Error, "Invalid date format.")
+			errorMsg := map[string]string{"error": "Invalid date format."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return
+		}
+		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
+		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if responseAccommodation.AccommodationHostId != response.LoggedInUser.ID {
+		span.SetStatus(codes.Error, "Unauthorized")
+		errorMsg := map[string]string{"error": "Unauthorized: That is not your accommodation."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
+		return
+	}
+
 	countReservations, err := s.EventRepo.CountReservationsForCurrentMonth(ctx, accID)
 	if err != nil {
 		span.SetStatus(codes.Error, "Error counting reservations!")
@@ -232,6 +363,28 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	reportID := gocql.TimeUUID()
 	currentYear, currentMonth, _ := currentTime.Date()
 
+	currentDate := time.Now().UTC()
+	startOfMonth := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, time.UTC)
+	endOfMonth := startOfMonth.AddDate(0, 1, 0)
+
+	startOfMonthStr := startOfMonth.Format("2006-01-02")
+	endOfMonthStr := endOfMonth.Format("2006-01-02")
+
+	var Metrics = []*ga.Metric{
+		{
+			Name: "screenPageViews",
+		},
+		{
+			Name: "averageSessionDuration",
+		},
+	}
+
+	users, avgTime := analyticsReport.GetNumberOfUsersPerPage(startOfMonthStr, endOfMonthStr,
+		"/accommodation/"+accID, Metrics)
+
+	fmt.Println(users)
+	fmt.Println(avgTime)
+
 	report := &data.MonthlyReport{
 		ReportID:         data.TimeUUID(reportID),
 		AccommodationID:  accID,
@@ -239,6 +392,8 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 		RatingCount:      countRatings,
 		Month:            int(currentMonth),
 		Year:             currentYear,
+		AverageVisitTime: avgTime,
+		PageVisits:       int(users),
 	}
 
 	errReport := s.Repo.InsertMonthlyReport(ctx, report)

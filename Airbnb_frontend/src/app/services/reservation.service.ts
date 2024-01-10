@@ -35,5 +35,6 @@ export class ReservationService {
    checkPrice(checkAvailabilityData: any, accId: string) {
     return this.apiService.post(this.configService.resv_url + "/prices/" + accId, checkAvailabilityData);
    }
+
 }
 
