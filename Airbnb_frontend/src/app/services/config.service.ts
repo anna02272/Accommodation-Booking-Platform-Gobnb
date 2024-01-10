@@ -13,7 +13,7 @@ export class ConfigService {
   // private _rating_api_url = 'https://localhost:8087/api';
   // private _availability_api_url = 'https://localhost:8082/api';
   // private _notifications_api_url = 'https://localhost:8089/api';
-   private _reports_api_url = 'https://localhost:8082/api';
+  // private _reports_api_url = 'https://localhost:8000/api';
 
   private _auth_url = this._api_url + '/auth';
   private _login_url = this._auth_url + '/login';
@@ -22,7 +22,7 @@ export class ConfigService {
   private _resendVerification_url = this._auth_url + '/resendVerification';
   private _forgotPassword_url = this._auth_url + '/forgotPassword';
   private _resetPassword_url = this._auth_url + '/resetPassword';
-  private _reportsGenerate_url = this._reports_api_url + '/report'
+  private _reportsGenerate_url = this._api_url + '/report';
   private _user_url = this._api_url + '/users';
   private _current_user_url = this._user_url + '/currentUser';
   private _current_user_profile_url = this._user_url + '/currentUserProfile';

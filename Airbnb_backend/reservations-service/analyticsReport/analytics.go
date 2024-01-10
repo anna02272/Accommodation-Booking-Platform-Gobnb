@@ -44,7 +44,7 @@ func GetNumberOfUsersPerPage(fromDate string, toDate string, pageName string, me
 	ctx := context.Background()
 	client, err := ga.NewService(ctx, option.WithCredentialsFile("/app/gobnb-409715-26445f8b186e.json"))
 	if err != nil {
-		panic(err)
+		return 0, 0
 	}
 
 	runReportRequest := &ga.RunReportRequest{
@@ -75,10 +75,14 @@ func GetNumberOfUsersPerPage(fromDate string, toDate string, pageName string, me
 	r, err := client.Properties.RunReport("properties/421890861", runReportRequest).Do()
 	if err != nil {
 		fmt.Println(err)
+		return 0, 0
 	}
 
 	var result []float64
 
+	if r.RowCount <= 0 {
+		return 0, 0
+	}
 	if r.RowCount > 0 {
 		for _, value := range r.Rows {
 			for _, metricValue := range value.MetricValues {
