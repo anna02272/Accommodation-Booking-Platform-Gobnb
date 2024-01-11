@@ -10,12 +10,10 @@
             <div class="box-top">
                 <h3> Daily report </h3>
                 <div class="report-user">
-                    <span>Average session duration: </span> <br>
-                    <span>Number of page visits: </span> <br>
-                    <span> Number of reservations: </span> <br>
-                    <span> Number of rating: </span> <br>
-
-
+                    <span>Average session duration: {{dailyReport.average_visit_time}} </span> <br>
+                    <span>Number of page visits: {{dailyReport.page_visits}}</span> <br>
+                    <span> Number of reservations: {{dailyReport.reservation_count}} </span> <br>
+                    <span> Number of rating: {{dailyReport.rating_count}} </span> <br>
                 </div>
             </div>
         </div>
@@ -31,13 +29,10 @@
             <div class="box-top">
                     <h3> Monthly report </h3>
                 <div class="report-user">
-                <span>Average session duration: </span> <br>
-                <span>Number of page visits: </span> <br>
-                <span> Number of reservations: </span> <br>
-                <span> Number of rating: </span> <br>
-
-
-
+                <span>Average session duration: {{monthlyReport.average_visit_time}} </span> <br>
+                <span>Number of page visits: {{monthlyReport.page_visits}} </span> <br>
+                <span> Number of reservations: {{monthlyReport.reservation_count}} </span> <br>
+                <span> Number of rating: {{monthlyReport.rating_count}} </span> <br>
                 </div>
             </div>
 
