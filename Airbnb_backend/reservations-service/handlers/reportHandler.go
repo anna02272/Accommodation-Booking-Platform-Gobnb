@@ -186,7 +186,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 		},
 	}
 
-	users, avgTime := analyticsReport.GetNumberOfUsersPerPage("2024-01-07", "today",
+	users, avgTime := analyticsReport.GetNumberOfUsersPerPage("yesterday", "today",
 		"/accommodation/"+accID, Metrics)
 
 	fmt.Println(users)
