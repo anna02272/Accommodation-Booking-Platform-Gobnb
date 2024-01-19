@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -23,10 +25,24 @@ type NotificationHandler struct {
 	notificationService services.NotificationService
 	DB                  *mongo.Collection
 	Tracer              trace.Tracer
+	CircuitBreaker      *gobreaker.CircuitBreaker
 }
 
 func NewNotificationHandler(notificationService services.NotificationService, db *mongo.Collection, tr trace.Tracer) NotificationHandler {
-	return NotificationHandler{notificationService, db, tr}
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			// Optionally, you can log state changes.
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+
+	return NotificationHandler{
+		notificationService: notificationService,
+		DB:                  db,
+		Tracer:              tr,
+		CircuitBreaker:      circuitBreaker,
+	}
 }
 
 func (s *NotificationHandler) CreateNotification(c *gin.Context) {
@@ -43,13 +59,21 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(spanCtx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
+
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -136,13 +160,21 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(spanCtx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
+
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -223,6 +255,44 @@ func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string) (*http.Response, error) {
+	// Define a function that represents the logic to execute within the Circuit Breaker
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		// Perform the request with the provided context
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	// Use the Circuit Breaker to execute the logic
+	result, err := s.CircuitBreaker.Execute(requestFunc)
+	if err != nil {
+		return nil, err
+	}
+
+	// Type assertion to retrieve the response
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
 
 	return resp, nil
