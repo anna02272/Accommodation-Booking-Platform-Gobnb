@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class AccDataService {
-  private apiUrl = 'https://localhost:8083/api/accommodations/create';
+  private apiUrl = 'https://localhost:8000/api/accommodations/create';
 
   constructor(private http: HttpClient) {}
 

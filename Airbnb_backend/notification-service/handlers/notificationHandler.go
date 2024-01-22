@@ -285,11 +285,14 @@ func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker
 
 	// Use the Circuit Breaker to execute the logic
 	result, err := s.CircuitBreaker.Execute(requestFunc)
+	fmt.Println("here circuit breaker")
 	if err != nil {
 		return nil, err
 	}
 
 	// Type assertion to retrieve the response
+	fmt.Println(result)
+	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
 		return nil, errors.New("unexpected response type from Circuit Breaker")

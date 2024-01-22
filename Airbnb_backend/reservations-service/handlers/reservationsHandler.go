@@ -5,7 +5,17 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+	"github.com/sony/gobreaker"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -15,16 +25,6 @@ import (
 	"reservations-service/utils"
 	"strings"
 	"time"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/go-playground/validator/v10"
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var validateFields = validator.New()
@@ -32,16 +32,31 @@ var validateFields = validator.New()
 type KeyProduct struct{}
 
 type ReservationsHandler struct {
-	logger    *log.Logger
-	Repo      *repository.ReservationRepo
-	EventRepo *repository.EventRepo
-	serviceAv services.AvailabilityService
-	DB        *mongo.Collection
-	Tracer    trace.Tracer
+	logger         *log.Logger
+	Repo           *repository.ReservationRepo
+	EventRepo      *repository.EventRepo
+	serviceAv      services.AvailabilityService
+	DB             *mongo.Collection
+	Tracer         trace.Tracer
+	CircuitBreaker *gobreaker.CircuitBreaker
 }
 
-func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer) *ReservationsHandler {
-	return &ReservationsHandler{l, r, er, srv, db, tracer}
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer) ReservationsHandler {
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+	return ReservationsHandler{
+		logger:         l,
+		serviceAv:      srv,
+		Repo:           r,
+		EventRepo:      er,
+		DB:             db,
+		Tracer:         tracer,
+		CircuitBreaker: circuitBreaker,
+	}
 }
 
 func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, h *http.Request) {
@@ -55,8 +70,16 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
@@ -122,8 +145,16 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	accId := guestReservation.AccommodationId
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, urlAccommodationCheck)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
@@ -260,8 +291,15 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	fmt.Println(responseAccommodation.AccommodationHostId)
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, urlHostCheck)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
@@ -388,8 +426,16 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
@@ -473,8 +519,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available. Try again later")
 			errorMsg := map[string]string{"error": "Authorization service not available. Try again later"}
@@ -576,8 +630,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, urlAccommodationCheck)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available.")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
@@ -624,8 +686,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContext(ctx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, urlHostCheck)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
@@ -689,8 +758,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	notificationURL := "https://notifications-server:8089/api/notifications/create"
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBody(ctx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(ctx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Notification service is not available.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
@@ -742,8 +819,16 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
@@ -999,6 +1084,88 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx context.Context, token string, url string) (*http.Response, error) {
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	result, err := s.CircuitBreaker.Execute(requestFunc)
+	fmt.Println("here circuit breaker")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(result)
+	fmt.Println("circuit breaker result")
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
+	}
+
+	return resp, nil
+}
+
+func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(
+	ctx context.Context, token string, url string, method string, requestBody []byte,
+) (*http.Response, error) {
+	_, span := s.Tracer.Start(ctx, "AccommodationRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBody")
+	defer span.End()
+
+	// Define a function that represents the logic to execute within the Circuit Breaker
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	// Use the Circuit Breaker to execute the request function
+	result, err := s.CircuitBreaker.Execute(requestFunc)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	resp, ok := result.(*http.Response)
+	if !ok {
+		err := errors.New("unexpected response type from Circuit Breaker")
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 

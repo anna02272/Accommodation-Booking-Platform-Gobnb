@@ -4,9 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gocql/gocql"
+	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -25,13 +27,25 @@ var validateFieldsEvent = validator.New()
 type KeyProductEvent struct{}
 
 type EventHandler struct {
-	logger *log.Logger
-	Repo   *repository.EventRepo
-	Tracer trace.Tracer
+	logger         *log.Logger
+	Repo           *repository.EventRepo
+	Tracer         trace.Tracer
+	CircuitBreaker *gobreaker.CircuitBreaker
 }
 
-func NewEventHandler(l *log.Logger, r *repository.EventRepo, tracer trace.Tracer) *EventHandler {
-	return &EventHandler{l, r, tracer}
+func NewEventHandler(l *log.Logger, r *repository.EventRepo, tracer trace.Tracer) EventHandler {
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+	return EventHandler{
+		logger:         l,
+		Repo:           r,
+		Tracer:         tracer,
+		CircuitBreaker: circuitBreaker,
+	}
 }
 
 func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http.Request) {
@@ -45,7 +59,7 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContextEvent(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerEvent(ctx, token, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
@@ -53,11 +67,15 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 			return
 		}
-		span.SetStatus(codes.Error, "Authorization service not available")
-		errorMsg := map[string]string{"error": "Authorization service not available.."}
-		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
-		return
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 	}
+
 	defer resp.Body.Close()
 
 	statusCode := resp.StatusCode
@@ -133,6 +151,43 @@ func (s *EventHandler) HTTPSperformAuthorizationRequestWithContextEvent(ctx cont
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *EventHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerEvent(ctx context.Context, token string, url string) (*http.Response, error) {
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	result, err := s.CircuitBreaker.Execute(requestFunc)
+	fmt.Println("here circuit breaker")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(result)
+	fmt.Println("circuit breaker result")
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
 
 	return resp, nil

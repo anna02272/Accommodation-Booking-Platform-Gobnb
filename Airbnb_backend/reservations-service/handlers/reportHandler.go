@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gocql/gocql"
 	"github.com/gorilla/mux"
+	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -28,14 +30,28 @@ var validateFieldsReport = validator.New()
 type KeyProductReport struct{}
 
 type ReportHandler struct {
-	logger    *log.Logger
-	Repo      *repository.ReportRepo
-	EventRepo *repository.EventRepo
-	Tracer    trace.Tracer
+	logger         *log.Logger
+	Repo           *repository.ReportRepo
+	EventRepo      *repository.EventRepo
+	Tracer         trace.Tracer
+	CircuitBreaker *gobreaker.CircuitBreaker
 }
 
-func NewReportHandler(l *log.Logger, r *repository.ReportRepo, er *repository.EventRepo, tracer trace.Tracer) *ReportHandler {
-	return &ReportHandler{l, r, er, tracer}
+func NewReportHandler(l *log.Logger, r *repository.ReportRepo, er *repository.EventRepo, tracer trace.Tracer) ReportHandler {
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+	return ReportHandler{
+		logger:         l,
+		Repo:           r,
+		EventRepo:      er,
+		Tracer:         tracer,
+		CircuitBreaker: circuitBreaker,
+	}
+
 }
 
 func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWriter, h *http.Request) {
@@ -49,8 +65,16 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
@@ -108,8 +132,16 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accID
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx, token, urlAccommodationCheck)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
@@ -233,8 +265,16 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx, token, url)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
@@ -292,8 +332,16 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accID
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextReport(ctx, token, urlAccommodationCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx, token, urlAccommodationCheck)
 	if err != nil {
+
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
@@ -430,6 +478,43 @@ func (s *ReportHandler) HTTPSperformAuthorizationRequestWithContextReport(ctx co
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (s *ReportHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx context.Context, token string, url string) (*http.Response, error) {
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	result, err := s.CircuitBreaker.Execute(requestFunc)
+	fmt.Println("here circuit breaker")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(result)
+	fmt.Println("circuit breaker result")
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
 
 	return resp, nil

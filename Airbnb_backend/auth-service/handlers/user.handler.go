@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"auth-service/domain"
+	error2 "auth-service/error"
 	"auth-service/services"
 	"auth-service/utils"
 	"context"
@@ -10,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -20,12 +22,23 @@ import (
 )
 
 type UserHandler struct {
-	userService services.UserService
-	Tracer      trace.Tracer
+	userService    services.UserService
+	Tracer         trace.Tracer
+	CircuitBreaker *gobreaker.CircuitBreaker
 }
 
 func NewUserHandler(userService services.UserService, tr trace.Tracer) UserHandler {
-	return UserHandler{userService, tr}
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+	return UserHandler{
+		userService:    userService,
+		Tracer:         tr,
+		CircuitBreaker: circuitBreaker,
+	}
 }
 
 var currentProfileUser *domain.User
@@ -205,6 +218,8 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "UserHandler.DeleteUser")
 	defer span.End()
+	rw := ctx.Writer
+	//h := ctx.Request
 
 	tokenStringHeader := ctx.GetHeader("Authorization")
 	tokenString := html.EscapeString(tokenStringHeader)
@@ -240,9 +255,15 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		ctxRest, cancel := context.WithTimeout(spanCtx, timeout)
 		defer cancel()
 
-		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
 		if errRes != nil {
-			fmt.Println(err)
+			if errors.Is(err, gobreaker.ErrOpenState) {
+				// Circuit is open
+				span.SetStatus(codes.Error, "Circuit is open. Reservation service is not available.")
+				error2.ReturnJSONError(rw, "Reservation service is not available.", http.StatusBadRequest)
+				return
+			}
+
 			if ctxRest.Err() == context.DeadlineExceeded {
 				span.SetStatus(codes.Error, "Failed to fetch user reservations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
@@ -253,7 +274,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 			return
 		}
 		defer respRes.Body.Close()
-		fmt.Println(respRes.StatusCode)
+
 		if respRes.StatusCode != 404 {
 			span.SetStatus(codes.Error, "You cannot delete your profile, you have active reservations")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have active reservations"})
@@ -274,14 +295,21 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
+		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
 		if errRes != nil {
-			fmt.Println(err)
+			if errors.Is(err, gobreaker.ErrOpenState) {
+				// Circuit is open
+				span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
+				error2.ReturnJSONError(rw, "Accommodation service is not available.", http.StatusBadRequest)
+				return
+			}
+
 			if ctxRest.Err() == context.DeadlineExceeded {
 				span.SetStatus(codes.Error, "Failed to fetch host accommodations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
 				return
 			}
+
 			span.SetStatus(codes.Error, "Failed to fetch host accommodations")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
 			return
@@ -315,14 +343,21 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	ctxRest, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := ac.HTTPSperformAuthorizationRequestWithContext(spanCtx, tokenStringHeader, urlProfile, "DELETE")
-	if err != nil {
-		fmt.Println(err)
+	resp, errRes := ac.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, tokenStringHeader, urlProfile, "DELETE")
+	if errRes != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Reservation service is not available.")
+			error2.ReturnJSONError(rw, "Reservation service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxRest.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Failed to delete user credentials")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 			return
 		}
+
 		span.SetStatus(codes.Error, "Failed to delete user credentials")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 		return
@@ -360,6 +395,44 @@ func (ac *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.C
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, err
+	}
+
+	return resp, nil
+}
+
+func (ac *UserHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string, method string) (*http.Response, error) {
+	// Define a function that represents the logic to execute within the Circuit Breaker
+	requestFunc := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest(method, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil
+	}
+
+	result, err := ac.CircuitBreaker.Execute(requestFunc)
+	fmt.Println("here circuit breaker")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(result)
+	fmt.Println("circuit breaker result")
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
 
 	return resp, nil
