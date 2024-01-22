@@ -35,6 +35,11 @@ type User struct {
 	Username string             `bson:"username" json:"username"`
 	Email    string             `bson:"email" json:"email" validate:"required,email"`
 }
+type NeoUser struct {
+	Username string `json:"username,omitempty"`
+	Email    string `json:"email,omitempty"`
+}
+type NeoUsers []*NeoUser
 
 type Accommodation struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
