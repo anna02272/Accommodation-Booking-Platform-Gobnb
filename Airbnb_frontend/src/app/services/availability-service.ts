@@ -10,7 +10,7 @@ import { HttpClient, HttpHeaders } from "@angular/common/http";
 @Injectable()
 export class AvailabilityService {
   availabilityPeriod!: AvailabilityPeriod;
-  private apiUrl = 'https://localhost:8082/api/availability/create';
+  private apiUrl = 'https://localhost:8000/api/availability/create';
 
   constructor(
     private configService: ConfigService,     

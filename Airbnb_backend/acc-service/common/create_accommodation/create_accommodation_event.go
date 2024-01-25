@@ -3,7 +3,7 @@ package create_accommodation
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type AccommodationWithAvailability struct {
-	ID               primitive.ObjectID
+	ID               string
 	HostId           string
 	Name             string
 	Location         string

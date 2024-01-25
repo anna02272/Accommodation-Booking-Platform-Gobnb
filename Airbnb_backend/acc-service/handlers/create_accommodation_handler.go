@@ -6,6 +6,8 @@ import (
 	"acc-service/domain"
 	"acc-service/services"
 	"context"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"net/http"
 )
 
 type CreateAccommodationCommandHandler struct {
@@ -14,7 +16,7 @@ type CreateAccommodationCommandHandler struct {
 	commandSubscriber    saga.Subscriber
 }
 
-func NewCreateAccommodationCommandHandler(accommodationService services.AccommodationService, publisher saga.Publisher, subscriber saga.Subscriber) (*CreateOrderCommandHandler, error) {
+func NewCreateAccommodationCommandHandler(accommodationService services.AccommodationService, publisher saga.Publisher, subscriber saga.Subscriber) (*CreateAccommodationCommandHandler, error) {
 	o := &CreateAccommodationCommandHandler{
 		accommodationService: accommodationService,
 		replyPublisher:       publisher,
@@ -27,21 +29,25 @@ func NewCreateAccommodationCommandHandler(accommodationService services.Accommod
 	return o, nil
 }
 
-func (handler *CreateAccommodationCommandHandler) handle(command *create_accommodation.CreateAccommodationCommand) {
+func (handler *CreateAccommodationCommandHandler) handle(rw http.ResponseWriter, command *create_accommodation.CreateAccommodationCommand) {
 	id := command.Accommodation.ID
-	accommodation := &domain.Accommodation{ID: id}
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return
+	}
+	accommodation := &domain.AccommodationWithAvailability{ID: objectID}
 
 	reply := create_accommodation.CreateAccommodationReply{Accommodation: command.Accommodation}
 
 	switch command.Type {
 	case create_accommodation.AddAvailability:
-		err := handler.accommodationService.InsertAccommodation(accommodation, context.Background())
+		err, _, _ := handler.accommodationService.InsertAccommodation(rw, accommodation, accommodation.HostId, context.Background(), "token")
 		if err != nil {
 			return
 		}
 		reply.Type = create_accommodation.AccommodationAdded
 	case create_accommodation.RollbackAccommodation:
-		err := handler.accommodationService.DeleteAccommodation(accommodation.ID, accommodation.HostId, context.Background())
+		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, context.Background())
 		if err != nil {
 			return
 		}

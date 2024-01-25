@@ -45,7 +45,7 @@ services:
       - NATS_PORT=${NATS_PORT}
       - NATS_USER= ${NATS_USER}
       - NATS_PASS=${NATS_PASS}
-      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ORDER_ACCOMMODATION_SUBJECT}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ACCOMMODATION_COMMAND_SUBJECT}
       - CREATE_ACCOMMODATION_REPLY_SUBJECT= ${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       cassandra:
@@ -78,17 +78,17 @@ services:
       - NATS_PORT=${NATS_PORT}
       - NATS_USER= ${NATS_USER}
       - NATS_PASS=${NATS_PASS}
-      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ORDER_ACCOMMODATION_SUBJECT}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ACCOMMODATION_COMMAND_SUBJECT}
       - CREATE_ACCOMMODATION_REPLY_SUBJECT= ${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       mongo:
         condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#      datanode:
-#        condition: service_healthy
-#      namenode:
-#        condition: service_healthy
+      redis:
+        condition: service_healthy
+      datanode:
+        condition: service_healthy
+      namenode:
+        condition: service_healthy
       jaeger:
         condition: service_started
     networks:
@@ -243,56 +243,56 @@ services:
     networks:
       - network
 
-#  redis:
-#    container_name: ${REDIS_HOST}
-#    image: redis
-#    restart: always
-#    ports:
-#      - ${REDIS_PORT}:${REDIS_PORT}
-#    command: "redis-server --save 20 1 --loglevel warning"
-#    volumes:
-#      - redis_data:/data
-#    healthcheck:
-#      test: [ "CMD", "redis-cli", "ping" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 3
-#    networks:
-#      - network
-#
-#    # HDFS - Namenode
-#
-#  namenode:
-#      image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-#      container_name: namenode
-#      ports:
-#        - "9870:9870"
-#        - "9000:9000"
-#      volumes:
-#        - hadoop_namenode:/hadoop/dfs/name
-#      environment:
-#        - CLUSTER_NAME=gobnb
-#      env_file:
-#        - ./.env
-#      networks:
-#        - network
-#
-#  datanode:
-#        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-#        container_name: datanode
-#        volumes:
-#          - hadoop_datanode:/hadoop/dfs/data
-#        environment:
-#          SERVICE_PRECONDITION: "namenode:9870"
-#        healthcheck:
-#          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
-#          interval: 15s
-#          timeout: 5s
-#          retries: 3
-#        networks:
-#          - network
-#        env_file:
-#          - ./.env
+  redis:
+    container_name: ${REDIS_HOST}
+    image: redis
+    restart: always
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    command: "redis-server --save 20 1 --loglevel warning"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - network
+
+    # HDFS - Namenode
+
+  namenode:
+      image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+      container_name: namenode
+      ports:
+        - "9870:9870"
+        - "9000:9000"
+      volumes:
+        - hadoop_namenode:/hadoop/dfs/name
+      environment:
+        - CLUSTER_NAME=gobnb
+      env_file:
+        - ./.env
+      networks:
+        - network
+
+  datanode:
+        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+        container_name: datanode
+        volumes:
+          - hadoop_datanode:/hadoop/dfs/data
+        environment:
+          SERVICE_PRECONDITION: "namenode:9870"
+        healthcheck:
+          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
+          interval: 15s
+          timeout: 5s
+          retries: 3
+        networks:
+          - network
+        env_file:
+          - ./.env
 
   jaeger:
     container_name: jaeger

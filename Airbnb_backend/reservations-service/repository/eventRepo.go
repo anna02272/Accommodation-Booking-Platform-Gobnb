@@ -143,10 +143,6 @@ func (sr *EventRepo) CountReservationsForCurrentMonth(ctx context.Context, accom
 	currentDate := time.Now().UTC()
 	startOfMonth := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, time.UTC)
 	endOfMonth := startOfMonth.AddDate(0, 1, 0)
-	fmt.Println("RESERVATION QUERY")
-	fmt.Println(startOfMonth)
-	fmt.Println(endOfMonth)
-	fmt.Println(accommodationID)
 
 	err := sr.session.Query(
 		`SELECT COUNT(*) FROM event_store 

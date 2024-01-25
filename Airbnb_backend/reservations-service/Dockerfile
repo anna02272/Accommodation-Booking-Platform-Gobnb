@@ -10,5 +10,6 @@ FROM alpine
 COPY --from=build_container /app/server /usr/bin
 COPY reservation-service.crt /app/
 COPY reservation_decrypted_key.pem /app/
+COPY gobnb-409715-26445f8b186e.json /app/
 EXPOSE 8082
 ENTRYPOINT ["server", "https"]

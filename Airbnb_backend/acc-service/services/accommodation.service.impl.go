@@ -255,8 +255,13 @@ func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, h
 	filter := bson.M{"_id": objID, "host_id": hostID}
 
 	_, err = s.collection.DeleteOne(context.Background(), filter)
-	span.SetStatus(codes.Error, err.Error())
-	return err
+
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	//span.SetStatus(codes.Error, err.Error())
+	return nil
 }
 
 func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool, ctx context.Context) ([]*domain.Accommodation, error) {

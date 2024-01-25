@@ -7,6 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/nats-io/nats.go v1.31.0
+	github.com/sony/gobreaker v0.5.0
 	github.com/thanhpk/randstr v1.0.6
 	go.mongodb.org/mongo-driver v1.12.1
 	go.opentelemetry.io/otel v1.21.0

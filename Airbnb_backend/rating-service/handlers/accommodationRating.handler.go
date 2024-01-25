@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
@@ -26,16 +27,29 @@ type AccommodationRatingHandler struct {
 	accommodationRatingService services.AccommodationRatingService
 	DB                         *mongo.Collection
 	Tracer                     trace.Tracer
+	CircuitBreaker             *gobreaker.CircuitBreaker
 }
 
 func NewAccommodationRatingHandler(accommodationRatingService services.AccommodationRatingService, db *mongo.Collection, tr trace.Tracer) AccommodationRatingHandler {
-	return AccommodationRatingHandler{accommodationRatingService, db, tr}
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+	return AccommodationRatingHandler{
+		accommodationRatingService: accommodationRatingService,
+		DB:                         db,
+		Tracer:                     tr,
+		CircuitBreaker:             circuitBreaker,
+	}
 }
 
 func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.RateAccommodation")
 	defer span.End()
-
+	//rw := c.Writer
+	//h := c.Request
 	accommodationID := c.Param("accommodationId")
 
 	token := c.GetHeader("Authorization")
@@ -59,8 +73,16 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	respRes, errRes := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlCheckReservations)
+	respRes, errRes := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, urlCheckReservations)
 	if errRes != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			fmt.Println(errRes)
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
+			return
+		}
+
 		span.SetStatus(codes.Error, "Failed to get reservations. Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
 		return
@@ -136,13 +158,20 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlAccommodationCheck)
-	if err != nil {
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, urlAccommodationCheck)
+	if errRes != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation service not available."})
+			return
+		}
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Accommodation service is not available.")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation service not available."})
 			return
 		}
+
 		span.SetStatus(codes.Error, "Accommodation service is not available.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation service not available."})
 		return
@@ -151,6 +180,7 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
+
 	if statusCodeAccommodation != 200 {
 		span.SetStatus(codes.Error, "Accommodation with that id does not exist.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Accommodation with that id does not exist."})
@@ -181,13 +211,21 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	urlHostCheck := "https://auth-server:8080/api/users/getById/" + responseAccommodation.AccommodationHostId
 
-	resp, err = s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, urlHostCheck)
+	resp, err = s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, urlHostCheck)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization service not available."})
+			return
+		}
+
 		if ctx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization service not available."})
 			return
 		}
+
 		span.SetStatus(codes.Error, "Authorization service is not available.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Authorization service not available."})
 		return
@@ -243,8 +281,14 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 	ctx, cancel = context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, notificationURL, "POST", notificationPayloadJSON)
+	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(spanCtx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Notification service not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available. Try again later."})
+			return
+		}
 		span.SetStatus(codes.Error, "Error creating notification request")
 		if ctx.Err() == context.DeadlineExceeded {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification request"})
@@ -283,17 +327,22 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 			return
 		}
 
-		resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, eventURL, "POST", eventPayloadJSON)
+		resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(spanCtx, token, eventURL, "POST", eventPayloadJSON)
 		if err != nil {
-			span.SetStatus(codes.Error, "Error creating event request")
+			if errors.Is(err, gobreaker.ErrOpenState) {
+				span.SetStatus(codes.Error, "Circuit is open. Error creating event request.")
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request."})
+				return
+			}
 			if ctx.Err() == context.DeadlineExceeded {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request"})
 				return
 			}
-			span.SetStatus(codes.Error, "Reservation service not available.")
+
+			span.SetStatus(codes.Error, "Error creating event request.")
 			fmt.Println(err)
 			fmt.Println("here")
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Reservation service while event handling not available."})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request."})
 			return
 		}
 		defer resp.Body.Close()
@@ -349,8 +398,14 @@ func (s *AccommodationRatingHandler) DeleteRatingAccommodation(c *gin.Context) {
 		return
 	}
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBodyAcc(spanCtx, token, eventURL, "POST", eventPayloadJSON)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(spanCtx, token, eventURL, "POST", eventPayloadJSON)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Reservation service not available.")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request"})
+			return
+		}
 		span.SetStatus(codes.Error, "Error creating event request")
 		if ctx.Err() == context.DeadlineExceeded {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating event request"})
@@ -406,9 +461,14 @@ func (s *AccommodationRatingHandler) getAccommodationByIDFromAccommodationServic
 	timeout := 2000 * time.Second
 	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, "", url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, "", url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
+			return nil, errors.New("Accommodation service is not available")
+		}
+
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -439,8 +499,13 @@ func (s *AccommodationRatingHandler) getCurrentUserFromAuthService(token string,
 	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(spanCtx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Auth service is not available.")
+			return nil, errors.New("Auth service is not available")
+		}
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -485,6 +550,47 @@ func (s *AccommodationRatingHandler) HTTPSPerformAuthorizationRequestWithContext
 	return resp, nil
 }
 
+func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string) (*http.Response, error) {
+	maxRetries := 3
+	type retryOperationFunc func() (interface{}, error)
+
+	retryOperation := retryOperationFunc(func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+
+		return resp, nil // Return the response as the first value
+	})
+
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
+	if err != nil {
+		// Handle or return the error
+		return nil, err
+	}
+
+	resp, ok := result.(*http.Response)
+	if !ok {
+		return nil, errors.New("unexpected response type from Circuit Breaker")
+	}
+
+	return resp, nil
+}
+
 func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAcc(
 	ctx context.Context, token string, url string, method string, requestBody []byte,
 ) (*http.Response, error) {
@@ -510,6 +616,67 @@ func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequestWithContext
 	return resp, nil
 }
 
+func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(
+	ctx context.Context, token string, url string, method string, requestBody []byte,
+) (*http.Response, error) {
+	_, span := s.Tracer.Start(ctx, "AccommodationRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker")
+	maxRetries := 3
+
+	// Define a retry operation function
+	retryOperation := func() (interface{}, error) {
+		// Use the Circuit Breaker to execute the request function
+		result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+			tr := http.DefaultTransport.(*http.Transport).Clone()
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+			req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Set("Authorization", token)
+			otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+			client := &http.Client{Transport: tr}
+			resp, err := client.Do(req.WithContext(ctx))
+			if err != nil {
+				return nil, err
+			}
+
+			return resp, nil
+		})
+
+		// If there is an error, propagate it
+		if err != nil {
+			return nil, err
+		}
+
+		// Check the type of the result
+		resp, ok := result.(*http.Response)
+		if !ok {
+			return nil, errors.New("unexpected response type from Circuit Breaker")
+		}
+
+		return resp, nil
+	}
+
+	// Use the retry mechanism
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	resp, ok := result.(*http.Response)
+	if !ok {
+		err := errors.New("unexpected response type from retry operation")
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+
+	return resp, nil
+
+}
+
 func (s *AccommodationRatingHandler) GetAllRatingsAccommodation(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.GetAllRatingsAccommodation")
 	defer span.End()
@@ -527,4 +694,27 @@ func (s *AccommodationRatingHandler) GetAllRatingsAccommodation(c *gin.Context) 
 	}
 	span.SetStatus(codes.Ok, "Got all ratings successfully")
 	c.JSON(http.StatusOK, response)
+}
+
+func retryOperationWithExponentialBackoff(ctx context.Context, maxRetries int, operation func() (interface{}, error)) (interface{}, error) {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Println("attempt loop: ")
+		fmt.Println(attempt)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		result, err := operation()
+		fmt.Println(result)
+		if err == nil {
+			fmt.Println("out of loop here")
+			return result, nil
+		}
+		fmt.Printf("Attempt %d failed: %s\n", attempt, err.Error())
+		backoff := time.Duration(attempt*attempt) * time.Second
+		time.Sleep(backoff)
+	}
+	return nil, fmt.Errorf("max retries exceeded")
 }

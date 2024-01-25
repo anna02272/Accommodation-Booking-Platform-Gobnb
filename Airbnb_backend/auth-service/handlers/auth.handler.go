@@ -6,6 +6,7 @@ import (
 	"auth-service/utils"
 	"context"
 	"errors"
+	"fmt"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
@@ -35,7 +36,7 @@ func NewAuthHandler(authService services.AuthService, userService services.UserS
 func (ac *AuthHandler) Login(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "AuthHandler.Login")
 	defer span.End()
-
+	fmt.Println("here login")
 	var credentials *domain.LoginInput
 	var userVerif *domain.Credentials
 

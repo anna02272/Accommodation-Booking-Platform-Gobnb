@@ -3,6 +3,8 @@ package main
 import (
 	"acc-service/application"
 	"acc-service/cache"
+	"acc-service/common/nats"
+	"acc-service/common/saga"
 	"acc-service/config"
 	"acc-service/handlers"
 	hdfs_store "acc-service/hdfs-store"
@@ -13,8 +15,6 @@ import (
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	saga "github.com/tamararankovic/microservices_demo/common/saga/messaging"
-	"github.com/tamararankovic/microservices_demo/common/saga/messaging/nats"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"

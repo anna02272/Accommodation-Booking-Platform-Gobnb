@@ -67,7 +67,6 @@ func (sr *ReportRepo) CreateTableMonthlyReport() {
 	err := sr.session.Query(
 		`CREATE TABLE IF NOT EXISTS monthly_report (
         report_id_time_created timeuuid,
-        created_at timestamp,
         accommodation_id text,
         year int,
         month int,
@@ -117,59 +116,134 @@ func (sr *ReportRepo) InsertDailyReport(ctx context.Context, dailyReport *data.D
 
 	reportIdTimeCreated := gocql.TimeUUID()
 	dateCreated := time.Now()
+	startOfDay := dateCreated.Truncate(24 * time.Hour)
+	endOfDay := startOfDay.Add(24 * time.Hour)
+	fmt.Println(startOfDay)
+	fmt.Println("start of the day")
+	fmt.Println(endOfDay)
+	fmt.Println("end of the day")
 
-	err := sr.session.Query(
-		`INSERT INTO daily_report 
-         (report_id_time_created,accommodation_id,date_created,reservation_count,rating_count,
-          page_visits,avg_visit_time) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		reportIdTimeCreated,
+	var existingReportId gocql.UUID
+	var dateCreatedFromDB time.Time
+	if err := sr.session.Query(
+		`SELECT report_id_time_created, date_created FROM daily_report 
+         WHERE accommodation_id = ? AND date_created >= ? AND date_created <= ? LIMIT 1 ALLOW FILTERING`,
 		dailyReport.AccommodationID,
-		dateCreated,
-		dailyReport.ReservationCount,
-		dailyReport.RatingCount,
-		0,
-		0.0,
-	).WithContext(ctx).Exec()
+		startOfDay,
+		endOfDay,
+	).WithContext(ctx).Scan(&existingReportId, &dateCreatedFromDB); err == nil {
+		fmt.Println(existingReportId)
+		fmt.Println("found existing report id")
+		err := sr.session.Query(
+			`UPDATE daily_report SET 
+             reservation_count = ?, rating_count = ?, page_visits = ?, avg_visit_time = ? 
+             WHERE report_id_time_created = ? AND date_created = ? AND accommodation_id = ?`,
+			dailyReport.ReservationCount,
+			dailyReport.RatingCount,
+			dailyReport.PageVisits,
+			dailyReport.AverageVisitTime,
+			existingReportId,
+			dateCreatedFromDB,
+			dailyReport.AccommodationID,
+		).WithContext(ctx).Exec()
 
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		sr.logger.Println(err)
-		fmt.Println(err)
-		fmt.Println("float error here")
-		return err
+		fmt.Println(existingReportId)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			sr.logger.Println(err)
+			fmt.Println(err)
+			fmt.Println("float error here")
+			return err
+		}
+	} else {
+		// Insert a new daily report if it doesn't exist
+		err := sr.session.Query(
+			`INSERT INTO daily_report 
+             (report_id_time_created,accommodation_id,date_created,reservation_count,rating_count,
+              page_visits,avg_visit_time) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			reportIdTimeCreated,
+			dailyReport.AccommodationID,
+			dateCreated,
+			dailyReport.ReservationCount,
+			dailyReport.RatingCount,
+			dailyReport.PageVisits,
+			dailyReport.AverageVisitTime,
+		).WithContext(ctx).Exec()
+
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			sr.logger.Println(err)
+			return err
+		}
 	}
 
 	return nil
 }
 
 func (sr *ReportRepo) InsertMonthlyReport(ctx context.Context, monthlyReport *data.MonthlyReport) error {
-	ctx, span := sr.Tracer.Start(ctx, "ReportRepository.InsertDailyReport")
+	ctx, span := sr.Tracer.Start(ctx, "ReportRepository.InsertMonthlyReport")
 	defer span.End()
 
 	reportIdTimeCreated := gocql.TimeUUID()
 	currentTime := time.Now().UTC()
 	currentYear, currentMonth, _ := currentTime.Date()
 
-	err := sr.session.Query(
-		`INSERT INTO monthly_report 
-     (report_id_time_created,accommodation_id,year,month,reservation_count,rating_count,
-      page_visits,avg_visit_time) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		reportIdTimeCreated,
+	var existingReportId gocql.UUID
+	if err := sr.session.Query(
+		`SELECT report_id_time_created FROM monthly_report 
+         WHERE accommodation_id = ? AND year = ? AND month = ? LIMIT 1 ALLOW FILTERING`,
 		monthlyReport.AccommodationID,
 		currentYear,
 		int(currentMonth),
-		monthlyReport.ReservationCount,
-		monthlyReport.RatingCount,
-		0,
-		0.0,
-	).WithContext(ctx).Exec()
+	).WithContext(ctx).Scan(&existingReportId); err == nil {
+		fmt.Println("Found report")
+		fmt.Println(existingReportId)
+		err := sr.session.Query(
+			`UPDATE monthly_report SET 
+             reservation_count = ?, rating_count = ?, page_visits = ?, avg_visit_time = ? 
+             WHERE report_id_time_created = ? AND accommodation_id = ? AND year = ? AND month = ?`,
+			monthlyReport.ReservationCount,
+			monthlyReport.RatingCount,
+			monthlyReport.PageVisits,
+			monthlyReport.AverageVisitTime,
+			existingReportId,
+			monthlyReport.AccommodationID,
+			currentYear,
+			int(currentMonth),
+		).WithContext(ctx).Exec()
 
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		sr.logger.Println(err)
-		return err
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			sr.logger.Println(err)
+			fmt.Println(err)
+			fmt.Println("error updating existing monthly report")
+			return err
+		}
+	} else {
+		// Insert a new monthly report if it doesn't exist
+		err := sr.session.Query(
+			`INSERT INTO monthly_report 
+             (report_id_time_created,accommodation_id,year,month,reservation_count,rating_count,
+              page_visits,avg_visit_time) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			reportIdTimeCreated,
+			monthlyReport.AccommodationID,
+			currentYear,
+			int(currentMonth),
+			monthlyReport.ReservationCount,
+			monthlyReport.RatingCount,
+			monthlyReport.PageVisits,
+			monthlyReport.AverageVisitTime,
+		).WithContext(ctx).Exec()
+
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			sr.logger.Println(err)
+			fmt.Println(err)
+			fmt.Println("error inserting new monthly report")
+			return err
+		}
 	}
 
 	return nil
