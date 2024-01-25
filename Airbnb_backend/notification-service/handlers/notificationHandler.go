@@ -261,8 +261,9 @@ func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 }
 
 func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string) (*http.Response, error) {
-	// Define a function that represents the logic to execute within the Circuit Breaker
-	requestFunc := func() (interface{}, error) {
+	maxRetries := 3
+
+	retryOperation := func() (interface{}, error) {
 		tr := http.DefaultTransport.(*http.Transport).Clone()
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -273,31 +274,33 @@ func (s *NotificationHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker
 		req.Header.Set("Authorization", token)
 		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 
-		// Perform the request with the provided context
 		client := &http.Client{Transport: tr}
 		resp, err := client.Do(req.WithContext(ctx))
 		if err != nil {
 			return nil, err
 		}
-
-		return resp, nil
+		fmt.Println(resp)
+		fmt.Println("resp here")
+		return resp, nil // Return the response as the first value
 	}
 
-	// Use the Circuit Breaker to execute the logic
-	result, err := s.CircuitBreaker.Execute(requestFunc)
-	fmt.Println("here circuit breaker")
+	//retryOpErr := retryOperationWithExponentialBackoff(ctx,3, retryOperation)
+	//if (r)
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	// Type assertion to retrieve the response
+	fmt.Println("result here")
 	fmt.Println(result)
-	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
+		fmt.Println(ok)
+		fmt.Println("OK")
 		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
-
 	return resp, nil
 }
 
@@ -316,6 +319,29 @@ func (s *NotificationHandler) performAuthorizationRequestWithContext(ctx context
 	}
 
 	return resp, nil
+}
+
+func retryOperationWithExponentialBackoff(ctx context.Context, maxRetries int, operation func() (interface{}, error)) (interface{}, error) {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Println("attempt loop: ")
+		fmt.Println(attempt)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		result, err := operation()
+		fmt.Println(result)
+		if err == nil {
+			fmt.Println("out of loop here")
+			return result, nil
+		}
+		fmt.Printf("Attempt %d failed: %s\n", attempt, err.Error())
+		backoff := time.Duration(attempt*attempt) * time.Second
+		time.Sleep(backoff)
+	}
+	return nil, fmt.Errorf("max retries exceeded")
 }
 
 func ExtractTraceInfoMiddleware() gin.HandlerFunc {

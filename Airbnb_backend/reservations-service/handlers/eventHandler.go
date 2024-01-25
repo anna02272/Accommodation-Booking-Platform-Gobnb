@@ -157,7 +157,9 @@ func (s *EventHandler) HTTPSperformAuthorizationRequestWithContextEvent(ctx cont
 }
 
 func (s *EventHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerEvent(ctx context.Context, token string, url string) (*http.Response, error) {
-	requestFunc := func() (interface{}, error) {
+	maxRetries := 3
+
+	retryOperation := func() (interface{}, error) {
 		tr := http.DefaultTransport.(*http.Transport).Clone()
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -173,23 +175,28 @@ func (s *EventHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerEvent(c
 		if err != nil {
 			return nil, err
 		}
-
-		return resp, nil
+		fmt.Println(resp)
+		fmt.Println("resp here")
+		return resp, nil // Return the response as the first value
 	}
 
-	result, err := s.CircuitBreaker.Execute(requestFunc)
-	fmt.Println("here circuit breaker")
+	//retryOpErr := retryOperationWithExponentialBackoff(ctx,3, retryOperation)
+	//if (r)
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("result here")
 	fmt.Println(result)
-	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
+		fmt.Println(ok)
+		fmt.Println("OK")
 		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
-
 	return resp, nil
 }
 

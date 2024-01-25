@@ -271,14 +271,13 @@ func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
 func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.Context) (*domain.User, error) {
 	spanCtx, span := s.Tracer.Start(c, "HostRatingHandler.getUserByIDFromAuthService")
 	defer span.End()
-	handler := AccommodationRatingHandler{}
 	url := "https://auth-server:8080/api/users/getById/" + userID
 
 	timeout := 2000 * time.Second
 	_, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := handler.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, "", url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, "", url)
 	if err != nil {
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
@@ -371,41 +370,56 @@ func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx cont
 func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(
 	ctx context.Context, token string, url string, method string, requestBody []byte,
 ) (*http.Response, error) {
-	_, span := s.Tracer.Start(ctx, "AccommodationRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBody")
-	defer span.End()
+	_, span := s.Tracer.Start(ctx, "HostRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker")
+	maxRetries := 3
 
-	// Define a function that represents the logic to execute within the Circuit Breaker
-	requestFunc := func() (interface{}, error) {
-		tr := http.DefaultTransport.(*http.Transport).Clone()
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	// Define a retry operation function
+	retryOperation := func() (interface{}, error) {
+		// Use the Circuit Breaker to execute the request function
+		result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+			tr := http.DefaultTransport.(*http.Transport).Clone()
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-		req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+			req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Set("Authorization", token)
+			otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+			client := &http.Client{Transport: tr}
+			resp, err := client.Do(req.WithContext(ctx))
+			if err != nil {
+				return nil, err
+			}
+
+			return resp, nil
+		})
+
+		// If there is an error, propagate it
 		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
-		req.Header.Set("Authorization", token)
-		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-		client := &http.Client{Transport: tr}
-		resp, err := client.Do(req.WithContext(ctx))
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			return nil, err
+
+		// Check the type of the result
+		resp, ok := result.(*http.Response)
+		if !ok {
+			return nil, errors.New("unexpected response type from Circuit Breaker")
 		}
 
 		return resp, nil
 	}
 
-	// Use the Circuit Breaker to execute the request function
-	result, err := s.CircuitBreaker.Execute(requestFunc)
+	// Use the retry mechanism
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	resp, ok := result.(*http.Response)
 	if !ok {
-		err := errors.New("unexpected response type from Circuit Breaker")
+		err := errors.New("unexpected response type from retry operation")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -439,8 +453,10 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
 }
 
 func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string) (*http.Response, error) {
-	// Define a function that represents the logic to execute within the Circuit Breaker
-	requestFunc := func() (interface{}, error) {
+	maxRetries := 3
+	type retryOperationFunc func() (interface{}, error)
+
+	retryOperation := retryOperationFunc(func() (interface{}, error) {
 		tr := http.DefaultTransport.(*http.Transport).Clone()
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -457,17 +473,18 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(c
 			return nil, err
 		}
 
-		return resp, nil
-	}
+		return resp, nil // Return the response as the first value
+	})
 
-	result, err := s.CircuitBreaker.Execute(requestFunc)
-	fmt.Println("here circuit breaker")
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
+		// Handle or return the error
 		return nil, err
 	}
 
-	fmt.Println(result)
-	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
 		return nil, errors.New("unexpected response type from Circuit Breaker")

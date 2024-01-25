@@ -401,12 +401,13 @@ func (ac *UserHandler) HTTPSperformAuthorizationRequestWithContext(ctx context.C
 }
 
 func (ac *UserHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string, method string) (*http.Response, error) {
-	// Define a function that represents the logic to execute within the Circuit Breaker
-	requestFunc := func() (interface{}, error) {
+	maxRetries := 3
+
+	retryOperation := func() (interface{}, error) {
 		tr := http.DefaultTransport.(*http.Transport).Clone()
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-		req, err := http.NewRequest(method, url, nil)
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -418,23 +419,28 @@ func (ac *UserHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx co
 		if err != nil {
 			return nil, err
 		}
-
-		return resp, nil
+		fmt.Println(resp)
+		fmt.Println("resp here")
+		return resp, nil // Return the response as the first value
 	}
 
-	result, err := ac.CircuitBreaker.Execute(requestFunc)
-	fmt.Println("here circuit breaker")
+	//retryOpErr := retryOperationWithExponentialBackoff(ctx,3, retryOperation)
+	//if (r)
+	// Use an anonymous function to convert the result to the expected type
+	result, err := ac.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("result here")
 	fmt.Println(result)
-	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
+		fmt.Println(ok)
+		fmt.Println("OK")
 		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
-
 	return resp, nil
 }
 
@@ -451,4 +457,27 @@ func (ac *UserHandler) CurrentProfile(ctx *gin.Context) {
 	}
 	currentProfileUser = user
 
+}
+
+func retryOperationWithExponentialBackoff(ctx context.Context, maxRetries int, operation func() (interface{}, error)) (interface{}, error) {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Println("attempt loop: ")
+		fmt.Println(attempt)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		result, err := operation()
+		fmt.Println(result)
+		if err == nil {
+			fmt.Println("out of loop here")
+			return result, nil
+		}
+		fmt.Printf("Attempt %d failed: %s\n", attempt, err.Error())
+		backoff := time.Duration(attempt*attempt) * time.Second
+		time.Sleep(backoff)
+	}
+	return nil, fmt.Errorf("max retries exceeded")
 }

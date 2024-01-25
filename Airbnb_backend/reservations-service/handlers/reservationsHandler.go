@@ -1091,7 +1091,8 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContext(ctx co
 }
 
 func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerRsv(ctx context.Context, token string, url string) (*http.Response, error) {
-	requestFunc := func() (interface{}, error) {
+	maxRetries := 3
+	retryOperation := func() (interface{}, error) {
 		tr := http.DefaultTransport.(*http.Transport).Clone()
 		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
@@ -1107,69 +1108,90 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker
 		if err != nil {
 			return nil, err
 		}
-
-		return resp, nil
+		fmt.Println(resp)
+		fmt.Println("resp here")
+		return resp, nil // Return the response as the first value
 	}
 
-	result, err := s.CircuitBreaker.Execute(requestFunc)
-	fmt.Println("here circuit breaker")
+	//retryOpErr := retryOperationWithExponentialBackoff(ctx,3, retryOperation)
+	//if (r)
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("result here")
 	fmt.Println(result)
-	fmt.Println("circuit breaker result")
 	resp, ok := result.(*http.Response)
 	if !ok {
+		fmt.Println(ok)
+		fmt.Println("OK")
 		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
-
 	return resp, nil
 }
 
 func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(
 	ctx context.Context, token string, url string, method string, requestBody []byte,
 ) (*http.Response, error) {
-	_, span := s.Tracer.Start(ctx, "AccommodationRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBody")
-	defer span.End()
+	_, span := s.Tracer.Start(ctx, "ReservationsHandler.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker")
+	maxRetries := 3
 
-	// Define a function that represents the logic to execute within the Circuit Breaker
-	requestFunc := func() (interface{}, error) {
-		tr := http.DefaultTransport.(*http.Transport).Clone()
-		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	// Define a retry operation function
+	retryOperation := func() (interface{}, error) {
+		// Use the Circuit Breaker to execute the request function
+		result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+			tr := http.DefaultTransport.(*http.Transport).Clone()
+			tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-		req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+			req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
+			if err != nil {
+				return nil, err
+			}
+			req.Header.Set("Authorization", token)
+			otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+			client := &http.Client{Transport: tr}
+			resp, err := client.Do(req.WithContext(ctx))
+			if err != nil {
+				return nil, err
+			}
+
+			return resp, nil
+		})
+
+		// If there is an error, propagate it
 		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
-		req.Header.Set("Authorization", token)
-		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-		client := &http.Client{Transport: tr}
-		resp, err := client.Do(req.WithContext(ctx))
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			return nil, err
+
+		// Check the type of the result
+		resp, ok := result.(*http.Response)
+		if !ok {
+			return nil, errors.New("unexpected response type from Circuit Breaker")
 		}
 
 		return resp, nil
 	}
 
-	// Use the Circuit Breaker to execute the request function
-	result, err := s.CircuitBreaker.Execute(requestFunc)
+	// Use the retry mechanism
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	resp, ok := result.(*http.Response)
 	if !ok {
-		err := errors.New("unexpected response type from Circuit Breaker")
+		err := errors.New("unexpected response type from retry operation")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
 	return resp, nil
+
 }
 
 func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContextAndBody(ctx context.Context, token string, url string, method string, requestBody []byte) (*http.Response, error) {
