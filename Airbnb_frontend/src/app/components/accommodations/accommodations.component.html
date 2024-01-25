@@ -11,6 +11,7 @@
     <div class="prices" id="main_acc_div">
       <h3>Explore Gobnb picks</h3>
       <h4 id="notif"> No accommodations match your search criteria. </h4>
+            <h4  *ngIf="accServiceAvailable" id="accService"> Accommodation service not available. </h4>
       <div *ngIf="showErrorDiv" class="error">
         {{ errorMsg }}
       </div>

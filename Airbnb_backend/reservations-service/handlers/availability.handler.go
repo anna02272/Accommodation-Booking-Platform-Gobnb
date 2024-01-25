@@ -346,25 +346,6 @@ func (s *AvailabilityHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker
 	return resp, nil
 }
 
-func (s *AvailabilityHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", token)
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
 func retryOperationWithExponentialBackoff(ctx context.Context, maxRetries int, operation func() (interface{}, error)) (interface{}, error) {
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		fmt.Println("attempt loop: ")

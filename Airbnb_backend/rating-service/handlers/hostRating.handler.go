@@ -81,6 +81,12 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Auth service is not available. Try again later."})
 		}
 
+		if spanCtx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Request timed out")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later"})
+			return
+		}
+
 		span.SetStatus(codes.Error, "Failed to get reservations. Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
 		return
@@ -181,7 +187,8 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 		}
 		span.SetStatus(codes.Error, "Error creating notification request")
 		if ctx.Err() == context.DeadlineExceeded {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification request"})
+			span.SetStatus(codes.Error, "Request timed out")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available"})
 			return
 		}
 		span.SetStatus(codes.Error, "Notification service not available.")
@@ -286,6 +293,11 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.
 			return nil, errors.New("Accommodation service is not available")
 		}
 
+		if spanCtx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service not available")
+			return nil, errors.New("Accommodation service is not available")
+		}
+
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -321,6 +333,11 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c contex
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
 			span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
+			return nil, errors.New("Accommodation service is not available")
+		}
+
+		if spanCtx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Accommodation service not available")
 			return nil, errors.New("Accommodation service is not available")
 		}
 
@@ -420,31 +437,6 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAc
 	resp, ok := result.(*http.Response)
 	if !ok {
 		err := errors.New("unexpected response type from retry operation")
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBody(
-	ctx context.Context, token string, url string, method string, requestBody []byte,
-) (*http.Response, error) {
-	_, span := s.Tracer.Start(ctx, "HostRatingHandler.HTTPSperformAuthorizationRequestWithContextAndBody")
-	defer span.End()
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(requestBody))
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		return nil, err
-	}
-	req.Header.Set("Authorization", token)
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}

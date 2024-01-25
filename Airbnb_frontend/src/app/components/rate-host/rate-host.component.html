@@ -3,6 +3,8 @@
     <p class="notif" *ngIf="notification1" [class]="notification1.msgType">
         {{ notification1.msgBody }}
       </p>
+        <p class="notif" *ngIf="ratingServiceAvailable"> Rating service not available  </p>
+
     <div class="rate">
         <input type="radio" id="stars5" name="hostRating" value="5" />
         <label for="stars5" title="5 stars">5 stars</label>

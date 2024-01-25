@@ -96,28 +96,39 @@ onSubmit() {
   this.submitted = true;
 
   if (this.form.get('captcha')?.invalid && this.form.get('captcha')?.untouched) {
-      this.notification = {
-        msgType: 'error',
-        msgBody: 'Please check the reCAPTCHA.'
-      };
-      this.submitted = false; 
-      return
-   }
+    this.notification = {
+      msgType: 'error',
+      msgBody: 'Please check the reCAPTCHA.'
+    };
+    this.submitted = false; 
+    return;
+  }
+
   this.authService.login(this.form.value).subscribe(
     () => {
       this.userService.getMyInfo().subscribe();
       this.router.navigate(['/home']);
-      
     },
     (error) => {
+      console.log("error")
+      console.log(error)
       this.submitted = false;
-      this.notification = {
-        msgType: 'error',
-        msgBody: 'Incorrect username or password.'
-      };
+      
+      if (error.statusText === 'Unknown Error') {
+        this.notification = {
+          msgType: 'error',
+          msgBody: 'Authorization service not available.'
+        };
+      } else {
+        this.notification = {
+          msgType: 'error',
+          msgBody: 'Incorrect username or password.'
+        };
+      }
     }
   );
 }
+
 
 
 

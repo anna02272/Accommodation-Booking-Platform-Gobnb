@@ -463,26 +463,6 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 }
 
-func (s *ReportHandler) HTTPSperformAuthorizationRequestWithContextReport(ctx context.Context, token string, url string) (*http.Response, error) {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", token)
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	// Perform the request with the provided context
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
 func (s *ReportHandler) HTTPSperformAuthorizationRequestWithCircuitBreakerReport(ctx context.Context, token string, url string) (*http.Response, error) {
 	maxRetries := 3
 
