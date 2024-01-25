@@ -40,7 +40,8 @@ func (o *CreateAccommodationOrchestrator) handle(reply *create_accommodation.Cre
 		_ = o.commandPublisher.Publish(command)
 	}
 }
-} Tu mas dodat
+
+//} Tu mas dodat
 
 func (o *CreateAccommodationOrchestrator) nextCommandType(reply create_accommodation.CreateAccommodationReplyType) create_accommodation.CreateAccommodationCommandType {
 	switch reply {

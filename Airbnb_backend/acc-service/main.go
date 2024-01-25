@@ -79,16 +79,20 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
+	commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
+	replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
+	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber)
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
+
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
-	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer)
+	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer, createAccommodationOrchestrator)
 	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
+
+	InitCreateAccommodationHandler(accommodationService, replyPublisher, commandSubscriber)
+
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
 
-	//commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
-	//replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
-	//createOrderOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber)
-	//commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
-	//replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 	server = gin.Default()
 }
 
@@ -162,4 +166,10 @@ func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber sa
 		log.Fatal(err)
 	}
 	return orchestrator
+}
+func InitCreateAccommodationHandler(service services.AccommodationService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

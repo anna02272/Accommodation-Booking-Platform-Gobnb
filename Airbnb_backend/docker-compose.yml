@@ -45,6 +45,8 @@ services:
       - NATS_PORT=${NATS_PORT}
       - NATS_USER= ${NATS_USER}
       - NATS_PASS=${NATS_PASS}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT= ${CREATE_ORDER_ACCOMMODATION_SUBJECT}
+      - CREATE_ACCOMMODATION_REPLY_SUBJECT= ${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       cassandra:
         condition: service_healthy

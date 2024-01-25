@@ -1,6 +1,7 @@
 package services
 
 import (
+	"acc-service/application"
 	"acc-service/domain"
 	error2 "acc-service/error"
 	"bytes"
@@ -23,13 +24,15 @@ import (
 )
 
 type AccommodationServiceImpl struct {
-	collection *mongo.Collection
-	ctx        context.Context
-	Tracer     trace.Tracer
+	collection   *mongo.Collection
+	ctx          context.Context
+	Tracer       trace.Tracer
+	orchestrator *application.CreateAccommodationOrchestrator
 }
 
-func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Context, tr trace.Tracer) AccommodationService {
-	return &AccommodationServiceImpl{collection, ctx, tr}
+func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Context,
+	tr trace.Tracer, orchestrator *application.CreateAccommodationOrchestrator) AccommodationService {
+	return &AccommodationServiceImpl{collection, ctx, tr, orchestrator}
 }
 
 func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context, token string) (*domain.Accommodation, string, error) {
@@ -49,6 +52,11 @@ func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, a
 	}
 
 	result, err := s.collection.InsertOne(context.Background(), accommodation)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, "", err
+	}
+	err = s.orchestrator.Start(accomm)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, "", err
