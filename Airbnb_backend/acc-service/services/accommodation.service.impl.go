@@ -56,21 +56,24 @@ func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, a
 		span.SetStatus(codes.Error, err.Error())
 		return nil, "", err
 	}
-	err = s.orchestrator.Start(accomm)
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		return nil, "", err
-	}
 
 	if accomm.StartDate != primitive.DateTime(0) &&
 		accomm.EndDate != primitive.DateTime(0) &&
 		accomm.Price != 0.0 &&
 		accomm.PriceType != "" &&
 		accomm.AvailabilityType != "" {
-		err = s.CreateAvailabilityInReservationService(rw, accomm, ctx, token)
+		//err = s.CreateAvailabilityInReservationService(rw, accomm, ctx, token)
+		//if err != nil {
+		//	span.SetStatus(codes.Error, err.Error())
+		//	return nil, "", err
+		//}
+		err = s.orchestrator.Start(rw, accomm, ctx, token)
+		fmt.Println("ORCHESTRATOR STARTED")
 		if err != nil {
+			fmt.Println("ORCHESTRATOR ERROR: ", err)
 			span.SetStatus(codes.Error, err.Error())
-			return nil, "", err
+			error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+			return nil, "", nil
 		}
 	}
 

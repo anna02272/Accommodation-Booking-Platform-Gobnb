@@ -3,8 +3,6 @@ package main
 import (
 	"acc-service/application"
 	"acc-service/cache"
-	"acc-service/common/nats"
-	"acc-service/common/saga"
 	"acc-service/config"
 	"acc-service/handlers"
 	hdfs_store "acc-service/hdfs-store"
@@ -12,6 +10,8 @@ import (
 	"acc-service/services"
 	"context"
 	"fmt"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -87,7 +87,7 @@ func init() {
 
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
 	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer, createAccommodationOrchestrator)
-	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
+	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer, createAccommodationOrchestrator)
 
 	InitCreateAccommodationHandler(accommodationService, replyPublisher, commandSubscriber)
 
@@ -141,7 +141,7 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 func InitPublisher(subject string) saga.Publisher {
 	cfg := config.GetConfig()
 	publisher, err := nats.NewNATSPublisher(
-		cfg.NatsHost, cfg.NatsPort,
+		"nats", cfg.NatsPort,
 		cfg.NatsUser, cfg.NatsPass, subject)
 	if err != nil {
 		log.Fatal(err)
@@ -152,7 +152,7 @@ func InitPublisher(subject string) saga.Publisher {
 func InitSubscriber(subject, queueGroup string) saga.Subscriber {
 	cfg := config.GetConfig()
 	subscriber, err := nats.NewNATSSubscriber(
-		cfg.NatsHost, cfg.NatsPort,
+		"nats", cfg.NatsPort,
 		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
 	if err != nil {
 		log.Fatal(err)
