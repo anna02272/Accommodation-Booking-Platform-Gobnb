@@ -102,39 +102,93 @@ func (r *RecommendationServiceImpl) CreateUser(user *domain.NeoUser) error {
 	}
 	r.logger.Println(savedMovie.(string))
 	return nil
-	//ctx := context.Background()
-	//session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
-	//defer session.Close(ctx)
-	//
-	//// Begin a new transaction
-	//transaction, err := session.BeginTransaction(neo4j.WriteAccess, neo4j.TxConfig{})
-	//if err != nil {
-	//	r.logger.Println("Error beginning transaction:", err)
-	//	return err
-	//}
-	//defer transaction.Close()
-	//
-	//// Run the transaction logic
-	//result, err := transaction.Run(ctx,
-	//	"CREATE (u:User) SET u.username = $username, u.email = $email RETURN u.username + ', from node ' + id(u)",
-	//	map[string]interface{}{"username": user.Username, "email": user.Email})
-	//if err != nil {
-	//	r.logger.Println("Error running transaction:", err)
-	//	return err
-	//}
-	//
-	//// Check for the next record in the result
-	//if result.Next(ctx) {
-	//	// Process the result if needed
-	//	// Note: You may want to handle the result here
-	//}
-	//
-	//// Commit the transaction
-	//err = transaction.Commit()
-	//if err != nil {
-	//	r.logger.Println("Error committing transaction:", err)
-	//	return err
-	//}
-	//
-	//return nil
+}
+func (r *RecommendationServiceImpl) CreateReservation(reservation *domain.ReservationByGuest) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	savedReservation, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"CREATE (r:Reservation) SET r.reservationIdTimeCreated = timestamp(),"+
+					"r.guestId = $guestId,"+
+					"r.accommodationId = $accommodationId,"+
+					"r.accommodationName = $accommodationName,"+
+					"r.accommodationLocation= $accommodationLocation,"+
+					"r.accommodationHostId = $accommodationHostId,"+
+					"r.checkInDate = $checkInDate,"+
+					"r.checkOutDate = $checkOutDate,"+
+					"r.numberOfGuests = $numberOfGuests"+
+					" RETURN r.reservationIdTimeCreated + ', from node ' + id(r)",
+				map[string]interface{}{
+					"guestId":               reservation.GuestId,
+					"accommodationId":       reservation.AccommodationId,
+					"accommodationName":     reservation.AccommodationName,
+					"accommodationLocation": reservation.AccommodationLocation,
+					"accommodationHostId":   reservation.AccommodationHostId,
+					"checkInDate":           reservation.CheckInDate,
+					"checkOutDate":          reservation.CheckOutDate,
+					"numberOfGuests":        reservation.NumberOfGuests,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			if result.Next(ctx) {
+				return result.Record().Values[0], nil
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error inserting Reservation:", err)
+		return err
+	}
+	r.logger.Println(savedReservation.(string))
+	return nil
+}
+func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.AccommodationRec) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	savedAccommodation, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"CREATE (a:Accommodation) SET a.accommodationId = $id,"+
+					"a.hostId = $hostId,"+
+					"a.name = $name,"+
+					"a.location = $location,"+
+					//"a.amenities= $amenities,"+
+					"a.minGuests = $minGuests,"+
+					"a.maxGuests = $maxGuests,"+
+					"a.active = $active"+
+					" RETURN a.accommodationIdTimeCreated + ', from node ' + id(a)",
+				map[string]interface{}{
+					"id":       accommodation.ID,
+					"hostId":   accommodation.HostId,
+					"name":     accommodation.Name,
+					"location": accommodation.Location,
+					//"amanities": accommodation.Amenities,
+					"minGuests": accommodation.MinGuests,
+					"maxGuests": accommodation.MaxGuests,
+					"active":    accommodation.Active,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			if result.Next(ctx) {
+				return result.Record().Values[0], nil
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error inserting Accommodation:", err)
+		return err
+	}
+	r.logger.Println(savedAccommodation.(string))
+	return nil
 }

@@ -35,5 +35,7 @@ func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router.GET("/getAccommodation/:accommodationId", rc.accommodationRatingHandler.GetByAccommodationAndGuest)
 	router.GET("/getAllAccomodation", rc.accommodationRatingHandler.GetAllRatingsAccommodation)
 	router.POST("/createUser", rc.recommendationHandler.CreateUser)
+	router.POST("/createReservation", rc.recommendationHandler.CreateReservation)
+	router.POST("/createAccommodation", rc.recommendationHandler.CreateAccommodation)
 
 }

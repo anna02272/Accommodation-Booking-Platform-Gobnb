@@ -1,99 +1,99 @@
 version: "3.1"
 
 services:
-#
-#  auth-server:
-#    build:
-#      context: ./auth-service/
-#      dockerfile: Dockerfile
-#    restart: always
-#    container_name: ${AUTH_SERVICE_HOST}
-#    hostname: ${AUTH_SERVICE_HOST}
-#    ports:
-#      - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
-#      - "446:446"
-#    environment:
-#      - PORT=${AUTH_SERVICE_PORT}
-#      - MONGO_DB_URI=${MONGO_DB_URI}
-#      - SECRET_KEY=${SECRET_KEY}
-#      - SMTP_HOST=${SMTP_HOST}
-#      - SMTP_PASS=${SMTP_PASS}
-#      - SMTP_PORT=${SMTP_PORT}
-#      - SMTP_USER=${SMTP_USER}
-#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-#    depends_on:
-#      mongo:
-#        condition: service_healthy
-#      jaeger:
-#        condition: service_started
-#    networks:
-#      - network
-#    volumes:
-#      - ./auth-service/auth-service.crt:/app/auth-service.crt
-#      - ./auth-service/auth-service.key:/app/auth-service.key
-#
-#  res-server:
-#    build:
-#      context: ./reservations-service/
-#      dockerfile: Dockerfile
-#    restart: always
-#    container_name: ${RES_SERVICE_HOST}
-#    hostname: ${RES_SERVICE_HOST}
-#    ports:
-#      - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
-#      - "448:448"
-#    environment:
-#      - PORT=${RES_SERVICE_PORT}
-#      - CASS_DB=${CASS_DB}
-#      - MONGO_DB_URI=${MONGO_DB_URI}
-#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-#    depends_on:
-#      cassandra:
-#        condition: service_healthy
-#      mongo:
-#        condition: service_healthy
-#      jaeger:
-#        condition: service_started
-#    networks:
-#      - network
-#    volumes:
-#      - ./reservations-service/reservation-service.crt:/app/reservation-service.crt
-#      - ./reservations-service/reservation_decrypted_key.pem:/app/reservation_decrypted_key.pem
-#
-#  acc-server:
-#    build:
-#      context: ./acc-service/
-#      dockerfile: Dockerfile
-#    restart: always
-#    container_name: ${ACC_SERVICE_HOST}
-#    hostname: ${ACC_SERVICE_HOST}
-#    ports:
-#      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
-#      - "447:447"
-#    environment:
-#      - PORT=${ACC_SERVICE_PORT}
-#      - MONGO_DB_URI=${MONGO_DB_URI}
-#      - HDFS_URI=namenode:9000
-#      - REDIS_HOST=${REDIS_HOST}
-#      - REDIS_PORT=${REDIS_PORT}
-#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-#    depends_on:
-#      mongo:
-#        condition: service_healthy
-#      redis:
-#        condition: service_healthy
-#      datanode:
-#        condition: service_healthy
-#      namenode:
-#        condition: service_healthy
-#      jaeger:
-#        condition: service_started
-#    networks:
-#      - network
-#    volumes:
-#      - ./acc-service/accomm-service.crt:/app/accomm-service.crt
-#      - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
-#
+
+  auth-server:
+    build:
+      context: ./auth-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${AUTH_SERVICE_HOST}
+    hostname: ${AUTH_SERVICE_HOST}
+    ports:
+      - ${AUTH_SERVICE_PORT}:${AUTH_SERVICE_PORT}
+      - "446:446"
+    environment:
+      - PORT=${AUTH_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+      - SECRET_KEY=${SECRET_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - network
+    volumes:
+      - ./auth-service/auth-service.crt:/app/auth-service.crt
+      - ./auth-service/auth-service.key:/app/auth-service.key
+
+  res-server:
+    build:
+      context: ./reservations-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${RES_SERVICE_HOST}
+    hostname: ${RES_SERVICE_HOST}
+    ports:
+      - ${RES_SERVICE_PORT}:${RES_SERVICE_PORT}
+      - "448:448"
+    environment:
+      - PORT=${RES_SERVICE_PORT}
+      - CASS_DB=${CASS_DB}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - network
+    volumes:
+      - ./reservations-service/reservation-service.crt:/app/reservation-service.crt
+      - ./reservations-service/reservation_decrypted_key.pem:/app/reservation_decrypted_key.pem
+
+  acc-server:
+    build:
+      context: ./acc-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${ACC_SERVICE_HOST}
+    hostname: ${ACC_SERVICE_HOST}
+    ports:
+      - ${ACC_SERVICE_PORT}:${ACC_SERVICE_PORT}
+      - "447:447"
+    environment:
+      - PORT=${ACC_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+      - HDFS_URI=namenode:9000
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      datanode:
+        condition: service_healthy
+      namenode:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - network
+    volumes:
+      - ./acc-service/accomm-service.crt:/app/accomm-service.crt
+      - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
+
 #  notifications-server:
 #    build:
 #      context: ./notification-service/
@@ -199,21 +199,21 @@ services:
 #      - ./api-gateway/api-gateway.crt:/app/api-gateway.crt
 #      - ./api-gateway/api-gateway.key:/app/api-gateway.key
 
-#  cassandra:
-#    image: cassandra
-#    container_name: ${CASS_HOST}
-#    restart: always
-#    ports:
-#      - ${CASS_PORT}:${CASS_PORT}
-#    healthcheck:
-#      test: ["CMD-SHELL", "cqlsh -e 'describe cluster;'"]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 15
-#    volumes:
-#      - cass_store:/var/lib/cassandra/data
-#    networks:
-#      - network
+  cassandra:
+    image: cassandra
+    container_name: ${CASS_HOST}
+    restart: always
+    ports:
+      - ${CASS_PORT}:${CASS_PORT}
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster;'"]
+      interval: 15s
+      timeout: 5s
+      retries: 15
+    volumes:
+      - cass_store:/var/lib/cassandra/data
+    networks:
+      - network
 
   mongo:
     image: ${MONGO_IMAGE}
@@ -255,58 +255,58 @@ services:
     networks:
       - network
 
-#  redis:
-#    container_name: ${REDIS_HOST}
-#    image: redis
-#    restart: always
-#    ports:
-#      - ${REDIS_PORT}:${REDIS_PORT}
-#    command: "redis-server --save 20 1 --loglevel warning"
-#    volumes:
-#      - redis_data:/data
-#    healthcheck:
-#      test: [ "CMD", "redis-cli", "ping" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 3
-#    networks:
-#      - network
-#
-#    # HDFS - Namenode
-#
-#  namenode:
-#    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
-#    container_name: namenode
-#    ports:
-#      - "9870:9870"
-#      - "9000:9000"
-#    volumes:
-#      - hadoop_namenode:/hadoop/dfs/name
-#    environment:
-#      - CLUSTER_NAME=gobnb
-#    env_file:
-#      - ./.env
-#
-#    networks:
-#      - network
-#
-#  datanode:
-#    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-#    container_name: datanode
-#    volumes:
-#      - hadoop_datanode:/hadoop/dfs/data
-#    environment:
-#      SERVICE_PRECONDITION: "namenode:9870"
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
-#      interval: 15s
-#      timeout: 5s
-#      retries: 3
-#    networks:
-#      - network
-#    env_file:
-#      - ./.env
-#
+  redis:
+    container_name: ${REDIS_HOST}
+    image: redis
+    restart: always
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    command: "redis-server --save 20 1 --loglevel warning"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - network
+
+    # HDFS - Namenode
+
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=gobnb
+    env_file:
+      - ./.env
+
+    networks:
+      - network
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - network
+    env_file:
+      - ./.env
+
   jaeger:
     container_name: jaeger
     image: jaegertracing/all-in-one:latest
@@ -321,14 +321,14 @@ services:
       timeout: 5s
       retries: 3
 
-#  collector:
-#    container_name: collector
-#    image: otel/opentelemetry-collector:0.69.0
-#    command: [ "--config=/etc/otel-collector-config.yaml" ]
-#    volumes:
-#      - ./api-gateway/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-#    networks:
-#      - network
+  collector:
+    container_name: collector
+    image: otel/opentelemetry-collector:0.69.0
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./api-gateway/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    networks:
+      - network
 
 
   neo4j:
@@ -356,6 +356,8 @@ services:
       - NEO4J_AUTH=neo4j/password
     volumes:
       - neo4j_data:/data
+    networks:
+      - network
 
 volumes:
   mongo_store:

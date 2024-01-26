@@ -2,10 +2,18 @@ package services
 
 import (
 	"acc-service/domain"
+	error2 "acc-service/error"
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	"net/http"
 	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -44,8 +52,66 @@ func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodat
 	}
 
 	insertedID = result.InsertedID.(primitive.ObjectID)
+	accomm.ID = insertedID
+	err = s.SendToRatingService(accomm, ctx)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, "", nil
+	}
 
 	return accomm, insertedID.Hex(), nil
+}
+func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.Accommodation, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AccommodationService.SendToRating")
+	defer span.End()
+
+	var rw http.ResponseWriter
+	url := "https://rating-server:8087/api/rating/createAccommodation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, accommodation, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (s *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, accommodation *domain.Accommodation, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(accommodation)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling accommodation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (s *AccommodationServiceImpl) GetAllAccommodations(ctx context.Context) ([]*domain.Accommodation, error) {
