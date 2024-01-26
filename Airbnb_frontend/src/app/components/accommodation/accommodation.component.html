@@ -1,3 +1,12 @@
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-K20F62SQ7S"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-K20F62SQ7S', 'auto');
+  </script>
+</head>
 <section id="inner">
   <div class="overview">
     <div *ngIf="images && images.length > 0">
@@ -41,6 +50,13 @@
       <hr />
       <h3>Reviews</h3>
       <a routerLink="/reviews">Click here to see all reviews</a>
+      <hr />
+      <div *ngIf="getRole() === 'Host'">
+        <h3>Reports</h3>
+        <a (click)="navigateToReports()" style="text-decoration: underline; color: #72A0C1;">Click here to see daily and monthly reports</a>
+      </div>
+
+
     </div>
     <div *ngIf="getRole() === 'Guest'">
     <app-rate-host [hostId]="hostId"></app-rate-host>
@@ -65,4 +81,5 @@
     <app-create-availability  [accId]="accId" ></app-create-availability>
   </div>
 </div>
+
 </section>

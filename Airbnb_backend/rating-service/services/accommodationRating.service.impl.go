@@ -20,7 +20,7 @@ type AccommodationRatingServiceImpl struct {
 func NewAccommodationRatingServiceImpl(collection *mongo.Collection, ctx context.Context, tr trace.Tracer) AccommodationRatingService {
 	return &AccommodationRatingServiceImpl{collection, ctx, tr}
 }
-func (s *AccommodationRatingServiceImpl) SaveRating(rating *domain.RateAccommodation, ctx context.Context) error {
+func (s *AccommodationRatingServiceImpl) SaveRating(rating *domain.RateAccommodation, ctx context.Context) (error, bool) {
 	ctx, span := s.Tracer.Start(ctx, "AccommodationRatingService.SaveRating")
 	defer span.End()
 	filter := bson.M{
@@ -39,21 +39,21 @@ func (s *AccommodationRatingServiceImpl) SaveRating(rating *domain.RateAccommoda
 		_, err := s.collection.UpdateOne(context.Background(), filter, update)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
-			return err
+			return err, false
 		}
-		return nil
+		return nil, false
 	} else if err != mongo.ErrNoDocuments {
 		span.SetStatus(codes.Error, err.Error())
-		return err
+		return err, false
 	}
 
 	_, err = s.collection.InsertOne(context.Background(), rating)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
-		return err
+		return err, false
 	}
 
-	return nil
+	return nil, true
 }
 
 func (s *AccommodationRatingServiceImpl) DeleteRating(accommodationID, guestID string, ctx context.Context) error {

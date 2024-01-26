@@ -3,16 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -25,6 +15,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/analyticsReport"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
 )
 
 var (
@@ -103,15 +103,32 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// NoSQL: Initialize Event Repository store
+	eventStore, err := repository.NewEventRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	// NoSQL: Initialize Report Repository store
+	reportStore, err := repository.NewReportRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	//serviceAv, err := services.New(storeLogger)
 	//if err != nil {
 	//	logger.Fatal(err)
 	//}
 
+	analyticsReport.GetPropertiesAnalytics()
+
 	defer store.CloseSession()
 	store.CreateTable()
-
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection, tracer)
+	eventStore.CreateTableEventStore()
+	reportStore.CreateTableDailyReport()
+	reportStore.CreateTableMonthlyReport()
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -139,6 +156,16 @@ func main() {
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	insertDailyReport := router.Methods(http.MethodPost).Subrouter()
+	insertDailyReport.HandleFunc("/api/report/daily/{accId}", reportHandler.GenerateDailyReportForAccommodation)
+
+	insertMonthlyReport := router.Methods(http.MethodPost).Subrouter()
+	insertMonthlyReport.HandleFunc("/api/report/monthly/{accId}", reportHandler.GenerateMonthlyReportForAccommodation)
+
+	insertEvent := router.Methods(http.MethodPost).Subrouter()
+	insertEvent.HandleFunc("/api/event/store", eventHandler.InsertEventIntoEventStore)
+	insertEvent.Use(eventHandler.MiddlewareReservationForEventDeserialization)
 
 	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)

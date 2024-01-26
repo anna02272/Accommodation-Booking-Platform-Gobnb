@@ -9,16 +9,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"net/http"
 	"strconv"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -33,16 +32,38 @@ func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Conte
 	return &AccommodationServiceImpl{collection, ctx, tr}
 }
 
-func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodation, hostID string, ctx context.Context) (*domain.Accommodation, string, error) {
+func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context, token string) (*domain.Accommodation, string, error) {
 	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.InsertAccommodation")
 	defer span.End()
 
 	accomm.HostId = hostID
+	accommodation := &domain.Accommodation{
+		ID:        accomm.ID,
+		HostId:    hostID,
+		Name:      accomm.Name,
+		Location:  accomm.Location,
+		Amenities: accomm.Amenities,
+		MinGuests: accomm.MinGuests,
+		MaxGuests: accomm.MaxGuests,
+		Active:    false,
+	}
 
-	result, err := s.collection.InsertOne(context.Background(), accomm)
+	result, err := s.collection.InsertOne(context.Background(), accommodation)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		return nil, "", err
+	}
+
+	if accomm.StartDate != primitive.DateTime(0) &&
+		accomm.EndDate != primitive.DateTime(0) &&
+		accomm.Price != 0.0 &&
+		accomm.PriceType != "" &&
+		accomm.AvailabilityType != "" {
+		err = s.CreateAvailabilityInReservationService(rw, accomm, ctx, token)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return nil, "", err
+		}
 	}
 
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
@@ -58,10 +79,70 @@ func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.Accommodat
 		span.SetStatus(codes.Error, err.Error())
 		return nil, "", nil
 	}
-
-	return accomm, insertedID.Hex(), nil
+	return accommodation, insertedID.Hex(), nil
 }
-func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.Accommodation, ctx context.Context) error {
+
+func (s *AccommodationServiceImpl) CreateAvailabilityInReservationService(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, ctx context.Context, token string) error {
+	ctx, span := s.Tracer.Start(ctx, "AccommodationService.CreateAvailabilityInReservationService")
+	defer span.End()
+
+	url := "https://res-server:8082/api/availability/create/" + accomm.ID.Hex()
+	timeout := 2000 * time.Second
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	availability := &domain.AvailabilityPeriod{
+		StartDate:        accomm.StartDate,
+		EndDate:          accomm.EndDate,
+		Price:            accomm.Price,
+		PriceType:        accomm.PriceType,
+		AvailabilityType: accomm.AvailabilityType,
+	}
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, availability, url, token)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Reservation service not available")
+			errorMsg := map[string]string{"error": "Reservation service not available"}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Reservation service not available")
+		errorMsg := map[string]string{"error": "Reservation service not available"}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+
+func (us *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, availability *domain.AvailabilityPeriod, url string, token string) (*http.Response, error) {
+	reqBody, err := json.Marshal(availability)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling user JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", token)
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.AccommodationWithAvailability, ctx context.Context) error {
 	ctx, span := s.Tracer.Start(ctx, "AccommodationService.SendToRating")
 	defer span.End()
 
@@ -72,7 +153,7 @@ func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.Acc
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSperformAuthorizationRequestWithContext(ctx, accommodation, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithContextt(ctx, accommodation, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Rating service not available..")
@@ -90,7 +171,7 @@ func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.Acc
 
 	return nil
 }
-func (s *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, accommodation *domain.Accommodation, url string) (*http.Response, error) {
+func (s *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContextt(ctx context.Context, accommodation *domain.AccommodationWithAvailability, url string) (*http.Response, error) {
 	reqBody, err := json.Marshal(accommodation)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling accommodation JSON: %v", err)
@@ -224,12 +305,18 @@ func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, h
 	filter := bson.M{"_id": objID, "host_id": hostID}
 
 	_, err = s.collection.DeleteOne(context.Background(), filter)
-	span.SetStatus(codes.Error, err.Error())
-	return err
+
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	//span.SetStatus(codes.Error, err.Error())
+	return nil
 }
 
-func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool) ([]*domain.Accommodation, error) {
-
+func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool, ctx context.Context) ([]*domain.Accommodation, error) {
+	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.GetAccommodationBySearch")
+	defer span.End()
 	filter := bson.M{}
 
 	if location != "" {
@@ -257,6 +344,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	if guests != "" {
 		guests, err := strconv.Atoi(guests)
 		if err != nil {
+			span.SetStatus(codes.Error, "failed to parse guests")
 			return nil, errors.New("failed to parse guests")
 		}
 
@@ -277,6 +365,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	cursor, err := s.collection.Find(context.Background(), filter)
 
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -286,6 +375,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	for cursor.Next(context.Background()) {
 		var acc domain.Accommodation
 		if err := cursor.Decode(&acc); err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			return nil, err
 		}
 
@@ -293,6 +383,7 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 	}
 
 	if err := cursor.Err(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 

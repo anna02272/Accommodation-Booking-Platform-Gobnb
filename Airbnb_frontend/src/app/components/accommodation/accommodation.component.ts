@@ -1,9 +1,9 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 import { Accommodation } from 'src/app/models/accommodation';
 import { UserService } from 'src/app/services';
 import { AccommodationService } from 'src/app/services/accommodation.service';
 import { DomSanitizer } from '@angular/platform-browser';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-accommodation',
@@ -22,18 +22,21 @@ export class AccommodationComponent implements OnInit {
   images!: any[];
   currentImage: string = ''; 
   currentIndex: number = 0;
+  ratingServiceAvailable: boolean = false;
+
   
   constructor( 
     private userService: UserService,
     private accService : AccommodationService,
     private route: ActivatedRoute ,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private router: Router,
     ) 
   { }
  
-
   ngOnInit(): void {
     this.accId = this.route.snapshot.paramMap.get('id')!;
+    // this.trackPageView("accommodation/" + this.accId)
     this.accService.getById(this.accId).subscribe((accommodation: Accommodation) => {
       this.accommodation = accommodation;
       this.accommodationId=accommodation._id
@@ -48,6 +51,9 @@ export class AccommodationComponent implements OnInit {
     this.getImages(this.accId);
   }
 
+  navigateToReports() {
+    this.router.navigate(['/reports/' + this.accId]);
+  }
 
 getImages(accId: string) {
   this.accService.fetchAccImages(accId).subscribe(
@@ -97,4 +103,9 @@ nextImage() {
   getRole() {
     return this.userService.currentUser?.user.userRole;
   }
+
+// trackPageView(pageName: string) {
+//    gtag('config', 'G-K20F62SQ7S', 'auto', {'page_path': '/' + pageName});
+
+// } 
 }

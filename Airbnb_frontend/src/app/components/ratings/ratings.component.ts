@@ -14,6 +14,7 @@ export class RatingsComponent implements OnInit{
   ratingResponse!: RateHost;
   ratingResponse2!: RateAccommodation;
   notification = { msgType: '', msgBody: '' };
+  ratingServiceAvailable: boolean = false;
   
   constructor(
     private ratingService: RatingService,
