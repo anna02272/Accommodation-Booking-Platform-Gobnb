@@ -97,6 +97,7 @@ services:
       - ./acc-service/accomm-service.crt:/app/accomm-service.crt
       - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
 
+
 #  notifications-server:
 #    build:
 #      context: ./notification-service/
@@ -122,6 +123,7 @@ services:
 #      - ./notification-service/notifications-service.crt:/app/notifications-service.crt
 #      - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
 #
+
 #  profile-server:
 #    build:
 #      context: ./profile-service/
@@ -144,27 +146,33 @@ services:
 #      - ./profile-service/profile-service.crt:/app/profile-service.crt
 #      - ./profile-service/profile-service.key:/app/profile-service.key
 #
-#  rating-server:
-#    build:
-#      context: ./rating-service/
-#      dockerfile: Dockerfile
-#    restart: always
-#    container_name: ${RATING_SERVICE_HOST}
-#    hostname: ${RATING_SERVICE_HOST}
-#    environment:
-#      - PORT=${RATING_SERVICE_PORT}
-#      - MONGO_DB_URI=${MONGO_DB_URI}
-#      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
-#    depends_on:
-#      mongo:
-#        condition: service_healthy
-#      jaeger:
-#        condition: service_started
-#    networks:
-#      - network
-#    volumes:
-#      - ./rating-service/rating-service.crt:/app/rating-service.crt
-#      - ./rating-service/rating-service.key:/app/rating-service.key
+
+  rating-server:
+    build:
+      context: ./rating-service/
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ${RATING_SERVICE_HOST}
+    hostname: ${RATING_SERVICE_HOST}
+    environment:
+      - PORT=${RATING_SERVICE_PORT}
+      - MONGO_DB_URI=${MONGO_DB_URI}
+      - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - NEO4J_DB=${NEO4J_DB}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - NEO4J_PASS=${NEO4J_PASS}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - network
+    volumes:
+      - ./rating-service/rating-service.crt:/app/rating-service.crt
+      - ./rating-service/rating-service.key:/app/rating-service.key
 
   api_gateway:
     build:
@@ -179,7 +187,7 @@ services:
       - res-server
       - acc-server
 #      - profile-server
-#      - rating-server
+      - rating-server
 #      - notifications-server
     networks:
       - network
@@ -263,6 +271,7 @@ services:
     # HDFS - Namenode
 
   namenode:
+
       image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
       container_name: namenode
       ports:
@@ -278,21 +287,21 @@ services:
         - network
 
   datanode:
-        image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
-        container_name: datanode
-        volumes:
-          - hadoop_datanode:/hadoop/dfs/data
-        environment:
-          SERVICE_PRECONDITION: "namenode:9870"
-        healthcheck:
-          test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
-          interval: 15s
-          timeout: 5s
-          retries: 3
-        networks:
-          - network
-        env_file:
-          - ./.env
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${HDFS_DATANODE_PORT}/" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - network
+    env_file:
+      - ./.env
 
   jaeger:
     container_name: jaeger
@@ -324,6 +333,34 @@ services:
     networks:
       - network
 
+  neo4j:
+    image: neo4j
+    restart: always
+    ports:
+      # bolt
+      - "7687:7687"
+      # http
+      - "7474:7474"
+      # https
+      - "7473:7473"
+    # Docker healtcheck - checks if database is "alive"
+    healthcheck:
+      # test: [ "CMD-SHELL", "echo RETURN 1 | cypher-shell -a <NEO4J_dbms_connector_bolt_listen__address> -u <user defined username> -p <user defined password> || exit 1" ]
+      test:
+        [
+          "CMD-SHELL",
+          "echo RETURN 1 | cypher-shell -a bolt://neo4j:7687 -u neo4j -p pass || exit 1",
+        ]
+      interval: 200s
+      timeout: 1000s
+      retries: 10
+    environment:
+      - NEO4J_AUTH=neo4j/password
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - network
+
 volumes:
   mongo_store:
   mongo_express_data:
@@ -331,6 +368,8 @@ volumes:
   redis_data:
   hadoop_namenode:
   hadoop_datanode:
+  neo4j_data:
+
 
 networks:
   network:

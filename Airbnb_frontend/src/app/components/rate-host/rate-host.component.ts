@@ -13,6 +13,7 @@ export class RateHostComponent implements AfterViewInit {
   notification1 = { msgType: '', msgBody: '' };
   selectedRating: number | null = null;
   ratings: RatingItem[] = [];
+  ratingServiceAvailable: boolean = false;
 
   constructor(
     private ratingService: RatingService,
@@ -88,9 +89,17 @@ export class RateHostComponent implements AfterViewInit {
       if (error.status === 400 && error.error && error.error.error) {
         const errorMessage = error.error.error;
         this.notification1 = { msgType: 'error', msgBody: errorMessage };
-      } else {
+      }
+      else if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.ratingServiceAvailable = true;
+      }
+      
+      else {
         this.notification1 = { msgType: 'error', msgBody: 'An error occurred while processing your request.' };
       }
+      
     }
   );
   }

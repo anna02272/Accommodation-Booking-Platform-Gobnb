@@ -22,6 +22,8 @@ export class AccommodationComponent implements OnInit {
   images!: any[];
   currentImage: string = ''; 
   currentIndex: number = 0;
+  ratingServiceAvailable: boolean = false;
+
   
   constructor( 
     private userService: UserService,

@@ -15,6 +15,7 @@ import { ReservationService } from 'src/app/services/reservation.service';
 export class AccommodationsComponent implements OnInit {
   accommodations: Accommodation[] = [];
   accommodation!: Accommodation;
+  accServiceAvailable: boolean = false;
   showErrorDiv: boolean = false;
   showSuccessMsg: boolean = false;
   errorMsg?: string;
@@ -123,7 +124,16 @@ export class AccommodationsComponent implements OnInit {
         notif!.style.display = "block";
       }
       this.loadAccommodationImages();
-    });
+    },
+    (error) => {
+    if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.accServiceAvailable = true;
+      }
+  }
+    
+    );
     }
   }
 

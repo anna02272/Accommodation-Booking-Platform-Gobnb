@@ -26,14 +26,6 @@ func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 	defer span.End()
 
 	var user *domain.User
-	//
-	//user.Name = html.EscapeString(user.Name)
-	//user.Email = html.EscapeString(user.Email)
-	//user.Username = html.EscapeString(user.Username)
-	//user.Lastname = html.EscapeString(user.Lastname)
-	//user.Address.Country = html.EscapeString(user.Address.Country)
-	//user.Address.City = html.EscapeString(user.Address.City)
-	//user.Address.Street = html.EscapeString(user.Address.Street)
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -41,7 +33,6 @@ func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 		return
 	}
 
-	// Pozovi servis za unos korisnika
 	err := ph.profileService.Registration(user, spanCtx)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
