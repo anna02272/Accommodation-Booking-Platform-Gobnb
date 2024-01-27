@@ -116,7 +116,21 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 	guestId string, accommodationName string, accommodationLocation string, accommodationHostId string) error {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.InsertReservationByGuest")
 	defer span.End()
-
+	var reservation *data.ReservationByGuest
+	reservation.AccommodationId = guestReservation.AccommodationId
+	reservation.CheckInDate = guestReservation.CheckInDate
+	reservation.CheckOutDate = guestReservation.CheckOutDate
+	reservation.NumberOfGuests = guestReservation.NumberOfGuests
+	reservation.GuestId = guestId
+	reservation.AccommodationName = accommodationName
+	reservation.AccommodationLocation = accommodationLocation
+	reservation.AccommodationHostId = accommodationHostId
+	reservation.IsCanceled = false
+	err := sr.SendToRatingService(reservation, ctx)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil
+	}
 	// Check if there is an existing reservation for the same guest, accommodation, and check-in date
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
@@ -195,11 +209,7 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 		reservations = append(reservations, &res)
 		m = map[string]interface{}{}
-		err := sr.SendToRatingService(&res, ctx)
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			return nil, nil
-		}
+
 	}
 
 	if err := iterable.Close(); err != nil {
