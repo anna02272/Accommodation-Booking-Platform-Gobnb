@@ -3,7 +3,7 @@ module acc-service
 go 1.20
 
 require (
-	github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240126202547-ba00df5612c4
+	github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240127141825-59969e2fdbf2
 	github.com/colinmarc/hdfs/v2 v2.4.0
 	github.com/gin-contrib/cors v1.5.0
 	github.com/gin-gonic/gin v1.9.1

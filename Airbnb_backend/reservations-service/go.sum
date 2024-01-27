@@ -4,8 +4,8 @@ cloud.google.com/go/compute v1.23.3/go.mod h1:VCgBUoMnIVIR0CscqQiPJLAG25E3ZRZMzc
 cloud.google.com/go/compute/metadata v0.2.3 h1:mg4jlk7mCAj6xXp9UJ4fjI9VUI5rubuGBW5aJ7UnBMY=
 cloud.google.com/go/compute/metadata v0.2.3/go.mod h1:VAV5nSsACxMJvgaAuX6Pk2AawlZn8kiOGuCv6gTkwuA=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240126202547-ba00df5612c4 h1:Ky46jeuWEez1oNS9Y9hmC1NYxFhXfh1Bl5filvpI2io=
-github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240126202547-ba00df5612c4/go.mod h1:2mBh08SMWzSutGAMMnEbpUe9y3i5PIR6KYEy712QQvM=
+github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240127141825-59969e2fdbf2 h1:6sLSW3hG6QAmaLj5B9anZCpgjNvQn6ij3wzfTHD1oAs=
+github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common v0.0.0-20240127141825-59969e2fdbf2/go.mod h1:2mBh08SMWzSutGAMMnEbpUe9y3i5PIR6KYEy712QQvM=
 github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 h1:mXoPYz/Ul5HYEDvkta6I8/rnYM5gSdSV2tJ6XbZuEtY=
 github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932/go.mod h1:NOuUCSz6Q9T7+igc/hlvDOUdtWKryOrtFyIVABv/p7k=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=

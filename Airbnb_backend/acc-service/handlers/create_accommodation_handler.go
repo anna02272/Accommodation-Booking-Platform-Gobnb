@@ -8,7 +8,6 @@ import (
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
-	"net/http"
 )
 
 type CreateAccommodationCommandHandler struct {
@@ -31,18 +30,18 @@ func NewCreateAccommodationCommandHandler(accommodationService services.Accommod
 	return o, nil
 }
 
-func (handler *CreateAccommodationCommandHandler) handle(rw http.ResponseWriter, command *create_accommodation.CreateAccommodationCommand, hostID string, ctx context.Context, token string) {
+func (handler *CreateAccommodationCommandHandler) handle(command *create_accommodation.CreateAccommodationCommand) {
 	log.Printf("CreateAccommodationCommandHandler handle method started for ID: %s", command.Accommodation.ID)
 
 	id := command.Accommodation.ID
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		log.Printf("Error converting ObjectID for ID: %s, Error: %v", id, err)
 		return
 	}
+
 	accommodation := &domain.AccommodationWithAvailability{
 		ID:               objectID,
-		HostId:           hostID,
+		HostId:           command.Accommodation.HostId,
 		Name:             command.Accommodation.Name,
 		Location:         command.Accommodation.Location,
 		Amenities:        command.Accommodation.Amenities,
@@ -60,22 +59,27 @@ func (handler *CreateAccommodationCommandHandler) handle(rw http.ResponseWriter,
 
 	switch command.Type {
 	case create_accommodation.AddAccommodation:
-		err, _, _ := handler.accommodationService.InsertAccommodation(rw, accommodation, accommodation.HostId, ctx, token)
-		if err != nil {
-			log.Printf("Error inserting accommodation for ID: %s, Error: %v", id, err)
-			reply.Type = create_accommodation.AccommodationNotAdded
-			return
-		}
+		log.Println("create_accommodation.AddAccommodation:")
+		//err, _, _ := handler.accommodationService.InsertAccommodation(rw, accommodation, accommodation.HostId, ctx, token)
+		//if err != nil {
+		//	log.Printf("Error inserting accommodation for ID: %s, Error: %v", id, err)
+		//	reply.Type = create_accommodation.AccommodationNotAdded
+		//	return
+		//}
 		reply.Type = create_accommodation.AccommodationAdded
 
 	case create_accommodation.RollbackAccommodation:
-		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, ctx)
+		log.Println("create_accommodation.RollbackAccommodation:")
+		log.Println("DeleteAccommodation", id, accommodation.HostId)
+		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, context.Background())
+		log.Println("DeleteAccommodation inside", id, accommodation.HostId)
 		if err != nil {
 			log.Printf("Error deleting accommodation for ID: %s, Error: %v", id, err)
 			return
 		}
-		reply.Type = create_accommodation.AccommodationNotAdded
+		reply.Type = create_accommodation.AccommodationRolledBack
 	default:
+		log.Println("create_accommodation.UnknownReply:")
 		reply.Type = create_accommodation.UnknownReply
 	}
 
@@ -84,5 +88,4 @@ func (handler *CreateAccommodationCommandHandler) handle(rw http.ResponseWriter,
 
 	}
 
-	log.Printf("CreateAccommodationCommandHandler handle method completed for ID: %s", command.Accommodation.ID)
 }

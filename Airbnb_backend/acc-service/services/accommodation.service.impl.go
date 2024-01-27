@@ -67,10 +67,8 @@ func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, a
 		//	span.SetStatus(codes.Error, err.Error())
 		//	return nil, "", err
 		//}
-		err = s.orchestrator.Start(rw, accomm, ctx, token)
-		fmt.Println("ORCHESTRATOR STARTED")
+		err = s.orchestrator.Start(accomm)
 		if err != nil {
-			fmt.Println("ORCHESTRATOR ERROR: ", err)
 			span.SetStatus(codes.Error, err.Error())
 			error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 			return nil, "", nil

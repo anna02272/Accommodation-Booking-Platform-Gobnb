@@ -81,7 +81,9 @@ func init() {
 	// Collections
 	commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
 	replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
+
 	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber)
+	
 	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
 	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 
