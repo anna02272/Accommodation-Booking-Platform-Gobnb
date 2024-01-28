@@ -13,6 +13,7 @@ export class ReportComponent implements OnInit {
    hostId!: string;
    dailyReport!: any;
    monthlyReport!: any;
+   serviceAvailable: boolean = false;
 
    constructor( 
     private userService: UserService,
@@ -29,13 +30,22 @@ export class ReportComponent implements OnInit {
       this.dailyReport = data;
       console.log(data);
       
-    });
+    }, 
+    (error) => {
+     if (error.statusText === 'Unknown Error') {
+      this.serviceAvailable = true;
+      }
+  });
 
      this.reportService.generateMonthlyReport(this.accId).subscribe((data :any) => {
       this.monthlyReport = data;
       console.log(data);
-      
-    });
-  }
+    },
+     (error) => {
+     if (error.statusText === 'Unknown Error') {
+      this.serviceAvailable = true;
+      }
+  });
 
+}
 }

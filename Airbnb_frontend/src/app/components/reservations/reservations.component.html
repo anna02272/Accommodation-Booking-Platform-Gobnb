@@ -4,6 +4,9 @@
   <p class="notif" *ngIf="notification" [class]="notification.msgType">
     {{ notification.msgBody }}
   </p>
+
+  <p class="notif" *ngIf="reservationServiceAvailable"> Reservations service not available </p>
+
   <div *ngFor="let reservation of reservations; let i = index">
 <ul>
     <li class="card" style="--color:#ececec; --bg-color:#5D8AA8">

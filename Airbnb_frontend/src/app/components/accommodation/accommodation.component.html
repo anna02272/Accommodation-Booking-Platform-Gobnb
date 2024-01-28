@@ -9,6 +9,7 @@
 </head>
 <section id="inner">
   <div class="overview">
+    <div class="notif" *ngIf="accommodationServiceAvailable"> Accommodation service not available </div>
     <div *ngIf="images && images.length > 0">
       <img class="img" [src]="currentImage" />
       <i (click)="nextImage()" *ngIf="currentIndex < images.length - 1" class="fa-solid fa-arrow-right"></i>

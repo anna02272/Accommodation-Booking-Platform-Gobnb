@@ -11,6 +11,7 @@ import { ReservationService } from 'src/app/services/reservation.service';
 export class ReservationsComponent implements OnInit{
 reservations: GetReservation[] = [];
 notification = { msgType: '', msgBody: '' };
+reservationServiceAvailable: boolean = false;
 
 constructor(
   private resService: ReservationService,
@@ -23,7 +24,15 @@ ngOnInit() {
 load() {
   this.resService.getAll().subscribe((data: GetReservation[]) => {
     this.reservations = data;
-});
+},
+ error => {
+if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.reservationServiceAvailable = true;
+      }
+ }
+);
 }
 
 private subscribeToRefresh() {

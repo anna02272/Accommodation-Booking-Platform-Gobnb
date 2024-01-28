@@ -13,6 +13,8 @@ import { UserService } from 'src/app/services';
 export class CreateAccommodationComponent {
   notification = { msgType: '', msgBody: '' };
   images: File[] = [];
+  accServiceAvailable: boolean = false;
+
   constructor(private dataService: AccDataService,
     private router: Router,
     private userService: UserService,
@@ -83,6 +85,13 @@ export class CreateAccommodationComponent {
         }, 2000) 
       },
       (error:any) => {
+
+          if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.accServiceAvailable = true;
+      }
+
         this.notification = { msgType: 'error', msgBody: `Creating accommodation failed` };
         console.error('Error:', error);
       }

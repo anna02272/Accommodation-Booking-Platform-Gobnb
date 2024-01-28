@@ -23,7 +23,7 @@ export class AccommodationComponent implements OnInit {
   currentImage: string = ''; 
   currentIndex: number = 0;
   ratingServiceAvailable: boolean = false;
-
+  accommodationServiceAvailable: boolean = false;
   
   constructor( 
     private userService: UserService,
@@ -46,7 +46,15 @@ export class AccommodationComponent implements OnInit {
       this.tv = this.am_map.get('TV')!;
       this.wifi = this.am_map.get('WiFi')!;
       this.ac = this.am_map.get('AC')!;
-    });
+    }, 
+    (error) => {
+    if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.accommodationServiceAvailable = true;
+      }
+  } 
+    );
 
     this.getImages(this.accId);
   }
