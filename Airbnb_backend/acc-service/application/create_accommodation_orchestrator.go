@@ -14,7 +14,6 @@ type CreateAccommodationOrchestrator struct {
 }
 
 func NewCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) (*CreateAccommodationOrchestrator, error) {
-	fmt.Println("NewCreateAccommodationOrchestrator")
 	o := &CreateAccommodationOrchestrator{
 		commandPublisher: publisher,
 		replySubscriber:  subscriber,
@@ -22,14 +21,12 @@ func NewCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber sag
 	err := o.replySubscriber.Subscribe(o.handle)
 	fmt.Println("handle")
 	if err != nil {
-		fmt.Println("NewCreateAccommodationOrchestrator error")
 		return nil, fmt.Errorf("error subscribing to reply: %v", err)
 	}
 	return o, nil
 }
 
 func (o *CreateAccommodationOrchestrator) Start(accommodation *domain.AccommodationWithAvailability) error {
-	fmt.Println("ORCHESTRATOR STARTED INSIDE")
 	var priceType create_accommodation.PriceType
 	var availabilityType create_accommodation.AvailabilityType
 	if accommodation.PriceType == "PerPerson" {
@@ -70,7 +67,6 @@ func (o *CreateAccommodationOrchestrator) Start(accommodation *domain.Accommodat
 }
 
 func (o *CreateAccommodationOrchestrator) handle(reply *create_accommodation.CreateAccommodationReply) {
-	fmt.Println("ORCHESTRATOR HANDLE")
 	command := create_accommodation.CreateAccommodationCommand{Accommodation: reply.Accommodation}
 	command.Type = o.nextCommandType(*reply)
 	if command.Type != create_accommodation.UnknownCommand {
@@ -79,8 +75,8 @@ func (o *CreateAccommodationOrchestrator) handle(reply *create_accommodation.Cre
 }
 
 func (o *CreateAccommodationOrchestrator) nextCommandType(reply create_accommodation.CreateAccommodationReply) create_accommodation.CreateAccommodationCommandType {
-	fmt.Println("ORCHESTRATOR nextCommandType")
 	switch reply.Type {
+
 	case create_accommodation.AccommodationAdded:
 		log.Println("ACC ADDED")
 		return create_accommodation.AddAvailability
@@ -89,10 +85,28 @@ func (o *CreateAccommodationOrchestrator) nextCommandType(reply create_accommoda
 		return create_accommodation.CancelAvailability
 	case create_accommodation.AccommodationRolledBack:
 		log.Println("ACC ROLLEDBACK")
-		return create_accommodation.CancelAvailability
+		return create_accommodation.RollbackAvailability
+
+	case create_accommodation.AvailabilityAdded:
+		log.Println("AVAILABILITY ADDED")
+		return create_accommodation.AddRecommendation
 	case create_accommodation.AvailabilityNotAdded:
 		log.Println("AVAILABILITY NOT ADDED")
 		return create_accommodation.RollbackAccommodation
+	case create_accommodation.AvailabilityRolledBack:
+		log.Println("AVAILABILITY ROLLEDBACK")
+		return create_accommodation.RollbackRecommendation
+
+	case create_accommodation.RecommendationAdded:
+		log.Println("RECOMMENDATION ADDED")
+		return create_accommodation.UnknownCommand
+	case create_accommodation.RecommendationNotAdded:
+		log.Println("RECOMMENDATION NOT ADDED")
+		return create_accommodation.RollbackAccommodation
+	case create_accommodation.RecommendationRolledBack:
+		log.Println("RECOMMENDATION ROLLEDBACK")
+		return create_accommodation.UnknownCommand
+
 	default:
 		log.Println("UNKNOWN")
 		return create_accommodation.UnknownCommand

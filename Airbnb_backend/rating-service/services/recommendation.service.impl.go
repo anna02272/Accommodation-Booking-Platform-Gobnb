@@ -192,3 +192,28 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 	r.logger.Println(savedAccommodation.(string))
 	return nil
 }
+func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (a:Accommodation) WHERE a.accommodationId = $id DELETE a",
+				map[string]interface{}{
+					"id": accommodationID,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error deleting Accommodation:", err)
+		return err
+	}
+
+	return nil
+}

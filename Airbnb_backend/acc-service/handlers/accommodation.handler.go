@@ -147,15 +147,23 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		return
 	}
 	acc.ID = id
-	insertedAcc, _, err := s.accommodationService.InsertAccommodation(rw, &acc, response.LoggedInUser.ID, spanCtx, token)
+	acc.HostId = response.LoggedInUser.ID
+
+	err = s.orchestrator.Start(&acc)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	//	insertedAcc, _, err := s.accommodationService.InsertAccommodation(&acc, response.LoggedInUser.ID, spanCtx)
+	//	if err != nil {
+	//		span.SetStatus(codes.Error, err.Error())
+	//		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+	//		return
+	//	}
 	rw.WriteHeader(http.StatusCreated)
-	jsonResponse, err1 := json.Marshal(insertedAcc)
+	jsonResponse, err1 := json.Marshal(acc)
 	if err1 != nil {
 		span.SetStatus(codes.Error, err1.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)

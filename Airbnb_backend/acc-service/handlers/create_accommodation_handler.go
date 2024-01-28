@@ -31,8 +31,6 @@ func NewCreateAccommodationCommandHandler(accommodationService services.Accommod
 }
 
 func (handler *CreateAccommodationCommandHandler) handle(command *create_accommodation.CreateAccommodationCommand) {
-	log.Printf("CreateAccommodationCommandHandler handle method started for ID: %s", command.Accommodation.ID)
-
 	id := command.Accommodation.ID
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -60,19 +58,19 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 	switch command.Type {
 	case create_accommodation.AddAccommodation:
 		log.Println("create_accommodation.AddAccommodation:")
-		//err, _, _ := handler.accommodationService.InsertAccommodation(rw, accommodation, accommodation.HostId, ctx, token)
-		//if err != nil {
-		//	log.Printf("Error inserting accommodation for ID: %s, Error: %v", id, err)
-		//	reply.Type = create_accommodation.AccommodationNotAdded
-		//	return
-		//}
+		_, insertedID, err := handler.accommodationService.InsertAccommodation(accommodation, accommodation.HostId, context.Background())
+		if err != nil {
+			log.Printf("Error inserting accommodation for ID: %s, Error: %v", id, err)
+			reply.Type = create_accommodation.AccommodationNotAdded
+			return
+		}
+		log.Println("Inserted Accommodation ID:", insertedID)
 		reply.Type = create_accommodation.AccommodationAdded
 
 	case create_accommodation.RollbackAccommodation:
 		log.Println("create_accommodation.RollbackAccommodation:")
 		log.Println("DeleteAccommodation", id, accommodation.HostId)
 		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, context.Background())
-		log.Println("DeleteAccommodation inside", id, accommodation.HostId)
 		if err != nil {
 			log.Printf("Error deleting accommodation for ID: %s, Error: %v", id, err)
 			return
