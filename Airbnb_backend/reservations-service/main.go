@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -37,6 +39,10 @@ var (
 	logger2                *log.Logger
 )
 
+const (
+	QueueGroup = "reservation_service"
+)
+
 func init() {
 	ctx = context.TODO()
 
@@ -59,11 +65,15 @@ func init() {
 	}
 
 	fmt.Println("MongoDB successfully connected...")
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
 	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
 	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx, tracer)
+	InitCreateAccommodationHandler(availabilityService, replyPublisher, commandSubscriber)
+
 	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2, tracer)
 
 	server2 = gin.Default()
@@ -252,4 +262,33 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationHandler(service services.AvailabilityService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

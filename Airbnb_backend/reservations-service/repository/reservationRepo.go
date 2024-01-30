@@ -1,15 +1,22 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"log"
+	"net/http"
 	"os"
 	"reservations-service/data"
+	error2 "reservations-service/error"
 	"time"
 )
 
@@ -188,6 +195,7 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 		reservations = append(reservations, &res)
 		m = map[string]interface{}{}
+
 	}
 
 	if err := iterable.Close(); err != nil {
@@ -198,7 +206,58 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 	return reservations, nil
 }
+func (sr *ReservationRepo) SendToRatingService(reservation *data.ReservationByGuest, ctx context.Context) error {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationService.SendToRating")
+	defer span.End()
 
+	var rw http.ResponseWriter
+	url := "https://rating-server:8087/api/rating/createReservation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := sr.HTTPSperformAuthorizationRequest(ctx, reservation, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (sr *ReservationRepo) HTTPSperformAuthorizationRequest(ctx context.Context, reservation *data.ReservationByGuest, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(reservation)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling reservation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx context.Context, accommodationId string) int {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationByAccommodationIDAndCheckOut")
 	defer span.End()

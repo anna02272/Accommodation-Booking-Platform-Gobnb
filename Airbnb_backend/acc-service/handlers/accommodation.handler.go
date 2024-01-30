@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"acc-service/application"
 	"acc-service/cache"
 	"acc-service/domain"
 	error2 "acc-service/error"
@@ -33,10 +34,11 @@ type AccommodationHandler struct {
 	imageCache           *cache.ImageCache
 	Tracer               trace.Tracer
 	CircuitBreaker       *gobreaker.CircuitBreaker
+	orchestrator         *application.CreateAccommodationOrchestrator
 }
 
 func NewAccommodationHandler(accommodationService services.AccommodationService, imageCache *cache.ImageCache,
-	hdfs *hdfs_store.FileStorage, db *mongo.Collection, tr trace.Tracer) AccommodationHandler {
+	hdfs *hdfs_store.FileStorage, db *mongo.Collection, tr trace.Tracer, orchestrator *application.CreateAccommodationOrchestrator) AccommodationHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -51,6 +53,7 @@ func NewAccommodationHandler(accommodationService services.AccommodationService,
 		imageCache:           imageCache,
 		Tracer:               tr,
 		CircuitBreaker:       circuitBreaker,
+		orchestrator:         orchestrator,
 	}
 
 }
@@ -144,15 +147,23 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		return
 	}
 	acc.ID = id
-	insertedAcc, _, err := s.accommodationService.InsertAccommodation(rw, &acc, response.LoggedInUser.ID, spanCtx, token)
+	acc.HostId = response.LoggedInUser.ID
+
+	err = s.orchestrator.Start(spanCtx, &acc)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	//	insertedAcc, _, err := s.accommodationService.InsertAccommodation(&acc, response.LoggedInUser.ID, spanCtx)
+	//	if err != nil {
+	//		span.SetStatus(codes.Error, err.Error())
+	//		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)
+	//		return
+	//	}
 	rw.WriteHeader(http.StatusCreated)
-	jsonResponse, err1 := json.Marshal(insertedAcc)
+	jsonResponse, err1 := json.Marshal(acc)
 	if err1 != nil {
 		span.SetStatus(codes.Error, err1.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
@@ -167,19 +178,13 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 	defer span.End()
 
 	location := c.Query("location")
-	fmt.Println(location)
 	guests := c.Query("guests")
-	fmt.Println(guests)
 	tv := c.Query("tv")
-	fmt.Println(tv)
 	wifi := c.Query("wifi")
-	fmt.Println(wifi)
 	ac := c.Query("ac")
-	fmt.Println(ac)
 
 	var amenitiesExist bool = false
 
-	//amenities is a map of amenities and their values from tv, wifi, ac
 	amenities := make(map[string]bool)
 	if tv != "" || wifi != "" || ac != "" {
 		amenitiesExist = true
@@ -187,29 +192,6 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 		amenities["WiFi"], _ = strconv.ParseBool(wifi)
 		amenities["AC"], _ = strconv.ParseBool(ac)
 	}
-	// } else {
-	// 	amenities["tv"] = false
-	// }
-	// if wifi == "true" {
-	// 	amenities["wifi"], _ = strconv.ParseBool(wifi)
-	// 	amenitiesExist = true
-	// } else {
-	// 	amenities["wifi"] = false
-	// }
-	// if ac == "true" {
-	// 	amenities["ac"], _ = strconv.ParseBool(ac)
-	// 	amenitiesExist = true
-	// } else {
-	// 	amenities["ac"] = false
-	// }
-
-	fmt.Println(amenitiesExist)
-	fmt.Println(amenities)
-	// startDate := c.Query("start_date")
-	// fmt.Println(startDate)
-	// endDate := c.Query("end_date")
-	// fmt.Println(endDate)
-
 	if location != "" || guests != "" || amenitiesExist {
 		accommodations, err := s.accommodationService.GetAccommodationBySearch(location, guests, amenities, amenitiesExist, spanCtx)
 		if err != nil {
