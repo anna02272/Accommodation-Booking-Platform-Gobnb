@@ -15,7 +15,6 @@ type CreateAccommodationOrchestrator struct {
 	commandPublisher    saga.Publisher
 	replySubscriber     saga.Subscriber
 	tracer              trace.Tracer
-	accommodationAdded  bool
 	availabilityAdded   bool
 	recommendationAdded bool
 }
@@ -74,7 +73,6 @@ func (o *CreateAccommodationOrchestrator) Start(ctx context.Context, accommodati
 		Accommodation: accomm,
 		Type:          create_accommodation.AddAccommodation,
 	}
-	o.accommodationAdded = false
 	o.availabilityAdded = false
 	o.recommendationAdded = false
 	if err := o.commandPublisher.Publish(event); err != nil {
@@ -112,7 +110,6 @@ func (o *CreateAccommodationOrchestrator) nextCommandType(reply create_accommoda
 	switch reply.Type {
 
 	case create_accommodation.AccommodationAdded:
-		o.accommodationAdded = true
 		log.Println("ACC ADDED")
 		return create_accommodation.AddAvailability
 	case create_accommodation.AvailabilityAdded:
@@ -137,5 +134,5 @@ func (o *CreateAccommodationOrchestrator) nextCommandType(reply create_accommoda
 	}
 }
 func (o *CreateAccommodationOrchestrator) shouldRollback() bool {
-	return !o.accommodationAdded || !o.availabilityAdded || !o.recommendationAdded
+	return !o.availabilityAdded || !o.recommendationAdded
 }

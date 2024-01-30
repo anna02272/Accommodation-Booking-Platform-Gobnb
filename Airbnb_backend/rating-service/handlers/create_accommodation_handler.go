@@ -44,19 +44,10 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 	switch command.Type {
 
 	case create_accommodation.AddRecommendation:
-		log.Println("create_accommodation.AddRecommendation:")
 		if err := handler.recommService.CreateAccommodation(&accommodation); err != nil {
 			reply.Type = create_accommodation.RecommendationNotAdded
-			log.Println("create_accommodation.RecommendationNotAdded:")
 		}
 		reply.Type = create_accommodation.RecommendationAdded
-		log.Println("create_accommodation.RecommendationAdded:")
-
-	//case create_accommodation.RollbackRecommendation:
-	//	if err := handler.recommService.DeleteAccommodation(accommodation.ID); err != nil {
-	//		return
-	//	}
-	//	reply.Type = create_accommodation.RecommendationNotAdded
 
 	case create_accommodation.RollbackAccommodation:
 		if err := handler.recommService.DeleteAccommodation(accommodation.ID); err != nil {

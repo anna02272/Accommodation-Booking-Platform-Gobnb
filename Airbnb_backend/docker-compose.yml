@@ -7,7 +7,7 @@ services:
       context: ./auth-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: ${AUTH_SERVICE_HOST}
+    container_name: ${AUTH_SERVICE_HOST}-
     hostname: ${AUTH_SERVICE_HOST}
     environment:
       - PORT=${AUTH_SERVICE_PORT}

@@ -55,25 +55,12 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 	switch command.Type {
 
 	case create_accommodation.AddAvailability:
-		if availability.StartDate != primitive.DateTime(0) &&
-			availability.EndDate != primitive.DateTime(0) &&
-			availability.Price != 0.0 {
-			handler.availabilityService.InsertMulitipleAvailability(availability, objectID, context.Background())
-			if err != nil {
-				reply.Type = create_accommodation.AvailabilityNotAdded
-			} else {
-				reply.Type = create_accommodation.AvailabilityAdded
-			}
+		handler.availabilityService.InsertMulitipleAvailability(availability, objectID, context.Background())
+		if err != nil {
+			reply.Type = create_accommodation.AvailabilityNotAdded
 		} else {
 			reply.Type = create_accommodation.AvailabilityAdded
 		}
-
-	//case create_accommodation.RollbackAvailability:
-	//	err = handler.availabilityService.DeleteAvailability(objectID, startDate, endDate, context.Background())
-	//	if err != nil {
-	//		return
-	//	}
-	//	reply.Type = create_accommodation.AvailabilityNotAdded
 
 	case create_accommodation.RollbackAccommodation:
 		err = handler.availabilityService.DeleteAvailability(objectID, startDate, endDate, context.Background())
