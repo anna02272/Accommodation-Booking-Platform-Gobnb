@@ -7,7 +7,6 @@ import (
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/create_accommodation"
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"log"
 )
 
 type CreateAccommodationCommandHandler struct {
@@ -56,28 +55,24 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 	reply := create_accommodation.CreateAccommodationReply{Accommodation: command.Accommodation}
 
 	switch command.Type {
+
 	case create_accommodation.AddAccommodation:
-		log.Println("create_accommodation.AddAccommodation:")
-		_, insertedID, err := handler.accommodationService.InsertAccommodation(accommodation, accommodation.HostId, context.Background())
+		_, _, err := handler.accommodationService.InsertAccommodation(accommodation, accommodation.HostId, context.Background())
 		if err != nil {
-			log.Printf("Error inserting accommodation for ID: %s, Error: %v", id, err)
 			reply.Type = create_accommodation.AccommodationNotAdded
 			return
+		} else {
+
+			reply.Type = create_accommodation.AccommodationAdded
 		}
-		log.Println("Inserted Accommodation ID:", insertedID)
-		reply.Type = create_accommodation.AccommodationAdded
 
 	case create_accommodation.RollbackAccommodation:
-		log.Println("create_accommodation.RollbackAccommodation:")
-		log.Println("DeleteAccommodation", id, accommodation.HostId)
 		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, context.Background())
 		if err != nil {
-			log.Printf("Error deleting accommodation for ID: %s, Error: %v", id, err)
 			return
 		}
-		reply.Type = create_accommodation.AccommodationRolledBack
+		reply.Type = create_accommodation.UnknownReply
 	default:
-		log.Println("create_accommodation.UnknownReply:")
 		reply.Type = create_accommodation.UnknownReply
 	}
 

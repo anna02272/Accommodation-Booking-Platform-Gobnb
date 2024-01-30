@@ -149,7 +149,7 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	acc.ID = id
 	acc.HostId = response.LoggedInUser.ID
 
-	err = s.orchestrator.Start(&acc)
+	err = s.orchestrator.Start(spanCtx, &acc)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
 		error2.ReturnJSONError(rw, err.Error(), http.StatusBadRequest)

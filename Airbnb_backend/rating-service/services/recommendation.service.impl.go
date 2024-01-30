@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"go.opentelemetry.io/otel/trace"
 	"log"
@@ -160,17 +161,15 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 					"a.hostId = $hostId,"+
 					"a.name = $name,"+
 					"a.location = $location,"+
-					//"a.amenities= $amenities,"+
 					"a.minGuests = $minGuests,"+
 					"a.maxGuests = $maxGuests,"+
 					"a.active = $active"+
-					" RETURN a.accommodationIdTimeCreated + ', from node ' + id(a)",
+					" RETURN a.accommodationId + ', from node ' + id(a)",
 				map[string]interface{}{
-					"id":       accommodation.ID,
-					"hostId":   accommodation.HostId,
-					"name":     accommodation.Name,
-					"location": accommodation.Location,
-					//"amanities": accommodation.Amenities,
+					"id":        accommodation.ID,
+					"hostId":    accommodation.HostId,
+					"name":      accommodation.Name,
+					"location":  accommodation.Location,
 					"minGuests": accommodation.MinGuests,
 					"maxGuests": accommodation.MaxGuests,
 					"active":    accommodation.Active,
@@ -189,9 +188,17 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 		r.logger.Println("Error inserting Accommodation:", err)
 		return err
 	}
-	r.logger.Println(savedAccommodation.(string))
+	fmt.Printf("savedAccommodation", savedAccommodation)
+	if savedAccommodation != nil {
+
+		r.logger.Println(savedAccommodation.(string))
+	} else {
+		r.logger.Println("savedAccommodation is nil")
+	}
+
 	return nil
 }
+
 func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) error {
 	ctx := context.Background()
 	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})

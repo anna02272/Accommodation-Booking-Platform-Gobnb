@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
@@ -82,7 +83,7 @@ func init() {
 	commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
 	replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
 
-	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber)
+	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber, tracer)
 
 	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
 	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
@@ -162,8 +163,8 @@ func InitSubscriber(subject, queueGroup string) saga.Subscriber {
 	return subscriber
 }
 
-func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber) *application.CreateAccommodationOrchestrator {
-	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber)
+func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber, tracer trace.Tracer) *application.CreateAccommodationOrchestrator {
+	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber, tracer)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -43,12 +43,6 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 		AvailabilityType: data.AvailabilityType(command.Accommodation.AvailabilityType),
 	}
 
-	idZero := "000000000000000000000000"
-	objectIDZero, err := primitive.ObjectIDFromHex(idZero)
-	if err != nil {
-		fmt.Printf("Error converting ID to ObjectID: %v\n", err)
-		return
-	}
 	id := command.Accommodation.ID
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -59,49 +53,36 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 	endDate := time.Unix(int64(availability.EndDate)/1000, 0)
 
 	switch command.Type {
+
 	case create_accommodation.AddAvailability:
-		log.Println("create_accommodation.AddAvailability:")
-		log.Println("availability", availability)
-		log.Println("availability", availability.StartDate, availability.EndDate, availability.Price, availability.PriceType, availability.AvailabilityType)
 		if availability.StartDate != primitive.DateTime(0) &&
 			availability.EndDate != primitive.DateTime(0) &&
-			availability.Price != 0.0 &&
-			availability.PriceType != "" &&
-			availability.AvailabilityType != "" {
+			availability.Price != 0.0 {
 			handler.availabilityService.InsertMulitipleAvailability(availability, objectID, context.Background())
-			//handler.availabilityService.InsertMulitipleAvailability(availability, primitive.ObjectID{}, context.Background())
-			//invalidID := "invalid_object_id"
-			//_, err := primitive.ObjectIDFromHex(invalidID)
-			//if err != nil {
-			//	log.Printf("Error converting ID to ObjectID: %v", err)
-			//}
 			if err != nil {
-				log.Printf("Error inserting availability: %s, Error: %v", err)
-				log.Println("create_accommodation.AvailabilityNotAdded:")
 				reply.Type = create_accommodation.AvailabilityNotAdded
-				break
 			} else {
-				log.Println("create_accommodation.AvailabilityAdded:")
 				reply.Type = create_accommodation.AvailabilityAdded
 			}
 		} else {
-			log.Println("create_accommodation.AvailabilityAdded:")
 			reply.Type = create_accommodation.AvailabilityAdded
 		}
 
-	case create_accommodation.RollbackAvailability:
-		log.Println("create_accommodation.RollbackAvailability:")
-		err = handler.availabilityService.DeleteAvailability(objectIDZero, startDate, endDate, context.Background())
-		if err != nil {
-			return
-		}
+	//case create_accommodation.RollbackAvailability:
+	//	err = handler.availabilityService.DeleteAvailability(objectID, startDate, endDate, context.Background())
+	//	if err != nil {
+	//		return
+	//	}
+	//	reply.Type = create_accommodation.AvailabilityNotAdded
+
+	case create_accommodation.RollbackAccommodation:
 		err = handler.availabilityService.DeleteAvailability(objectID, startDate, endDate, context.Background())
 		if err != nil {
 			return
 		}
-		reply.Type = create_accommodation.AvailabilityRolledBack
+		reply.Type = create_accommodation.UnknownReply
+
 	default:
-		log.Printf("Unknown command type: %v", command.Type)
 		reply.Type = create_accommodation.UnknownReply
 	}
 
