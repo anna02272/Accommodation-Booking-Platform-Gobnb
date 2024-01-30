@@ -7,6 +7,7 @@ import (
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/create_accommodation"
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"log"
 )
 
 type CreateAccommodationCommandHandler struct {
@@ -62,8 +63,15 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 			reply.Type = create_accommodation.AccommodationNotAdded
 			return
 		} else {
+			log.Println(accommodation.StartDate, accommodation.EndDate, accommodation.Price)
+			if accommodation.StartDate != primitive.DateTime(0) &&
+				accommodation.EndDate != primitive.DateTime(0) &&
+				accommodation.Price != 0.0 {
+				reply.Type = create_accommodation.AccommodationAdded
+			} else {
 
-			reply.Type = create_accommodation.AccommodationAdded
+				reply.Type = create_accommodation.AvailabilityAdded
+			}
 		}
 
 	case create_accommodation.RollbackAccommodation:
