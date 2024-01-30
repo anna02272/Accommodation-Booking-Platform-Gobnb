@@ -37,29 +37,6 @@ func NewRecommendationServiceImpl(driver neo4j.DriverWithContext, trace trace.Tr
 	}
 }
 
-//func New(logger *log.Logger) (*RecommendationServiceImpl, error) {
-//	// Local instance
-//	uri := os.Getenv("NEO4J_DB")
-//	user := os.Getenv("NEO4J_USERNAME")
-//	pass := os.Getenv("NEO4J_PASS")
-//	auth := neo4j.BasicAuth(user, pass, "")
-//	log.Println("HEEEEEEEEEEEEEEEJJJJJJJJJJJJJJ")
-//	log.Println(auth)
-//	log.Println(uri)
-//
-//	driver, err := neo4j.NewDriverWithContext(uri, auth)
-//	if err != nil {
-//		logger.Panic(err)
-//		return nil, err
-//	}
-//
-//	// Return repository with logger and DB session
-//	return &RecommendationServiceImpl{
-//		driver: driver,
-//		logger: logger,
-//	}, nil
-//}
-
 // Check if connection is established
 func (r *RecommendationServiceImpl) CheckConnection() {
 	ctx := context.Background()
@@ -84,8 +61,8 @@ func (r *RecommendationServiceImpl) CreateUser(user *domain.NeoUser) error {
 	savedMovie, err := session.ExecuteWrite(ctx,
 		func(transaction neo4j.ManagedTransaction) (any, error) {
 			result, err := transaction.Run(ctx,
-				"CREATE (u:User) SET u.username = $username, u.email = $email RETURN u.username + ', from node ' + id(u)",
-				map[string]interface{}{"username": user.Username, "email": user.Email})
+				"CREATE (u:User) SET u.id = $id, u.username = $username, u.email = $email RETURN u.username + ', from node ' + id(u)",
+				map[string]interface{}{"username": user.Username, "email": user.Email, "id": user.ID})
 			if err != nil {
 				return nil, err
 			}
@@ -160,17 +137,15 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 					"a.hostId = $hostId,"+
 					"a.name = $name,"+
 					"a.location = $location,"+
-					//"a.amenities= $amenities,"+
 					"a.minGuests = $minGuests,"+
 					"a.maxGuests = $maxGuests,"+
 					"a.active = $active"+
 					" RETURN a.accommodationIdTimeCreated + ', from node ' + id(a)",
 				map[string]interface{}{
-					"id":       accommodation.ID,
-					"hostId":   accommodation.HostId,
-					"name":     accommodation.Name,
-					"location": accommodation.Location,
-					//"amanities": accommodation.Amenities,
+					"id":        accommodation.ID,
+					"hostId":    accommodation.HostId,
+					"name":      accommodation.Name,
+					"location":  accommodation.Location,
 					"minGuests": accommodation.MinGuests,
 					"maxGuests": accommodation.MaxGuests,
 					"active":    accommodation.Active,
@@ -191,4 +166,105 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 	}
 	r.logger.Println(savedAccommodation.(string))
 	return nil
+}
+func (r *RecommendationServiceImpl) CreateRate(rate *domain.RateAccommodationRec) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+	savedAccommodation, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"CREATE (r:Rate) SET r.rateId = $id,"+
+					"r.guestId = $guestId,"+
+					"r.accommodation = $accommodation,"+
+					"r.rating = $rating"+
+					" RETURN r.rateId + ', from node ' + id(r)",
+				map[string]interface{}{
+					"id":            rate.ID,
+					"guestId":       rate.Guest,
+					"accommodation": rate.Accommodation,
+					"rating":        rate.Rating,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			if result.Next(ctx) {
+				return result.Record().Values[0], nil
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error inserting Rate:", err)
+		return err
+	}
+	r.logger.Println(savedAccommodation.(string))
+	return nil
+}
+func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.AccommodationRec, error) {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+	log.Println("STIGAO U RECOMMENDATION")
+	log.Println(idd)
+	recommendation, err := session.ExecuteRead(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (trenutniKorisnik:User {id: $id})-[:REZERVISAO]->(rezervacija:Reservation)-[:ZA_SMESTAJ]->(smestaj:Accommodation)"+
+					" MATCH (similarUser:User)-[:REZERVISAO]->(rezervacijaa:Reservation)-[:ZA_SMESTAJ]->(smestaj)"+
+					" WHERE trenutniKorisnik <> similarUser"+
+					" MATCH (similarUser) - [:REZERVISAO] ->(r:Reservation)-[:ZA_SMESTAJ]->(s:Accommodation)"+
+					// WHERE smestaj <> s
+					" MATCH (s)-[:OCENJEN]->(ocena:Rate)"+
+					" WHERE ocena.rating>3"+
+					" RETURN s.name as name, s.location as location, s.minGuests as minGuests, s.maxGuests as maxGuests,s.accommodationId as accommodationId,s.hostId as hostId,s.active as active",
+				map[string]interface{}{
+					"id": idd,
+				})
+			if err != nil {
+				return nil, err
+			}
+			log.Println("ovde sammmmmm")
+			log.Println(result)
+			var news []domain.AccommodationRec
+			for result.Next(ctx) {
+				record := result.Record()
+				name, _ := record.Get("name")
+				id, _ := record.Get("accommodationId")
+				location, _ := record.Get("location")
+				hostId, _ := record.Get("hostId")
+				minGuests, _ := record.Get("minGuests")
+				maxGuests, _ := record.Get("maxGuests")
+				active, _ := record.Get("active")
+
+				log.Println(name)
+				log.Println(id)
+				log.Println(location)
+				log.Println(hostId)
+				log.Println(minGuests)
+				log.Println(maxGuests)
+				log.Println(active)
+
+				new := domain.AccommodationRec{
+					Name:      name.(string),
+					ID:        id.(string),
+					Location:  location.(string),
+					HostId:    hostId.(string),
+					MinGuests: int(minGuests.(int64)),
+					MaxGuests: int(maxGuests.(int64)),
+					Active:    active.(bool),
+				}
+				log.Println(new)
+				news = append(news, new)
+			}
+
+			return news, nil
+		})
+	if err != nil {
+		r.logger.Println("Error get Recomm:", err)
+		return []domain.AccommodationRec{}, nil
+	}
+	r.logger.Println(recommendation.([]domain.AccommodationRec))
+	return recommendation.([]domain.AccommodationRec), nil
 }

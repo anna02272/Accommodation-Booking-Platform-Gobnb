@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Accommodation } from 'src/app/models/accommodation';
+import { Recommendation } from 'src/app/models/recommendation';
 import { UserService } from 'src/app/services';
 import { AccommodationService } from 'src/app/services/accommodation.service';
 import { RefreshService } from 'src/app/services/refresh.service';
@@ -15,6 +16,8 @@ import { ReservationService } from 'src/app/services/reservation.service';
 export class AccommodationsComponent implements OnInit {
   accommodations: Accommodation[] = [];
   accommodation!: Accommodation;
+  recommendations: Recommendation[]=[];
+  recommendation! : Recommendation;
   accServiceAvailable: boolean = false;
   showErrorDiv: boolean = false;
   showSuccessMsg: boolean = false;
@@ -23,6 +26,7 @@ export class AccommodationsComponent implements OnInit {
   coverImage: string = ''; 
   currentIndex: number = 0;
   gtag?: Function;
+  id:any;
 
 
   constructor(
@@ -37,11 +41,13 @@ export class AccommodationsComponent implements OnInit {
   ngOnInit() {
     this.userService.getMyInfo().subscribe(
       () => {
+        this.loadGuestId();
         this.loadByHost();
         this.subscribeToRefresh();
       },
       () => {
         this.load();
+        // this.loadRecommendation();
         this.subscribeToRefresh();
       },
       () => {
@@ -51,7 +57,7 @@ export class AccommodationsComponent implements OnInit {
       
     );
   }
-
+  
   loadByHost() {
     const userRole = this.userService.currentUser?.user.userRole;
 
@@ -63,10 +69,27 @@ export class AccommodationsComponent implements OnInit {
     } else {
       this.load();
       this.loadAccommodationImages();
+      // this.loadRemmendationAccommodation();
 
     }
   }
+  loadGuestId(){
+    this.id=this.userService.currentUser?.user.id
+  }
+  loadRecommendation(){
 
+    this.accService.getAllRecommendation(this.id).subscribe((dataa:Recommendation[])=>{
+      this.recommendations=dataa;
+      console.log(dataa)
+      if(this.recommendations.length){
+        var notif = document.getElementById("notif");
+        notif!.style.display = "none";
+      } else{
+        var notif = document.getElementById("notif");
+        notif!.style.display = "block";
+      }
+    })
+  }
   load() {
     if (window.location.search){
       //alert("here")
@@ -114,6 +137,8 @@ export class AccommodationsComponent implements OnInit {
       });
     }
     else{
+    this.loadRecommendation();
+
     this.accService.getAll().subscribe((data: Accommodation[]) => {
       this.accommodations = data;
       if(this.accommodations.length){
@@ -125,6 +150,7 @@ export class AccommodationsComponent implements OnInit {
       }
       this.loadAccommodationImages();
     },
+    
     (error) => {
     if (error.statusText === 'Unknown Error') {
        console.log("here")

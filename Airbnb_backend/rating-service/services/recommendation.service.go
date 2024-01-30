@@ -11,4 +11,6 @@ type RecommendationService interface {
 	CreateUser(user *domain.NeoUser) error
 	CreateReservation(reservation *domain.ReservationByGuest) error
 	CreateAccommodation(accommodation *domain.AccommodationRec) error
+	CreateRate(rate *domain.RateAccommodationRec) error
+	GetRecommendation(id string) ([]domain.AccommodationRec, error)
 }
