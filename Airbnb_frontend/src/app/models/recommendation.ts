@@ -1,5 +1,5 @@
 export class Recommendation {
-    accommodation_id: string;
+    _id: string;
     accommodation_name: string;
     accommodation_location: string;
     accommodation_min_guests: number;
@@ -9,7 +9,7 @@ export class Recommendation {
 
 
     constructor(
-      accommodation_id: string,
+      _id: string,
       accommodation_name: string,
       accommodation_location: string,
     //   accommodation_amenities: Map<string, boolean>,
@@ -17,7 +17,7 @@ export class Recommendation {
       accommodation_max_guests: number,
 
     ) {
-      this.accommodation_id = accommodation_id;
+      this._id = _id;
       this.accommodation_name = accommodation_name;
       this.accommodation_location = accommodation_location;
       this.accommodation_min_guests = accommodation_min_guests;

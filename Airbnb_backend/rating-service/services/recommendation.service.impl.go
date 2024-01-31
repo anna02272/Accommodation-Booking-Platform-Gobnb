@@ -88,16 +88,21 @@ func (r *RecommendationServiceImpl) CreateReservation(reservation *domain.Reserv
 	savedReservation, err := session.ExecuteWrite(ctx,
 		func(transaction neo4j.ManagedTransaction) (any, error) {
 			result, err := transaction.Run(ctx,
-				"CREATE (r:Reservation) SET r.reservationIdTimeCreated = timestamp(),"+
-					"r.guestId = $guestId,"+
-					"r.accommodationId = $accommodationId,"+
-					"r.accommodationName = $accommodationName,"+
-					"r.accommodationLocation= $accommodationLocation,"+
-					"r.accommodationHostId = $accommodationHostId,"+
-					"r.checkInDate = $checkInDate,"+
-					"r.checkOutDate = $checkOutDate,"+
-					"r.numberOfGuests = $numberOfGuests"+
-					" RETURN r.reservationIdTimeCreated + ', from node ' + id(r)",
+				"MATCH (u:User {id: $guestId}), (a:Accommodation {accommodationId: $accommodationId}) "+
+					"CREATE (r:Reservation) SET "+
+					"r.reservationIdTimeCreated = timestamp(), "+
+					"r.guestId = $guestId, "+
+					"r.accommodationId = $accommodationId, "+
+					"r.accommodationName = $accommodationName, "+
+					"r.accommodationLocation = $accommodationLocation, "+
+					"r.accommodationHostId = $accommodationHostId, "+
+					"r.checkInDate = $checkInDate, "+
+					"r.checkOutDate = $checkOutDate, "+
+					"r.numberOfGuests = $numberOfGuests "+
+					"CREATE (u)-[:REZERVISAO]->(r)-[:ZA_SMESTAJ]->(a) "+
+					"CREATE (u)<-[:REZERVISAO]-(r)<-[:ZA_SMESTAJ]-(a) "+
+					"RETURN r.reservationIdTimeCreated + ', from node ' + id(r)",
+
 				map[string]interface{}{
 					"guestId":               reservation.GuestId,
 					"accommodationId":       reservation.AccommodationId,
@@ -174,10 +179,13 @@ func (r *RecommendationServiceImpl) CreateRate(rate *domain.RateAccommodationRec
 	savedAccommodation, err := session.ExecuteWrite(ctx,
 		func(transaction neo4j.ManagedTransaction) (any, error) {
 			result, err := transaction.Run(ctx,
-				"CREATE (r:Rate) SET r.rateId = $id,"+
+				"MATCH (u:User {id: $guestId}), (a:Accommodation {accommodationId: $accommodation}) "+
+					"CREATE (r:Rate) SET r.rateId = $id,"+
 					"r.guestId = $guestId,"+
 					"r.accommodation = $accommodation,"+
-					"r.rating = $rating"+
+					"r.rating = $rating "+
+					"CREATE (u)-[:OCENJUJE]->(r)-[:OCENJEN]->(a) "+
+					"CREATE (u)<-[:OCENJUJE]-(r)<-[:OCENJEN]-(a) "+
 					" RETURN r.rateId + ', from node ' + id(r)",
 				map[string]interface{}{
 					"id":            rate.ID,
@@ -215,7 +223,7 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 					" MATCH (similarUser:User)-[:REZERVISAO]->(rezervacijaa:Reservation)-[:ZA_SMESTAJ]->(smestaj)"+
 					" WHERE trenutniKorisnik <> similarUser"+
 					" MATCH (similarUser) - [:REZERVISAO] ->(r:Reservation)-[:ZA_SMESTAJ]->(s:Accommodation)"+
-					// WHERE smestaj <> s
+					" WHERE smestaj <> s"+
 					" MATCH (s)-[:OCENJEN]->(ocena:Rate)"+
 					" WHERE ocena.rating>3"+
 					" RETURN s.name as name, s.location as location, s.minGuests as minGuests, s.maxGuests as maxGuests,s.accommodationId as accommodationId,s.hostId as hostId,s.active as active",
@@ -225,9 +233,8 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 			if err != nil {
 				return nil, err
 			}
-			log.Println("ovde sammmmmm")
-			log.Println(result)
 			var news []domain.AccommodationRec
+
 			for result.Next(ctx) {
 				record := result.Record()
 				name, _ := record.Get("name")
@@ -237,14 +244,6 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 				minGuests, _ := record.Get("minGuests")
 				maxGuests, _ := record.Get("maxGuests")
 				active, _ := record.Get("active")
-
-				log.Println(name)
-				log.Println(id)
-				log.Println(location)
-				log.Println(hostId)
-				log.Println(minGuests)
-				log.Println(maxGuests)
-				log.Println(active)
 
 				new := domain.AccommodationRec{
 					Name:      name.(string),
@@ -258,7 +257,7 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 				log.Println(new)
 				news = append(news, new)
 			}
-
+			log.Println(news)
 			return news, nil
 		})
 	if err != nil {
