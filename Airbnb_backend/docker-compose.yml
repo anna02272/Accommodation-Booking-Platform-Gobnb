@@ -7,7 +7,7 @@ services:
       context: ./auth-service/
       dockerfile: Dockerfile
     restart: always
-    container_name: ${AUTH_SERVICE_HOST}
+    container_name: ${AUTH_SERVICE_HOST}-
     hostname: ${AUTH_SERVICE_HOST}
     environment:
       - PORT=${AUTH_SERVICE_PORT}
@@ -41,6 +41,12 @@ services:
       - CASS_DB=${CASS_DB}
       - MONGO_DB_URI=${MONGO_DB_URI}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - NATS_HOST=${NATS_HOST}
+      - NATS_PORT=${NATS_PORT}
+      - NATS_USER=${NATS_USER}
+      - NATS_PASS=${NATS_PASS}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT=${CREATE_ACCOMMODATION_COMMAND_SUBJECT}
+      - CREATE_ACCOMMODATION_REPLY_SUBJECT=${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       cassandra:
         condition: service_healthy
@@ -68,6 +74,12 @@ services:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
       - JAEGER_ADDRESS=${JAEGER_ADDRESS}
+      - NATS_HOST=${NATS_HOST}
+      - NATS_PORT=${NATS_PORT}
+      - NATS_USER=${NATS_USER}
+      - NATS_PASS=${NATS_PASS}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT=${CREATE_ACCOMMODATION_COMMAND_SUBJECT}
+      - CREATE_ACCOMMODATION_REPLY_SUBJECT=${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       mongo:
         condition: service_healthy
@@ -111,6 +123,7 @@ services:
       - ./notification-service/notifications-service.crt:/app/notifications-service.crt
       - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
 
+
   profile-server:
     build:
       context: ./profile-service/
@@ -147,6 +160,12 @@ services:
       - NEO4J_DB=${NEO4J_DB}
       - NEO4J_USERNAME=${NEO4J_USERNAME}
       - NEO4J_PASS=${NEO4J_PASS}
+      - NATS_HOST=${NATS_HOST}
+      - NATS_PORT=${NATS_PORT}
+      - NATS_USER=${NATS_USER}
+      - NATS_PASS=${NATS_PASS}
+      - CREATE_ACCOMMODATION_COMMAND_SUBJECT=${CREATE_ACCOMMODATION_COMMAND_SUBJECT}
+      - CREATE_ACCOMMODATION_REPLY_SUBJECT=${CREATE_ACCOMMODATION_REPLY_SUBJECT}
     depends_on:
       mongo:
         condition: service_healthy
@@ -159,7 +178,6 @@ services:
     volumes:
       - ./rating-service/rating-service.crt:/app/rating-service.crt
       - ./rating-service/rating-service.key:/app/rating-service.key
-
 
   api_gateway:
     build:
@@ -313,6 +331,12 @@ services:
     networks:
       - network
 
+  nats:
+    image: nats
+    container_name: nats
+    restart: on-failure
+    networks:
+      - network
 
   neo4j:
     image: neo4j

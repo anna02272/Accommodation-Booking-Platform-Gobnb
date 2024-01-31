@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -40,6 +42,10 @@ var (
 	RecommendationHandler         handlers.RecommendationHandler
 	recommendationService         services.RecommendationService
 	RatingRouteHandler            routes.RatingRouteHandler
+)
+
+const (
+	QueueGroup = "recommendation_service"
 )
 
 func init() {
@@ -89,6 +95,10 @@ func init() {
 	}
 	//defer neo4jDriver.Close()
 	fmt.Println("Neo4j successfully connected...")
+
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
+
 	hostRatingService = services.NewHostRatingServiceImpl(hostRatingCollection, ctx, tracer)
 	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer)
 	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx, tracer)
@@ -98,6 +108,8 @@ func init() {
 	RecommendationHandler = handlers.NewRecommendationHandler(recommendationService, neo4jDriver, tracer, logger)
 	RatingRouteHandler = routes.NewRatingRouteHandler(HostRatingHandler, hostRatingService, AccommodationRatingHandler, accommodationRatingService,
 		RecommendationHandler, recommendationService)
+
+	InitCreateAccommodationHandler(recommendationService, replyPublisher, commandSubscriber)
 
 	server = gin.Default()
 }
@@ -143,4 +155,32 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationHandler(service services.RecommendationService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

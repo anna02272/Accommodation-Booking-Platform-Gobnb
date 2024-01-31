@@ -6,6 +6,8 @@
           <h2  class="heading">
             Create Accommodation
           </h2>
+                <div class="notif" *ngIf="accServiceAvailable"> Accommodation service not available </div>
+
        
         </div>
         <p class="notif" *ngIf="notification" [class]="notification.msgType">

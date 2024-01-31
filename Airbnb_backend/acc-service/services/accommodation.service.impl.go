@@ -1,6 +1,7 @@
 package services
 
 import (
+	"acc-service/application"
 	"acc-service/domain"
 	error2 "acc-service/error"
 	"bytes"
@@ -23,16 +24,18 @@ import (
 )
 
 type AccommodationServiceImpl struct {
-	collection *mongo.Collection
-	ctx        context.Context
-	Tracer     trace.Tracer
+	collection   *mongo.Collection
+	ctx          context.Context
+	Tracer       trace.Tracer
+	orchestrator *application.CreateAccommodationOrchestrator
 }
 
-func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Context, tr trace.Tracer) AccommodationService {
-	return &AccommodationServiceImpl{collection, ctx, tr}
+func NewAccommodationServiceImpl(collection *mongo.Collection, ctx context.Context,
+	tr trace.Tracer, orchestrator *application.CreateAccommodationOrchestrator) AccommodationService {
+	return &AccommodationServiceImpl{collection, ctx, tr, orchestrator}
 }
 
-func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context, token string) (*domain.Accommodation, string, error) {
+func (s *AccommodationServiceImpl) InsertAccommodation(accomm *domain.AccommodationWithAvailability, hostID string, ctx context.Context) (*domain.Accommodation, string, error) {
 	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.InsertAccommodation")
 	defer span.End()
 
@@ -54,18 +57,6 @@ func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, a
 		return nil, "", err
 	}
 
-	if accomm.StartDate != primitive.DateTime(0) &&
-		accomm.EndDate != primitive.DateTime(0) &&
-		accomm.Price != 0.0 &&
-		accomm.PriceType != "" &&
-		accomm.AvailabilityType != "" {
-		err = s.CreateAvailabilityInReservationService(rw, accomm, ctx, token)
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			return nil, "", err
-		}
-	}
-
 	insertedID, ok := result.InsertedID.(primitive.ObjectID)
 	if !ok {
 		span.SetStatus(codes.Error, "failed to get inserted ID")
@@ -74,11 +65,6 @@ func (s *AccommodationServiceImpl) InsertAccommodation(rw http.ResponseWriter, a
 
 	insertedID = result.InsertedID.(primitive.ObjectID)
 	accomm.ID = insertedID
-	err = s.SendToRatingService(accomm, ctx)
-	if err != nil {
-		span.SetStatus(codes.Error, err.Error())
-		return nil, "", nil
-	}
 	return accommodation, insertedID.Hex(), nil
 }
 

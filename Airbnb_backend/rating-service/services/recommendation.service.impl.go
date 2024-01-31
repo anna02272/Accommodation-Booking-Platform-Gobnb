@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"go.opentelemetry.io/otel/trace"
 	"log"
@@ -145,7 +146,7 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 					"a.minGuests = $minGuests,"+
 					"a.maxGuests = $maxGuests,"+
 					"a.active = $active"+
-					" RETURN a.accommodationIdTimeCreated + ', from node ' + id(a)",
+					" RETURN a.accommodationId + ', from node ' + id(a)",
 				map[string]interface{}{
 					"id":        accommodation.ID,
 					"hostId":    accommodation.HostId,
@@ -169,7 +170,40 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 		r.logger.Println("Error inserting Accommodation:", err)
 		return err
 	}
-	r.logger.Println(savedAccommodation.(string))
+	fmt.Printf("savedAccommodation", savedAccommodation)
+	if savedAccommodation != nil {
+
+		r.logger.Println(savedAccommodation.(string))
+	} else {
+		r.logger.Println("savedAccommodation is nil")
+	}
+
+	return nil
+}
+
+func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (a:Accommodation) WHERE a.accommodationId = $id DELETE a",
+				map[string]interface{}{
+					"id": accommodationID,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error deleting Accommodation:", err)
+		return err
+	}
+
 	return nil
 }
 func (r *RecommendationServiceImpl) CreateRate(rate *domain.RateAccommodationRec) error {

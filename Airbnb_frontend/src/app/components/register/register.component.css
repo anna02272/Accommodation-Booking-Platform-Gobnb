@@ -38,8 +38,9 @@ height: calc(100% - 73px);
   }
 
 .container-fluid {
-    max-width: 100%;
+    max-width: 85%;
     padding: 100;
+    margin-top: 80px;
   }
 
 .image {
