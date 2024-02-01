@@ -44,6 +44,8 @@ import { RateAccommodationComponent } from './components/rate-accommodation/rate
 import { RatingService } from './services/rating.service';
 import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
 import { AvailabilityService } from './services/availability-service';
+import { ReportComponent } from './components/report/report.component';
+import { ReportService } from './services/report.service';
 
 
 @NgModule({
@@ -69,7 +71,8 @@ import { AvailabilityService } from './services/availability-service';
     RatingsComponent,
     RateHostComponent,
     CreateAvailabilityComponent,
-    RateAccommodationComponent
+    RateAccommodationComponent,
+    ReportComponent
   ],
   imports: [
     HttpClientModule,
@@ -112,7 +115,8 @@ import { AvailabilityService } from './services/availability-service';
     AccommodationService,
     RatingService,
     RefreshService,
-    AvailabilityService
+    AvailabilityService,
+    ReportService
     
   ],
   bootstrap: [AppComponent]

@@ -1,7 +1,0 @@
-POST https://localhost:8082/api/availability/create/accId
-
-{
-    "date": "2024-01-01T12:00:00.000Z",
-    "price": 300,
-    "availability_type": "Available"
-}

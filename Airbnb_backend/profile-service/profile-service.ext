@@ -13,7 +13,7 @@ stateOrProvinceName = Vojvodina
 localityName = Novi Sad
 organizationName = FTN
 organizationalUnitName = IT
-commonName = Gobnb
+commonName = Gobnb_profile
 emailAddress = gobnb@gmail.com
 
 [req_ext]

@@ -3,16 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
-
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -25,6 +17,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/analyticsReport"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
 )
 
 var (
@@ -35,6 +37,10 @@ var (
 	availabilityService    services.AvailabilityService
 	AvailabilityHandler    handlers.AvailabilityHandler
 	logger2                *log.Logger
+)
+
+const (
+	QueueGroup = "reservation_service"
 )
 
 func init() {
@@ -59,11 +65,15 @@ func init() {
 	}
 
 	fmt.Println("MongoDB successfully connected...")
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
 	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
 	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx, tracer)
+	InitCreateAccommodationHandler(availabilityService, replyPublisher, commandSubscriber)
+
 	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2, tracer)
 
 	server2 = gin.Default()
@@ -103,15 +113,32 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// NoSQL: Initialize Event Repository store
+	eventStore, err := repository.NewEventRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	// NoSQL: Initialize Report Repository store
+	reportStore, err := repository.NewReportRepo(storeLogger, tracer)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	//serviceAv, err := services.New(storeLogger)
 	//if err != nil {
 	//	logger.Fatal(err)
 	//}
 
+	analyticsReport.GetPropertiesAnalytics()
+
 	defer store.CloseSession()
 	store.CreateTable()
-
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, availabilityCollection, tracer)
+	eventStore.CreateTableEventStore()
+	reportStore.CreateTableDailyReport()
+	reportStore.CreateTableMonthlyReport()
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -139,6 +166,16 @@ func main() {
 
 	checkAvailability := router.Methods(http.MethodPost).Subrouter()
 	checkAvailability.HandleFunc("/api/reservations/availability/{accId}", reservationsHandler.CheckAvailability)
+
+	insertDailyReport := router.Methods(http.MethodPost).Subrouter()
+	insertDailyReport.HandleFunc("/api/report/daily/{accId}", reportHandler.GenerateDailyReportForAccommodation)
+
+	insertMonthlyReport := router.Methods(http.MethodPost).Subrouter()
+	insertMonthlyReport.HandleFunc("/api/report/monthly/{accId}", reportHandler.GenerateMonthlyReportForAccommodation)
+
+	insertEvent := router.Methods(http.MethodPost).Subrouter()
+	insertEvent.HandleFunc("/api/event/store", eventHandler.InsertEventIntoEventStore)
+	insertEvent.Use(eventHandler.MiddlewareReservationForEventDeserialization)
 
 	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
@@ -225,4 +262,33 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationHandler(service services.AvailabilityService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

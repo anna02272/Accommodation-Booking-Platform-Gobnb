@@ -15,12 +15,14 @@ import { ReservationService } from 'src/app/services/reservation.service';
 export class AccommodationsComponent implements OnInit {
   accommodations: Accommodation[] = [];
   accommodation!: Accommodation;
+  accServiceAvailable: boolean = false;
   showErrorDiv: boolean = false;
   showSuccessMsg: boolean = false;
   errorMsg?: string;
   images!: any[];
   coverImage: string = ''; 
   currentIndex: number = 0;
+  gtag?: Function;
 
 
   constructor(
@@ -122,7 +124,16 @@ export class AccommodationsComponent implements OnInit {
         notif!.style.display = "block";
       }
       this.loadAccommodationImages();
-    });
+    },
+    (error) => {
+    if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.accServiceAvailable = true;
+      }
+  }
+    
+    );
     }
   }
 
@@ -358,5 +369,8 @@ export class AccommodationsComponent implements OnInit {
     }
     return 'data:image/jpeg;base64,' + btoa(binary);
   }
+
+
+  
 }
 

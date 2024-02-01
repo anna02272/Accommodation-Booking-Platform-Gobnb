@@ -13,6 +13,9 @@ export class ProfileComponent {
   errorMessage: string | null = null;
   currentProfile!: User;
   notifications!: any[];
+  notifServiceAvailable: boolean = false;
+  profileServiceAvailable: boolean = false;
+
 
 
   constructor(private userService: UserService, private router: Router, private authService: AuthService) {
@@ -33,7 +36,18 @@ export class ProfileComponent {
       this.getNotifications();
 
 
-  });
+  },
+
+  error => {
+    console.log("here")
+    console.log(error)
+      if (error.statusText === 'Unknown Error') {
+        console.log("here if unknown error")
+          this.profileServiceAvailable = true;
+      }
+  }
+  
+  );
 }
 deleteProfile() {
     this.userService.deleteProfile().subscribe(
@@ -66,7 +80,11 @@ deleteProfile() {
         console.log(data)
       },
       error => {
-        console.error('Failed to delete profile:', error);
+         if (error.statusText === 'Unknown Error') {
+          this.notifServiceAvailable = true;
+       
+      }
+        // console.error('Failed to delete profile:', error);
           console.log('Error object:', error.error); // Log the entire error object
 
       }

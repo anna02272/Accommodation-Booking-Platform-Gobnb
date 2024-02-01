@@ -1,6 +1,7 @@
 package main
 
 import (
+	"acc-service/application"
 	"acc-service/cache"
 	"acc-service/config"
 	"acc-service/handlers"
@@ -9,6 +10,8 @@ import (
 	"acc-service/services"
 	"context"
 	"fmt"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
@@ -36,6 +40,10 @@ var (
 	AccommodationHandler      handlers.AccommodationHandler
 	AccommodationRouteHandler routes.AccommodationRouteHandler
 	imageCache                *cache.ImageCache
+)
+
+const (
+	QueueGroup = "accommodation_service"
 )
 
 func init() {
@@ -72,9 +80,20 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
+	commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
+	replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
+
+	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber, tracer)
+
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
+
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
-	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer)
-	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
+	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer, createAccommodationOrchestrator)
+	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer, createAccommodationOrchestrator)
+
+	InitCreateAccommodationHandler(accommodationService, replyPublisher, commandSubscriber)
+
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
 
 	server = gin.Default()
@@ -121,4 +140,39 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber, tracer trace.Tracer) *application.CreateAccommodationOrchestrator {
+	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber, tracer)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return orchestrator
+}
+func InitCreateAccommodationHandler(service services.AccommodationService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

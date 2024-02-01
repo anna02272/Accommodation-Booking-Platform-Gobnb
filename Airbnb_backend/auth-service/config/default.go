@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+	Port          string
 	SecretKey     string
 	EmailFrom     string
 	SMTPHost      string
@@ -24,6 +25,7 @@ func LoadConfig() *Config {
 		log.Printf("Error converting SMTP_PORT to int: %v", err)
 	}
 	return &Config{
+		Port:          os.Getenv("AUTH_SERVICE_PORT"),
 		SecretKey:     os.Getenv("SECRET_KEY"),
 		EmailFrom:     os.Getenv("EMAIL_FROM"),
 		SMTPHost:      os.Getenv("SMTP_HOST"),

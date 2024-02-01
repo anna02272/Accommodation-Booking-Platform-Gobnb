@@ -1,15 +1,22 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"log"
+	"net/http"
 	"os"
 	"reservations-service/data"
+	error2 "reservations-service/error"
 	"time"
 )
 
@@ -82,6 +89,7 @@ func (sr *ReservationRepo) CreateTable() {
         check_in_date timestamp,
         check_out_date timestamp,
         number_of_guests int,
+        isCanceled boolean ,
         PRIMARY KEY ((guest_id, reservation_id_time_created),check_in_date)
     ) WITH CLUSTERING ORDER BY (check_in_date ASC);`,
 	).Exec()
@@ -95,7 +103,7 @@ func (sr *ReservationRepo) CreateTable() {
 	).Exec()
 
 	err = sr.session.Query(
-		`CREATE INDEX IF NOT EXISTS idx_check_out_date ON reservations_by_guest (check_out_date);`,
+		`CREATE INDEX IF NOT EXISTS idx_check_in_date ON reservations_by_guest (check_in_date);`,
 	).Exec()
 
 	if err != nil {
@@ -113,7 +121,7 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 	var existingReservationCount int
 	errSameReservation := sr.session.Query(
 		`SELECT COUNT(*) FROM reservations_by_guest 
-         WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? ALLOW FILTERING`,
+         WHERE guest_id = ? AND accommodation_id = ? AND check_in_date = ? AND isCanceled = false ALLOW FILTERING`,
 		guestId, guestReservation.AccommodationId, guestReservation.CheckInDate,
 	).WithContext(ctx).Scan(&existingReservationCount)
 
@@ -136,8 +144,8 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
          (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, accommodation_host_id,
-          check_in_date, check_out_date,number_of_guests) 
-         VALUES (?, ?, ?, ?, ?, ?, ?,?, ?)`,
+          check_in_date, check_out_date,number_of_guests, isCanceled) 
+         VALUES (?, ?, ?, ?, ?, ?, ?,?, ?, false)`,
 		reservationIdTimeCreated,
 		guestId,
 		guestReservation.AccommodationId,
@@ -163,7 +171,7 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 	defer span.End()
 
 	query := `SELECT  reservation_id_time_created, guest_id, accommodation_id,
-        accommodation_location, accommodation_host_id, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ? ALLOW FILTERING`
+        accommodation_location, accommodation_host_id, accommodation_name, check_in_date, check_out_date, number_of_guests FROM reservation.reservations_by_guest WHERE guest_id = ?  AND isCanceled = false ALLOW FILTERING`
 
 	//iterable := sr.session.Query(query, guestID).Iter()
 	iterable := sr.session.Query(query, guestID).WithContext(ctx).Iter()
@@ -187,6 +195,7 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 		reservations = append(reservations, &res)
 		m = map[string]interface{}{}
+
 	}
 
 	if err := iterable.Close(); err != nil {
@@ -197,7 +206,58 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 	return reservations, nil
 }
+func (sr *ReservationRepo) SendToRatingService(reservation *data.ReservationByGuest, ctx context.Context) error {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationService.SendToRating")
+	defer span.End()
 
+	var rw http.ResponseWriter
+	url := "https://rating-server:8087/api/rating/createReservation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := sr.HTTPSperformAuthorizationRequest(ctx, reservation, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (sr *ReservationRepo) HTTPSperformAuthorizationRequest(ctx context.Context, reservation *data.ReservationByGuest, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(reservation)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling reservation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx context.Context, accommodationId string) int {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationByAccommodationIDAndCheckOut")
 	defer span.End()
@@ -207,7 +267,7 @@ func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx contex
 
 	query := `
 		SELECT COUNT(*) FROM reservations_by_guest 
-         WHERE check_out_date >= ? AND accommodation_id = ? ALLOW FILTERING`
+         WHERE check_out_date >= ? AND accommodation_id = ?  AND isCanceled = false ALLOW FILTERING`
 
 	if err := sr.session.Query(query, checkOutNow, accommodationId).WithContext(ctx).Scan(&countVariable); err != nil {
 		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
@@ -225,7 +285,7 @@ func (sr *ReservationRepo) GetReservationAccommodationID(ctx context.Context, re
 	var accommodationID string
 	query := `
 		SELECT accommodation_id FROM reservations_by_guest
-         WHERE guest_id = ? AND reservation_id_time_created = ?`
+         WHERE guest_id = ? AND reservation_id_time_created = ?  AND isCanceled = false ALLOW FILTERING`
 	fmt.Println(reservationID)
 	fmt.Println("repo rsv id")
 	if err := sr.session.Query(query, guestID, reservationID).Scan(&accommodationID); err != nil {
@@ -237,31 +297,27 @@ func (sr *ReservationRepo) GetReservationAccommodationID(ctx context.Context, re
 
 }
 
-func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string) error {
+func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string, checkInDate time.Time) error {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CancelReservationByID")
 	defer span.End()
-	var checkInDate time.Time
-	query := `
-        SELECT check_in_date
-        FROM reservation.reservations_by_guest
-        WHERE guest_id = ? AND reservation_id_time_created = ?`
 
-	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkInDate); err != nil {
-		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
-		sr.logger.Println("Error retrieving reservation details:", err)
+	var isCanceled bool
+	checkQuery := `SELECT isCanceled FROM reservations_by_guest 
+        WHERE guest_id = ? AND reservation_id_time_created = ? AND check_in_date = ?`
+	if err := sr.session.Query(checkQuery, guestID, reservationID, checkInDate).WithContext(ctx).Scan(&isCanceled); err != nil {
+		span.SetStatus(codes.Error, "Error checking reservation status: "+err.Error())
+		sr.logger.Println("Error checking reservation status:", err)
 		return err
 	}
 
-	currentTime := time.Now()
-	if currentTime.After(checkInDate) {
-		span.SetStatus(codes.Error, "cannot cancel reservation, check-in date has already started")
-		return errors.New("cannot cancel reservation, check-in date has already started")
+	if isCanceled {
+		return errors.New("reservation is already canceled")
 	}
 
-	deleteQuery := ` DELETE FROM reservations_by_guest 
-        WHERE guest_id = ? AND reservation_id_time_created = ?`
+	updateQuery := `UPDATE reservations_by_guest SET isCanceled = true
+        WHERE guest_id = ? AND reservation_id_time_created = ? AND check_in_date = ?`
 
-	if err := sr.session.Query(deleteQuery, guestID, reservationID).WithContext(ctx).Exec(); err != nil {
+	if err := sr.session.Query(updateQuery, guestID, reservationID, checkInDate).WithContext(ctx).Exec(); err != nil {
 		span.SetStatus(codes.Error, "Error canceling reservation: "+err.Error())
 		sr.logger.Println("Error canceling reservation:", err)
 		return err
@@ -269,3 +325,73 @@ func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID st
 
 	return nil
 }
+
+func (sr *ReservationRepo) GetReservationCheckInDate(ctx context.Context, reservationID string, guestID string) (time.Time, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationCheckInDate")
+	defer span.End()
+
+	var checkInDate time.Time
+
+	query := `
+        SELECT check_in_date FROM reservations_by_guest
+        WHERE guest_id = ? AND reservation_id_time_created = ?`
+
+	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkInDate); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving check-in date: "+err.Error())
+		sr.logger.Println("Error retrieving check-in date:", err)
+		return time.Time{}, err
+	}
+
+	return checkInDate, nil
+}
+func (sr *ReservationRepo) GetReservationCheckOutDate(ctx context.Context, reservationID string, guestID string) (time.Time, error) {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationCheckOutDate")
+	defer span.End()
+
+	var checkOutDate time.Time
+
+	query := `
+        SELECT check_out_date FROM reservations_by_guest
+        WHERE guest_id = ? AND reservation_id_time_created = ?`
+
+	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkOutDate); err != nil {
+		span.SetStatus(codes.Error, "Error retrieving check-out date: "+err.Error())
+		sr.logger.Println("Error retrieving check-out date:", err)
+		return time.Time{}, err
+	}
+
+	return checkOutDate, nil
+}
+
+//func (sr *ReservationRepo) CancelReservationByID(ctx context.Context, guestID string, reservationID string) error {
+//	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.CancelReservationByID")
+//	defer span.End()
+//	var checkInDate time.Time
+//	query := `
+//        SELECT check_in_date
+//        FROM reservation.reservations_by_guest
+//        WHERE guest_id = ? AND reservation_id_time_created = ?`
+//
+//	if err := sr.session.Query(query, guestID, reservationID).WithContext(ctx).Scan(&checkInDate); err != nil {
+//		span.SetStatus(codes.Error, "Error retrieving reservation details: "+err.Error())
+//		sr.logger.Println("Error retrieving reservation details:", err)
+//		return err
+//	}
+//
+//	currentTime := time.Now()
+//	if currentTime.After(checkInDate) {
+//		span.SetStatus(codes.Error, "cannot cancel reservation, check-in date has already started")
+//		return errors.New("cannot cancel reservation, check-in date has already started")
+//	}
+//
+//	deleteQuery := ` DELETE FROM reservations_by_guest
+//        WHERE guest_id = ? AND reservation_id_time_created = ?`
+//
+//	if err := sr.session.Query(deleteQuery, guestID, reservationID).WithContext(ctx).Exec(); err != nil {
+//		span.SetStatus(codes.Error, "Error canceling reservation: "+err.Error())
+//		sr.logger.Println("Error canceling reservation:", err)
+//		return err
+//	}
+//
+//	return nil
+//}

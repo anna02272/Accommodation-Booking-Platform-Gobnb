@@ -54,6 +54,15 @@ func init() {
 		log.Fatal("JaegerTraceProvider failed to Initialize", err)
 	}
 	tracer := tracerProvider.Tracer(cfg.ServiceName)
+
+	//circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+	//	Name: "HTTPSRequest",
+	//	OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+	//		// Optionally, you can log state changes.
+	//		fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+	//	},
+	//})
+
 	notificationCollection = mongoclient.Database("Gobnb").Collection("notification")
 	notificationService = services.NewNotificationServiceImpl(notificationCollection, ctx, tracer)
 	NotificationHandler = handlers.NewNotificationHandler(notificationService, notificationCollection, tracer)
