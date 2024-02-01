@@ -140,7 +140,24 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 
 	// If no existing reservation is found, proceed with the insertion
 	reservationIdTimeCreated := gocql.TimeUUID()
-
+	log.Println("CHECK HERE")
+	log.Println(guestReservation.AccommodationId)
+	var reservation data.ReservationByGuest
+	reservation.AccommodationId = guestReservation.AccommodationId
+	reservation.CheckInDate = guestReservation.CheckInDate
+	reservation.CheckOutDate = guestReservation.CheckOutDate
+	reservation.NumberOfGuests = guestReservation.NumberOfGuests
+	reservation.GuestId = guestId
+	reservation.AccommodationName = accommodationName
+	reservation.AccommodationLocation = accommodationLocation
+	reservation.AccommodationHostId = accommodationHostId
+	reservation.IsCanceled = false
+	log.Println(reservation.AccommodationName)
+	er := sr.SendToRatingService(&reservation, ctx)
+	if er != nil {
+		span.SetStatus(codes.Error, er.Error())
+		return nil
+	}
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
          (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, accommodation_host_id,

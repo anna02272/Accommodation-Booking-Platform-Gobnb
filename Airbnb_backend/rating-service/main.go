@@ -102,7 +102,8 @@ func init() {
 	hostRatingService = services.NewHostRatingServiceImpl(hostRatingCollection, ctx, tracer)
 	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer)
 	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx, tracer)
-	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection, tracer)
+	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, recommendationService, accommodationRatingCollection, tracer)
+	//AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection, tracer)
 	recommendationService = services.NewRecommendationServiceImpl(neo4jDriver, tracer, logger)
 	RecommendationHandler = handlers.NewRecommendationHandler(recommendationService, neo4jDriver, tracer, logger)
 	RatingRouteHandler = routes.NewRatingRouteHandler(HostRatingHandler, hostRatingService, AccommodationRatingHandler, accommodationRatingService,

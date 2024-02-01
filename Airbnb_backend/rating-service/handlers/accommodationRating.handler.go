@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
+	"log"
 	"net/http"
 	"rating-service/domain"
 	"rating-service/services"
@@ -25,12 +26,13 @@ import (
 
 type AccommodationRatingHandler struct {
 	accommodationRatingService services.AccommodationRatingService
+	recommendationService      services.RecommendationService
 	DB                         *mongo.Collection
 	Tracer                     trace.Tracer
 	CircuitBreaker             *gobreaker.CircuitBreaker
 }
 
-func NewAccommodationRatingHandler(accommodationRatingService services.AccommodationRatingService, db *mongo.Collection, tr trace.Tracer) AccommodationRatingHandler {
+func NewAccommodationRatingHandler(accommodationRatingService services.AccommodationRatingService, recommendationService services.RecommendationService, db *mongo.Collection, tr trace.Tracer) AccommodationRatingHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -39,6 +41,7 @@ func NewAccommodationRatingHandler(accommodationRatingService services.Accommoda
 	})
 	return AccommodationRatingHandler{
 		accommodationRatingService: accommodationRatingService,
+		recommendationService:      recommendationService,
 		DB:                         db,
 		Tracer:                     tr,
 		CircuitBreaker:             circuitBreaker,
@@ -145,13 +148,41 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 		DateAndTime:   currentDateTime,
 		Rating:        domain.Rating(requestBody.Rating),
 	}
-
+	log.Println(newRateAccommodation.Rating)
 	err, update := s.accommodationRatingService.SaveRating(newRateAccommodation, spanCtx)
 	if err != nil {
 		span.SetStatus(codes.Error, "Failed to save rating")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
 		return
 	}
+	log.Println("proba")
+	log.Println(requestBody.Rating)
+	a := domain.Rating(requestBody.Rating)
+	log.Println(string(a))
+	log.Println(string(requestBody.Rating))
+
+	new := domain.RateAccommodationRec{
+		ID:            id.Hex(),
+		Accommodation: accommodationID,
+		Guest:         currentUser.ID.Hex(),
+		Rating:        requestBody.Rating,
+	}
+	log.Println("start")
+	log.Println(new.ID)
+	log.Println(new.Accommodation)
+	log.Println(new.Guest)
+	log.Println(new.Rating)
+	var ctxx context.Context
+	err = s.CreateRate(&new, ctxx)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return
+	}
+	//result := s.recommendationService.CreateRate(&new)
+	//if result == nil {
+	//	println("GRESKA JE U PUTANJI")
+	//}
+	//log.Println(result)
 	urlAccommodationCheck := "https://acc-server:8083/api/accommodations/get/" + accommodationID
 
 	timeout = 2000 * time.Second
@@ -356,7 +387,53 @@ func (s *AccommodationRatingHandler) RateAccommodation(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateAccommodation})
 }
+func (s *AccommodationRatingHandler) CreateRate(rate *domain.RateAccommodationRec, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AccommodationService.CreateRate")
+	defer span.End()
 
+	url := "https://rating-server:8087/api/rating/createRecomRate"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequest(ctx, rate, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (s *AccommodationRatingHandler) HTTPSperformAuthorizationRequest(ctx context.Context, rate *domain.RateAccommodationRec, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(rate)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling reservation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (s *AccommodationRatingHandler) DeleteRatingAccommodation(c *gin.Context) {
 	spanCtx, span := s.Tracer.Start(c.Request.Context(), "AccommodationRatingHandler.DeleteRatingAccommodation")
 	defer span.End()

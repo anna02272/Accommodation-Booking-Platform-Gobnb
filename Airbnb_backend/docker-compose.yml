@@ -146,7 +146,6 @@ services:
       - ./profile-service/profile-service.crt:/app/profile-service.crt
       - ./profile-service/profile-service.key:/app/profile-service.key
 
-
   rating-server:
     build:
       context: ./rating-service/

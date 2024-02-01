@@ -605,7 +605,11 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 		return
 	}
-
+	er := s.SendToDelete(rw, accommodationID, guestID, ctx)
+	if er != nil {
+		//span.SetStatus(codes.Error, er.Error())
+		return
+	}
 	if err := s.Repo.CancelReservationByID(ctx, guestID, reservationIDString, checkInDate); err != nil {
 		span.SetStatus(codes.Error, "Error canceling reservation:"+err.Error())
 		s.logger.Println("Error canceling reservation:", err)
@@ -806,6 +810,63 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 
 	rw.WriteHeader(http.StatusNoContent)
+}
+
+func (s *ReservationsHandler) SendToDelete(rw http.ResponseWriter, accommodationId string, guestId string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "ReservationService.SendToDelete")
+	defer span.End()
+
+	url := "https://rating-server:8087/api/rating/deleteReservation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContexttt(ctx, accommodationId, guestId, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContexttt(ctx context.Context, accommodationId string, guestId string, url string) (*http.Response, error) {
+	requestData := map[string]string{
+		"accommodationId": accommodationId,
+		"guestId":         guestId,
+	}
+
+	reqBody, err := json.Marshal(requestData)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http.ResponseWriter, h *http.Request) {

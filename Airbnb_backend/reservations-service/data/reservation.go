@@ -14,16 +14,16 @@ func (t TimeUUID) MarshalJSON() ([]byte, error) {
 }
 
 type ReservationByGuest struct {
-	ReservationIdTimeCreated TimeUUID
-	GuestId                  string
-	AccommodationId          string
-	AccommodationName        string
-	AccommodationLocation    string
-	AccommodationHostId      string
-	CheckInDate              time.Time
-	CheckOutDate             time.Time
-	NumberOfGuests           int
-	IsCanceled               bool
+	ReservationIdTimeCreated TimeUUID  `json:"reservation_id_time_created"`
+	GuestId                  string    `json:"guest_id"`
+	AccommodationId          string    `json:"accommodation_id"`
+	AccommodationName        string    `json:"accommodation_name"`
+	AccommodationLocation    string    `json:"accommodation_location"`
+	AccommodationHostId      string    `json:"accommodation_host_id"`
+	CheckInDate              time.Time `json:"check_in_date"`
+	CheckOutDate             time.Time `json:"check_out_date"`
+	NumberOfGuests           int       `json:"number_of_guests"`
+	IsCanceled               bool      `json:"is_canceled"`
 }
 
 //// CQRS Event Store

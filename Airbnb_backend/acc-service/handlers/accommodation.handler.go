@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -210,6 +211,7 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 		error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Println(accommodations)
 	span.SetStatus(codes.Ok, "Get all success")
 	c.JSON(http.StatusOK, accommodations)
 }

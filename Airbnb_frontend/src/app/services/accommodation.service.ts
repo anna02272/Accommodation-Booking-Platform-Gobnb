@@ -13,6 +13,9 @@ export class AccommodationService {
   getAll() {
     return this.apiService.get(this.config.acc_url + "/get");
    }
+   getAllRecommendation(id:string) {
+    return this.apiService.get(this.config.rating_url + "/getRecomendation/"+id);
+   }
 
   getSearch(location: any, guests: any, start_date: any, end_date: any, tv: any, wifi: any, ac: any, min_price: any, max_price: any) {
     //alert(this.config.acc_url + `/get?location=${location}&guests=${guests}&start_date=${start_date}&end_date=${end_date}`);
