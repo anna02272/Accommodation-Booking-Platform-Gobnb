@@ -28,8 +28,6 @@ func (r *RecommendationHandler) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	//
-	log.Println(&user)
 
 	r.CreateUserNext(c.Writer, c.Request, &user)
 
@@ -44,7 +42,6 @@ func (r *RecommendationHandler) CreateUserNext(rw http.ResponseWriter, h *http.R
 	err := r.rec.CreateUser(user)
 	if err != nil {
 		r.logger.Print("Database exception: ", err)
-		log.Println("usao sam u error")
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -57,16 +54,12 @@ func (r *RecommendationHandler) CreateReservation(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	log.Println(&reservation)
-
 	r.CreateReservationNext(c.Writer, c.Request, &reservation)
 
 }
 func (r *RecommendationHandler) CreateReservationNext(rw http.ResponseWriter, h *http.Request, reservation *domain.ReservationByGuest) {
 
 	if reservation == nil {
-		// Handle the case when the value is not present or is not of the expected type
 		log.Println("Resevation not found in the context or not of type *domain.Reservation")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
@@ -114,9 +107,6 @@ func (r *RecommendationHandler) CreateRecomRate(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	log.Println("create")
-	log.Println(&rate)
-	log.Println(rate.Rating)
 
 	r.CreateRecomRateNext(c.Writer, c.Request, &rate)
 
@@ -128,11 +118,6 @@ func (r *RecommendationHandler) CreateRecomRateNext(rw http.ResponseWriter, h *h
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	log.Println("next step")
-	log.Println(rate.Rating)
-	log.Println("next")
-	log.Println(&rate)
-	log.Println(rate.Rating)
 	err := r.rec.CreateRate(rate)
 	if err != nil {
 		r.logger.Print("Database exception: ", err)
@@ -145,11 +130,7 @@ func (r *RecommendationHandler) CreateRecomRateNext(rw http.ResponseWriter, h *h
 func (r *RecommendationHandler) GetRecommendation(ctx *gin.Context) {
 	_, span := r.Tracer.Start(ctx.Request.Context(), "RecommendationHandler.GetRecommendation")
 	defer span.End()
-	log.Println("pocinjemo")
-	log.Println(ctx.Params)
 	id := ctx.Param("id")
-	log.Println(id)
-
 	if id == "" {
 		span.SetStatus(codes.Error, "Id is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Id is required"})
@@ -162,17 +143,99 @@ func (r *RecommendationHandler) GetRecommendation(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Accommodation not found"})
 		return
 	}
-	log.Println(acc)
 	span.SetStatus(codes.Ok, "Found accommodation by id successfully")
 	ctx.JSON(http.StatusOK, acc)
 }
+func (r *RecommendationHandler) DeleteReservation(c *gin.Context) {
+	var requestData map[string]interface{}
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	guestId, exists := requestData["guestId"].(string)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "guestId is missing or not a string"})
+		return
+	}
+	accommodationId, existss := requestData["accommodationId"].(string)
+	if !existss {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "accommodationId is missing or not a string"})
+		return
+	}
+	err := r.rec.DeleteReservation(accommodationId, guestId)
+	if err != nil {
+		r.logger.Print("Database exception: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting reservation"})
+		return
+	}
 
-//new := &domain.RateAccommodationRec{
-//	ID:            id.String(),
-//	Accommodation: accommodationID,
-//	Guest:         newRateAccommodation.Guest.ID.String(),
-//	Rating:        string(newRateAccommodation.Rating),
-//}
-//log.Println("start")
-//log.Println(new.Rating)
-//_ = s.recommendationService.CreateRate(new)
+	c.JSON(http.StatusOK, gin.H{"message": "Reservation deleted successfully"})
+}
+
+func (r *RecommendationHandler) DeleteRate(c *gin.Context) {
+	var requestData map[string]interface{}
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	guestId, exists := requestData["guestId"].(string)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "guestId is missing or not a string"})
+		return
+	}
+	accommodation, existss := requestData["accommodation"].(string)
+	if !existss {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "accommodation is missing or not a string"})
+		return
+	}
+	err := r.rec.DeleteRate(accommodation, guestId)
+	if err != nil {
+		r.logger.Print("Database exception: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting rate"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Rate deleted successfully"})
+}
+
+func (r *RecommendationHandler) DeleteUser(c *gin.Context) {
+	var requestData map[string]interface{}
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId, exists := requestData["userId"].(string)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "userId is missing or not a string"})
+		return
+	}
+	err := r.rec.DeleteUser(userId)
+	if err != nil {
+		r.logger.Print("Database exception: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+}
+func (r *RecommendationHandler) DeleteAccommodation(c *gin.Context) {
+	var requestData map[string]interface{}
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	accommodationId, exists := requestData["accommodationId"].(string)
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "accommodationId is missing or not a string"})
+		return
+	}
+	err := r.rec.DeleteAccommodation(accommodationId)
+	if err != nil {
+		r.logger.Print("Database exception: ", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting accommodation"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Accommodation deleted successfully"})
+}

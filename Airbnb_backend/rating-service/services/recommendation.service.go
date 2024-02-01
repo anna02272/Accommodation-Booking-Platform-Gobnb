@@ -14,4 +14,7 @@ type RecommendationService interface {
 	CreateRate(rate *domain.RateAccommodationRec) error
 	GetRecommendation(id string) ([]domain.AccommodationRec, error)
 	DeleteAccommodation(accommodationID string) error
+	DeleteReservation(accommodationId string, guestId string) error
+	DeleteUser(id string) error
+	DeleteRate(accommodation string, guestId string) error
 }

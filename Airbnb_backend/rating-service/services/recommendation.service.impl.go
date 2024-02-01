@@ -21,10 +21,6 @@ func NewRecommendationServiceImpl(driver neo4j.DriverWithContext, trace trace.Tr
 	user := os.Getenv("NEO4J_USERNAME")
 	pass := os.Getenv("NEO4J_PASS")
 	auth := neo4j.BasicAuth(user, pass, "")
-	log.Println("HEEEEEEEEEEEEEEEJJJJJJJJJJJJJJ")
-	log.Println(auth)
-	log.Println(uri)
-
 	driver, err := neo4j.NewDriverWithContext(uri, auth)
 	if err != nil {
 		logger.Panic(err)
@@ -38,7 +34,6 @@ func NewRecommendationServiceImpl(driver neo4j.DriverWithContext, trace trace.Tr
 	}
 }
 
-// Check if connection is established
 func (r *RecommendationServiceImpl) CheckConnection() {
 	ctx := context.Background()
 	err := r.driver.VerifyConnectivity(ctx)
@@ -49,8 +44,6 @@ func (r *RecommendationServiceImpl) CheckConnection() {
 	// Print Neo4J server address
 	r.logger.Printf(`Neo4J server address: %s`, r.driver.Target().Host)
 }
-
-// Disconnect from database
 func (r *RecommendationServiceImpl) CloseDriverConnection(ctx context.Context) {
 	r.driver.Close(ctx)
 }
@@ -180,12 +173,37 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 
 	return nil
 }
-
-func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) error {
+func (r *RecommendationServiceImpl) DeleteRate(accommodation string, guestId string) error {
 	ctx := context.Background()
 	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
 	defer session.Close(ctx)
 
+	_, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (r:Rate) WHERE r.accommodation = $accommodation AND r.guestId = $guestId"+
+					" DETACH DELETE r",
+				map[string]interface{}{
+					"accommodation": accommodation,
+					"guestId":       guestId,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error deleting Rate:", err)
+		return err
+	}
+
+	return nil
+}
+func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
 	_, err := session.ExecuteWrite(ctx,
 		func(transaction neo4j.ManagedTransaction) (any, error) {
 			result, err := transaction.Run(ctx,
@@ -201,6 +219,59 @@ func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) 
 		})
 	if err != nil {
 		r.logger.Println("Error deleting Accommodation:", err)
+		return err
+	}
+
+	return nil
+}
+func (r *RecommendationServiceImpl) DeleteReservation(accommodationId string, guestId string) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (r:Reservation) WHERE r.accommodationId = $id AND r.guestId = $guestId"+
+					" DETACH DELETE r",
+				map[string]interface{}{
+					"id":      accommodationId,
+					"guestId": guestId,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error deleting Reservation:", err)
+		return err
+	}
+
+	return nil
+}
+func (r *RecommendationServiceImpl) DeleteUser(id string) error {
+	ctx := context.Background()
+	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
+	defer session.Close(ctx)
+
+	_, err := session.ExecuteWrite(ctx,
+		func(transaction neo4j.ManagedTransaction) (any, error) {
+			result, err := transaction.Run(ctx,
+				"MATCH (u:User) WHERE u.id = $id "+
+					"DETACH DELETE u",
+				map[string]interface{}{
+					"id": id,
+				})
+			if err != nil {
+				return nil, err
+			}
+
+			return nil, result.Err()
+		})
+	if err != nil {
+		r.logger.Println("Error deleting User:", err)
 		return err
 	}
 
@@ -248,8 +319,6 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 	ctx := context.Background()
 	session := r.driver.NewSession(ctx, neo4j.SessionConfig{DatabaseName: "neo4j"})
 	defer session.Close(ctx)
-	log.Println("STIGAO U RECOMMENDATION")
-	log.Println(idd)
 	recommendation, err := session.ExecuteRead(ctx,
 		func(transaction neo4j.ManagedTransaction) (any, error) {
 			result, err := transaction.Run(ctx,
@@ -288,10 +357,8 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 					MaxGuests: int(maxGuests.(int64)),
 					Active:    active.(bool),
 				}
-				log.Println(new)
 				news = append(news, new)
 			}
-			log.Println(news)
 			return news, nil
 		})
 	if err != nil {
