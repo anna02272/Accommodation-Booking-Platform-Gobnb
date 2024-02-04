@@ -28,6 +28,8 @@ services:
     volumes:
       - ./auth-service/auth-service.crt:/app/auth-service.crt
       - ./auth-service/auth-service.key:/app/auth-service.key
+      - auth_logs:/auth-service/logs
+
 
   res-server:
     build:
@@ -96,6 +98,7 @@ services:
     volumes:
       - ./acc-service/accomm-service.crt:/app/accomm-service.crt
       - ./acc-service/accomm_decrypted_key.pem:/app/accomm_decrypted_key.pem
+      - acc_logs:/acc-service/logs
 
 
   notifications-server:
@@ -178,6 +181,8 @@ services:
     volumes:
       - ./rating-service/rating-service.crt:/app/rating-service.crt
       - ./rating-service/rating-service.key:/app/rating-service.key
+      - rating_logs:/rating-service/logs
+
 
   api_gateway:
     build:
@@ -374,6 +379,10 @@ volumes:
   hadoop_namenode:
   hadoop_datanode:
   neo4j_data:
+  rating_logs:
+  auth_logs:
+  acc_logs:
+#    driver: local
 
 
 networks:
