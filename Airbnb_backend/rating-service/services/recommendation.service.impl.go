@@ -2,10 +2,10 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"go.opentelemetry.io/otel/trace"
-	"log"
+	//"log"
+	logger "github.com/sirupsen/logrus"
 	"os"
 	"rating-service/domain"
 )
@@ -13,10 +13,10 @@ import (
 type RecommendationServiceImpl struct {
 	driver neo4j.DriverWithContext
 	//trace  trace.Tracer
-	logger *log.Logger
+	logger *logger.Logger
 }
 
-func NewRecommendationServiceImpl(driver neo4j.DriverWithContext, trace trace.Tracer, logger *log.Logger) *RecommendationServiceImpl {
+func NewRecommendationServiceImpl(driver neo4j.DriverWithContext, trace trace.Tracer, logger *logger.Logger) *RecommendationServiceImpl {
 	uri := os.Getenv("NEO4J_DB")
 	user := os.Getenv("NEO4J_USERNAME")
 	pass := os.Getenv("NEO4J_PASS")
@@ -42,7 +42,7 @@ func (r *RecommendationServiceImpl) CheckConnection() {
 		return
 	}
 	// Print Neo4J server address
-	r.logger.Printf(`Neo4J server address: %s`, r.driver.Target().Host)
+	r.logger.Info(`Neo4J server address: %s`, r.driver.Target().Host)
 }
 func (r *RecommendationServiceImpl) CloseDriverConnection(ctx context.Context) {
 	r.driver.Close(ctx)
@@ -68,10 +68,10 @@ func (r *RecommendationServiceImpl) CreateUser(user *domain.NeoUser) error {
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error inserting User:", err)
+		r.logger.Error("Error inserting User:", err)
 		return err
 	}
-	r.logger.Println(savedMovie.(string))
+	r.logger.Infof(savedMovie.(string))
 	return nil
 }
 func (r *RecommendationServiceImpl) CreateReservation(reservation *domain.ReservationByGuest) error {
@@ -118,10 +118,10 @@ func (r *RecommendationServiceImpl) CreateReservation(reservation *domain.Reserv
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error inserting Reservation:", err)
+		r.logger.Error("Error inserting Reservation:", err)
 		return err
 	}
-	r.logger.Println(savedReservation.(string))
+	r.logger.Infof(savedReservation.(string))
 	return nil
 }
 func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.AccommodationRec) error {
@@ -160,13 +160,13 @@ func (r *RecommendationServiceImpl) CreateAccommodation(accommodation *domain.Ac
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error inserting Accommodation:", err)
+		r.logger.Error("Error inserting Accommodation:", err)
 		return err
 	}
-	fmt.Printf("savedAccommodation", savedAccommodation)
+	r.logger.Info("savedAccommodation", savedAccommodation)
 	if savedAccommodation != nil {
 
-		r.logger.Println(savedAccommodation.(string))
+		r.logger.Infof(savedAccommodation.(string))
 	} else {
 		r.logger.Println("savedAccommodation is nil")
 	}
@@ -194,7 +194,7 @@ func (r *RecommendationServiceImpl) DeleteRate(accommodation string, guestId str
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error deleting Rate:", err)
+		r.logger.Errorf("Error deleting Rate:", err)
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (r *RecommendationServiceImpl) DeleteAccommodation(accommodationID string) 
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error deleting Accommodation:", err)
+		r.logger.Errorf("Error deleting Accommodation:", err)
 		return err
 	}
 
@@ -245,7 +245,7 @@ func (r *RecommendationServiceImpl) DeleteReservation(accommodationId string, gu
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error deleting Reservation:", err)
+		r.logger.Errorf("Error deleting Reservation:", err)
 		return err
 	}
 
@@ -271,7 +271,7 @@ func (r *RecommendationServiceImpl) DeleteUser(id string) error {
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error deleting User:", err)
+		r.logger.Errorf("Error deleting User:", err)
 		return err
 	}
 
@@ -309,10 +309,10 @@ func (r *RecommendationServiceImpl) CreateRate(rate *domain.RateAccommodationRec
 			return nil, result.Err()
 		})
 	if err != nil {
-		r.logger.Println("Error inserting Rate:", err)
+		r.logger.Errorf("Error inserting Rate:", err)
 		return err
 	}
-	r.logger.Println(savedAccommodation.(string))
+	r.logger.Infof(savedAccommodation.(string))
 	return nil
 }
 func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.AccommodationRec, error) {
@@ -362,9 +362,9 @@ func (r *RecommendationServiceImpl) GetRecommendation(idd string) ([]domain.Acco
 			return news, nil
 		})
 	if err != nil {
-		r.logger.Println("Error get Recomm:", err)
+		r.logger.Errorf("Error get Recomm:", err)
 		return []domain.AccommodationRec{}, nil
 	}
-	r.logger.Println(recommendation.([]domain.AccommodationRec))
+	r.logger.Info(recommendation.([]domain.AccommodationRec))
 	return recommendation.([]domain.AccommodationRec), nil
 }

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	logger "github.com/sirupsen/logrus"
 	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,9 +31,10 @@ type AccommodationRatingHandler struct {
 	DB                         *mongo.Collection
 	Tracer                     trace.Tracer
 	CircuitBreaker             *gobreaker.CircuitBreaker
+	logger                     *logger.Logger
 }
 
-func NewAccommodationRatingHandler(accommodationRatingService services.AccommodationRatingService, recommendationService services.RecommendationService, db *mongo.Collection, tr trace.Tracer) AccommodationRatingHandler {
+func NewAccommodationRatingHandler(accommodationRatingService services.AccommodationRatingService, recommendationService services.RecommendationService, db *mongo.Collection, tr trace.Tracer, logger *logger.Logger) AccommodationRatingHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -45,6 +47,7 @@ func NewAccommodationRatingHandler(accommodationRatingService services.Accommoda
 		DB:                         db,
 		Tracer:                     tr,
 		CircuitBreaker:             circuitBreaker,
+		logger:                     logger,
 	}
 }
 

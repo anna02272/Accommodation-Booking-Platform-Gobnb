@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -36,10 +37,11 @@ type AccommodationHandler struct {
 	Tracer               trace.Tracer
 	CircuitBreaker       *gobreaker.CircuitBreaker
 	orchestrator         *application.CreateAccommodationOrchestrator
+	logger               *logrus.Logger
 }
 
 func NewAccommodationHandler(accommodationService services.AccommodationService, imageCache *cache.ImageCache,
-	hdfs *hdfs_store.FileStorage, db *mongo.Collection, tr trace.Tracer, orchestrator *application.CreateAccommodationOrchestrator) AccommodationHandler {
+	hdfs *hdfs_store.FileStorage, db *mongo.Collection, tr trace.Tracer, orchestrator *application.CreateAccommodationOrchestrator, logger *logrus.Logger) AccommodationHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -55,6 +57,7 @@ func NewAccommodationHandler(accommodationService services.AccommodationService,
 		Tracer:               tr,
 		CircuitBreaker:       circuitBreaker,
 		orchestrator:         orchestrator,
+		logger:               logger,
 	}
 
 }
