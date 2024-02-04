@@ -3,6 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/analyticsReport"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
+
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"
@@ -17,16 +28,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/analyticsReport"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
 )
 
 var (
@@ -179,6 +180,15 @@ func main() {
 
 	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
+
+	getTotalReservations := router.Methods(http.MethodGet).Subrouter()
+	getTotalReservations.HandleFunc("/api/reservations/total/{hostId}", reservationsHandler.GetTotalReservations)
+
+	getPercentageOfCancelledReservations := router.Methods(http.MethodGet).Subrouter()
+	getPercentageOfCancelledReservations.HandleFunc("/api/reservations/cancelled/{hostId}", reservationsHandler.GetPercentageOfCancelledReservations)
+
+	getTotalDurationOfReservations := router.Methods(http.MethodGet).Subrouter()
+	getTotalDurationOfReservations.HandleFunc("/api/reservations/duration/{hostId}", reservationsHandler.GetTotalDurationOfReservations)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",

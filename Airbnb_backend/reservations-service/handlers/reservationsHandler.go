@@ -7,15 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/gorilla/mux"
-	"github.com/sony/gobreaker"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -25,6 +16,16 @@ import (
 	"reservations-service/utils"
 	"strings"
 	"time"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+	"github.com/sony/gobreaker"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var validateFields = validator.New()
@@ -1041,6 +1042,104 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	rw.Write(responseJSON)
+}
+
+// GetTotalReservations()
+func (s *ReservationsHandler) GetTotalReservations(rw http.ResponseWriter, h *http.Request) {
+
+	vars := mux.Vars(h)
+	hostId, ok := vars["hostId"]
+	if !ok {
+		error2.ReturnJSONError(rw, "Missing hostId in the URL", http.StatusBadRequest)
+		return
+	}
+	total, err := s.Repo.GetTotalReservations(hostId)
+	if err != nil {
+		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
+		return
+	}
+
+	if total == -1 {
+		error2.ReturnJSONError(rw, "Error getting total reservations", http.StatusBadRequest)
+		return
+
+	}
+
+	responseJSON, err := json.Marshal(total)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseJSON)
+}
+
+// .GetPercentageOfCancelledReservations
+func (s *ReservationsHandler) GetPercentageOfCancelledReservations(rw http.ResponseWriter, h *http.Request) {
+
+	vars := mux.Vars(h)
+	hostId, ok := vars["hostId"]
+	if !ok {
+		error2.ReturnJSONError(rw, "Missing hostId in the URL", http.StatusBadRequest)
+		return
+	}
+
+	total, err := s.Repo.GetPercentageOfCancelledReservations(hostId)
+	if err != nil {
+		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
+		return
+	}
+
+	if total == -1 {
+		error2.ReturnJSONError(rw, "Error getting percentage of cancelled reservations", http.StatusBadRequest)
+		return
+	}
+
+	responseJSON, err := json.Marshal(total)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseJSON)
+
+}
+
+// GetTotalDurationOfReservations
+func (s *ReservationsHandler) GetTotalDurationOfReservations(rw http.ResponseWriter, h *http.Request) {
+
+	vars := mux.Vars(h)
+	hostId, ok := vars["hostId"]
+	if !ok {
+		error2.ReturnJSONError(rw, "Missing hostId in the URL", http.StatusBadRequest)
+		return
+	}
+
+	total, err := s.Repo.GetTotalDurationOfReservations(hostId)
+	if err != nil {
+		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
+		return
+	}
+
+	if total == -1 {
+		error2.ReturnJSONError(rw, "Error getting total duration of reservations", http.StatusBadRequest)
+		return
+	}
+
+	responseJSON, err := json.Marshal(total)
+	if err != nil {
+		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(responseJSON)
+
 }
 
 func (s *ReservationsHandler) MiddlewareContentTypeSet(next http.Handler) http.Handler {

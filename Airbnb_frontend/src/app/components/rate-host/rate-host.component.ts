@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { Component, AfterViewInit, Input, SimpleChanges } from '@angular/core';
 import { RatingItem } from 'src/app/models/rateHost';
 import { UserService } from 'src/app/services';
@@ -10,6 +11,7 @@ import { RatingService } from 'src/app/services/rating.service';
 })
 export class RateHostComponent implements AfterViewInit {
   @Input() hostId!: string;
+  //hostId2: string = "65bccbd379154f7558b148f7";
   notification1 = { msgType: '', msgBody: '' };
   selectedRating: number | null = null;
   ratings: RatingItem[] = [];
@@ -17,7 +19,8 @@ export class RateHostComponent implements AfterViewInit {
 
   constructor(
     private ratingService: RatingService,
-    private userService: UserService
+    private userService: UserService,
+    private httpClient: HttpClient
   ) {}
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -84,6 +87,9 @@ export class RateHostComponent implements AfterViewInit {
     this.ratingService.rateHost(this.hostId, this.selectedRating).subscribe(
       response => {
         this.notification1 = { msgType: 'success', msgBody: 'Rating successfully submitted' };
+        
+        //this.isHostFeatured()
+
       },
     error => {
       if (error.status === 400 && error.error && error.error.error) {
@@ -130,5 +136,100 @@ export class RateHostComponent implements AfterViewInit {
       }
     );
   }
+
+  // isHostFeatured() {
+  //   //get all ratings for the host getAll returns one json {"ratings": "", "averageRating": ""}
+  //   var featured = false;
+  //   var averageRating = 0;
+  //   this.ratingService.getAll().subscribe(
+  //     (response: any) => {
+  //       averageRating = response.averageRating;
+  //     },
+  //     error => {
+  //       console.error('Error fetching ratings', error);
+  //     }
+  //   );
+  //   if (averageRating >= 4.7) {
+  //     featured = true;
+  //   }
+
+  //   var cancelRate = 0;
+  //   //get cancelled rate from https://localhost:8000/api/reservations/cancelled/{hostId}
+  //   this.httpClient.get('https://localhost:8000/api/reservations/cancelled/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //cancelRate = response to float
+  //       cancelRate = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching cancel rate', error);
+  //     }
+  //   );
+  //   if (cancelRate < 5.0) {
+  //     featured = true;
+  //   }
+
+  //   var total = 0;
+  //   this.httpClient.get('https://localhost:8000/api/reservations/total/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //total = response to float
+  //       total = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching total', error);
+  //     }
+  //   );
+  //   if (total >= 5) {
+  //     featured = true;
+  //   }
+
+  //   var duration = 0;
+  //   this.httpClient.get('https://localhost:8000/api/reservations/duration/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //duration = response to float
+  //       duration = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching duration', error);
+  //     }
+  //   );
+  //   if (duration > 50) {
+  //     featured = true;
+  //   }
+
+  //   var responseFeatured = false;
+  //   this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostId).subscribe(
+  //       (response: any) => {
+  //         responseFeatured = response;
+  //       },
+  //       error => {
+  //         console.error('Error fetching isFeatured', error);
+  //       }
+  //     );
+  //   if (featured) {
+  //     if (!responseFeatured) {
+  //       //post to https://localhost:8000/api/hosts/featured/{hostId}
+  //       this.httpClient.post('https://localhost:8000/api/profile/setFeatured/' + this.hostId, null).subscribe(
+  //         (response: any) => {
+  //           console.log(response);
+  //         },
+  //         error => {
+  //           console.error('Error featuring host', error);
+  //         }
+  //       );
+  //     }
+  //   } else{
+  //     if (responseFeatured) {
+  //       this.httpClient.post('https://localhost:8000/api/profile/removeFeatured/' + this.hostId, null).subscribe(
+  //         (response: any) => {
+  //           console.log(response);
+  //         },
+  //         error => {
+  //           console.error('Error removing feature from host', error);
+  //         }
+  //       );
+  //     }
+  //   }
+
+  // }
 
 }

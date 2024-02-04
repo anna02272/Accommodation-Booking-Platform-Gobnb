@@ -7,18 +7,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"profile-service/domain"
 	"regexp"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type UserServiceImpl struct {
@@ -52,6 +53,15 @@ func (uc *UserServiceImpl) Registration(user *domain.User, ctx context.Context) 
 		span.SetStatus(codes.Error, err.Error())
 
 		return err
+	}
+
+	// if user is a host, set it to featured
+	if user.UserRole == "Host" {
+		err := uc.SetFeatured(res.InsertedID.(string))
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			return err
+		}
 	}
 
 	return nil
@@ -172,6 +182,44 @@ func (uc *UserServiceImpl) UpdateUser(user *domain.User, ctx context.Context) er
 	}
 
 	return nil
+}
+
+// func (uc *UserServiceImpl) CheckIsFeatured(user *domain.User, ctx context.Context) (bool, error) {
+
+// 	return false, nil
+
+// }
+
+func (uc *UserServiceImpl) IsFeatured(hostID string) (bool, error) {
+
+	var user *domain.User
+	fmt.Println("hostId in service: ", hostID)
+	var err = uc.collection.FindOne(uc.ctx, bson.M{"_id": hostID}).Decode(&user)
+	if err != nil {
+		return false, err
+	}
+	return user.Featured, nil
+
+}
+
+func (uc *UserServiceImpl) SetFeatured(hostID string) error {
+
+	_, err := uc.collection.UpdateOne(uc.ctx, bson.M{"_id": hostID}, bson.M{"$set": bson.M{"featured": true}})
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+func (uc *UserServiceImpl) SetUnfeatured(hostID string) error {
+
+	_, err := uc.collection.UpdateOne(uc.ctx, bson.M{"_id": hostID}, bson.M{"$set": bson.M{"featured": false}})
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (us *UserServiceImpl) HTTPSperformAuthorizationRequestWithContext(ctx context.Context, user *domain.User, url string) (*http.Response, error) {

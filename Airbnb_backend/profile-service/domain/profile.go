@@ -14,6 +14,7 @@ type User struct {
 	Age      int                `bson:"age,omitempty" json:"age"`
 	Gender   Gender             `bson:"gender,omitempty" json:"gender"`
 	UserRole UserRole           `bson:"userRole" json:"userRole"`
+	Featured bool               `bson:"featured" json:"featured"`
 }
 
 type UserResponse struct {

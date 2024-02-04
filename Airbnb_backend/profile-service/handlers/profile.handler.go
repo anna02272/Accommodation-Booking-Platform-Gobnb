@@ -1,15 +1,17 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+	"profile-service/domain"
+	"profile-service/services"
+
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"log"
-	"net/http"
-	"profile-service/domain"
-	"profile-service/services"
 )
 
 type ProfileHandler struct {
@@ -107,6 +109,61 @@ func (ph *ProfileHandler) FindUserByEmail(ctx *gin.Context) {
 	}
 	span.SetStatus(codes.Ok, "Found user by email successfully")
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+// func (ph *ProfileHandler) CheckIsFeatured(ctx *gin.Context) {
+
+// 	email := ctx.Param("email")
+
+// 	if email == "" {
+// 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+// 		return
+// 	}
+
+// 	user, err := ph.profileService.FindProfileByEmail(email)
+// 	if err != nil {
+// 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+// 		return
+// 	}
+
+// 	isFeatured, err := ph.profileService.CheckIsFeatured(user)
+// 	if err != nil {
+// 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+// 		return
+// 	}
+// 	ctx.JSON(http.StatusOK, gin.H{"isFeatured": isFeatured})
+
+// }
+
+func (ph *ProfileHandler) IsFeatured(ctx *gin.Context) {
+	hostID := ctx.Param("hostId")
+	fmt.Println("hostId in handler: ", hostID)
+	featured, err := ph.profileService.IsFeatured(hostID)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(200, gin.H{"featured": featured})
+}
+
+func (ph *ProfileHandler) SetFeatured(ctx *gin.Context) {
+	hostID := ctx.Param("hostId")
+	err := ph.profileService.SetFeatured(hostID)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "Host is now featured"})
+}
+
+func (ph *ProfileHandler) SetUnfeatured(ctx *gin.Context) {
+	hostID := ctx.Param("hostId")
+	err := ph.profileService.SetUnfeatured(hostID)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "Host is no longer featured"})
 }
 
 func ExtractTraceInfoMiddleware() gin.HandlerFunc {

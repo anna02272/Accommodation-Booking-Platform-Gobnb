@@ -3,6 +3,7 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { ReservationService } from 'src/app/services/reservation.service';
 import { Reservation } from 'src/app/models/reservation';
 import { DatePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-reservation',
@@ -25,7 +26,7 @@ export class ReservationComponent implements OnInit {
   successMessage?: "Reserved successfully!"
   errorMessage2?: "Please enter your check-in time!"
 
-  constructor(private fb: FormBuilder, private reservationService: ReservationService, private datePipe: DatePipe) {
+  constructor(private fb: FormBuilder, private reservationService: ReservationService, private datePipe: DatePipe, private httpClient: HttpClient) {
     this.showDivSuccess = false;
   }
 
@@ -88,6 +89,7 @@ export class ReservationComponent implements OnInit {
           setTimeout(() => {
             this.showDivSuccess = false;
           }, 5000);
+          //this.isHostFeatured();
         },
         error: (error) => {
           console.log(reservationCreate)
@@ -129,5 +131,101 @@ export class ReservationComponent implements OnInit {
       }
     );
   }
+
+  // isHostFeatured() {
+  //   //get all ratings for the host getAll returns one json {"ratings": "", "averageRating": ""}
+  //   var featured = false;
+  //   var averageRating = 0;
+  //   this.ratingService.getAll().subscribe(
+  //     (response: any) => {
+  //       averageRating = response.averageRating;
+  //     },
+  //     error => {
+  //       console.error('Error fetching ratings', error);
+  //     }
+  //   );
+  //   if (averageRating >= 4.7) {
+  //     featured = true;
+  //   }
+
+  //   var cancelRate = 0;
+  //   //get cancelled rate from https://localhost:8000/api/reservations/cancelled/{hostId}
+  //   this.httpClient.get('https://localhost:8000/api/reservations/cancelled/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //cancelRate = response to float
+  //       cancelRate = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching cancel rate', error);
+  //     }
+  //   );
+  //   if (cancelRate < 5.0) {
+  //     featured = true;
+  //   }
+
+  //   var total = 0;
+  //   this.httpClient.get('https://localhost:8000/api/reservations/total/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //total = response to float
+  //       total = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching total', error);
+  //     }
+  //   );
+  //   if (total >= 5) {
+  //     featured = true;
+  //   }
+
+  //   var duration = 0;
+  //   this.httpClient.get('https://localhost:8000/api/reservations/duration/' + this.hostId).subscribe(
+  //     (response: any) => {
+  //       //duration = response to float
+  //       duration = response;
+  //     },
+  //     error => {
+  //       console.error('Error fetching duration', error);
+  //     }
+  //   );
+  //   if (duration > 50) {
+  //     featured = true;
+  //   }
+
+  //   var responseFeatured = false;
+  //   this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostId).subscribe(
+  //       (response: any) => {
+  //         responseFeatured = response;
+  //       },
+  //       error => {
+  //         console.error('Error fetching isFeatured', error);
+  //       }
+  //     );
+  //   if (featured) {
+  //     if (!responseFeatured) {
+  //       //post to https://localhost:8000/api/hosts/featured/{hostId}
+  //       this.httpClient.post('https://localhost:8000/api/profile/setFeatured/' + this.hostId, null).subscribe(
+  //         (response: any) => {
+  //           console.log(response);
+  //         },
+  //         error => {
+  //           console.error('Error featuring host', error);
+  //         }
+  //       );
+  //     }
+  //   } else{
+  //     if (responseFeatured) {
+  //       this.httpClient.post('https://localhost:8000/api/profile/removeFeatured/' + this.hostId, null).subscribe(
+  //         (response: any) => {
+  //           console.log(response);
+  //         },
+  //         error => {
+  //           console.error('Error removing feature from host', error);
+  //         }
+  //       );
+  //     }
+  //   }
+
+  // }
+  
 }
 
