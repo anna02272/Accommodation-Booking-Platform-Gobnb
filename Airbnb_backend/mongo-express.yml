@@ -1,0 +1,64 @@
+# mongo-express-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-express-configmap
+data:
+  MONGODB_SERVER: "mongo"
+  MONGO_USERNAME: "root"
+  MONGO_PASSWORD: "root"
+  BASICAUTH_USERNAME: "admin"
+  BASICAUTH_PASSWORD: "admin"
+
+---
+# mongo-express-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mongo-express
+  name: mongo-express
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-express
+  template:
+    metadata:
+      labels:
+        app: mongo-express
+    spec:
+      containers:
+        - image: mongo-express
+          name: mongo-express
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef:
+                name: mongo-express-configmap
+          volumeMounts:
+            - name: mongo-express-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-express-data
+          emptyDir: {}
+
+---
+# mongo-express-service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mongo-express
+  name: mongo-express
+spec:
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 31000
+      protocol: TCP
+      name: mongo-express-port
+  selector:
+    app: mongo-express
+  type: NodePort
+

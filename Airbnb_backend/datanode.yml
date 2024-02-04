@@ -1,0 +1,65 @@
+# datanode-persistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: datanode-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+
+# datanode-statefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: datanode
+spec:
+  serviceName: "datanode"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datanode
+  template:
+    metadata:
+      labels:
+        app: datanode
+    spec:
+      containers:
+        - name: datanode
+          image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+          ports:
+            - containerPort: 9864
+            - containerPort: 9866
+          env:
+            - name: SERVICE_PRECONDITION
+              value: "namenode:9870"
+          volumeMounts:
+            - name: hadoopdatanode
+              mountPath: /hadoop/dfs/name
+      volumes:
+        - name: hadoop-datanode
+          persistentVolumeClaim:
+            claimName: datanode-pvc
+---
+# datanode-service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: datanode
+  name: datanode
+spec:
+  ports:
+    - port: 9864
+      targetPort: 9864
+      protocol: TCP
+      name: datanode-port
+    - port: 9866
+      targetPort: 9866
+      protocol: TCP
+      name: datanode-http-port
+  selector:
+    app: datanode

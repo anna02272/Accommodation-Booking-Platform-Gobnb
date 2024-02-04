@@ -1,0 +1,64 @@
+# namenode-persistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: namenode-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# namenode-statefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: namenode
+spec:
+  serviceName: "namenode"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: namenode
+  template:
+    metadata:
+      labels:
+        app: namenode
+    spec:
+      containers:
+        - name: namenode
+          image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+          ports:
+            - containerPort: 9870
+            - containerPort: 9000
+          env:
+            - name: CLUSTER_NAME
+              value: "gobnb"
+          volumeMounts:
+            - name: hadoopnamenode
+              mountPath: /hadoop/dfs/name
+      volumes:
+        - name: hadoop-namenode
+          persistentVolumeClaim:
+           claimName: namenode-pvc
+---
+# namenode-service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: namenode
+  name: namenode
+spec:
+  ports:
+    - port: 9870
+      targetPort: 9870
+      protocol: TCP
+      name: namenode-port
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: namenode-rpc-port
+  selector:
+    app: namenode

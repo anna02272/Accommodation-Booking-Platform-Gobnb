@@ -1,0 +1,60 @@
+# jaeger-persistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jaeger-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+
+# jeager-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jeager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jeager
+  template:
+    metadata:
+      labels:
+        app: jeager
+    spec:
+      containers:
+        - name: jeager
+          image: jaegertracing/all-in-one:latest
+          ports:
+            - containerPort: 6831
+            - containerPort: 16686
+      volumes:
+        - name: jaegerstore
+          persistentVolumeClaim:
+            claimName: jaeger-pvc
+---
+#jeager-service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jeager
+  name: jeager
+spec:
+  ports:
+    - port: 6831
+      targetPort: 6831
+      protocol: UDP
+      name: jeager-udp-port
+    - port: 16686
+      targetPort: 16686
+      protocol: TCP
+      name: jeager-port
+  selector:
+    app: jeager
+
+

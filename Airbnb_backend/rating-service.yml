@@ -1,0 +1,164 @@
+# rating-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rating-configmap
+data:
+  PORT: "8087"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+  NEO4J_DB: "bolt://neo4j:7687"
+  NEO4J_USERNAME: "neo4j"
+  NEO4J_PASS: "password"
+  NATS_HOST: "nats"
+  NATS_PORT: "4222"
+  NATS_USER: "ruser"
+  NATS_PASS: "T0pS3cr3t"
+  CREATE_ACCOMMODATION_COMMAND_SUBJECT: "accommodation.create.command"
+  CREATE_ACCOMMODATION_REPLY_SUBJECT: "accommodation.create.reply"
+---
+# rating-secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rating-tls
+type: kubernetes.io/tls
+data:
+  tls.crt: |
+    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
+
+  tls.key: |
+    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
+    tnri2vDPi80+Saz4m1iBWdmCkqLSDA==
+
+---
+# rating-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+    spec:
+      containers:
+        - name: rating-server
+          image: docker.io/library/airbnb_backend-rating-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8087
+          envFrom:
+            - configMapRef:
+                name: rating-configmap
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: rating-tls
+            items:
+              - key: tls.crt
+                path: rating-service.crt
+              - key: tls.key
+                path: rating-service.key
+---
+#rating-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-server
+spec:
+  ports:
+    - port: 8087
+      nodePort: 30007
+      targetPort: rating-port
+      protocol: TCP
+      name: rating-port
+  type: NodePort
+  selector:
+    app: rating-service
+
+

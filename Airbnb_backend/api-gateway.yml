@@ -1,0 +1,239 @@
+# api-gateway-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-configmap
+data:
+  api-gateway.conf: |
+    upstream auth-server {
+      server auth-server:8080;
+    } 
+    upstream res-server {
+      server res-server:8082;
+    }
+    upstream acc-server {
+      server acc-server:8083;
+    }
+    upstream profile-server {
+      server profile-server:8084;
+    }
+    upstream rating-server {
+      server rating-server:8087;
+    }
+    upstream notifications-server {
+      server notifications-server:8089;
+    }
+      server {
+        listen 8000 ssl;
+    
+        ssl_certificate /etc/ssl/certs/api-gateway.crt;
+        ssl_certificate_key /etc/ssl/private/api-gateway.key;
+    
+        location /api/auth/ {
+        proxy_pass https://auth-server;
+      }
+        location /api/users/ {
+        proxy_pass https://auth-server;
+      }
+        location /api/reservations/ {
+         proxy_pass https://res-server;
+      }
+        location /api/report/ {
+        proxy_pass https://res-server;
+      }
+    
+        location /api/availability/ {
+        proxy_pass https://res-server;
+      }
+    
+        location /api/accommodations/ {
+        proxy_pass https://acc-server;
+      }
+    
+        location /api/profile/ {
+        proxy_pass https://profile-server;
+      }
+    
+       location /api/rating/ {
+        proxy_pass https://rating-server;
+      }
+    
+      location /api/notifications/ {
+      proxy_pass https://notifications-server;
+       }
+    }
+
+  opentelemetry_module.conf: |
+    NginxModuleEnabled ON;
+    NginxModuleOtelSpanExporter otlp;
+    NginxModuleOtelExporterEndpoint collector:4317;
+    NginxModuleServiceName api_gateway;
+    NginxModuleServiceNamespace api_gateway;
+    NginxModuleServiceInstanceId api_gateway;
+    NginxModuleResolveBackends ON;
+    NginxModuleTraceAsError ON;
+
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      jaeger:
+        endpoint: jaeger:14250
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [jaeger]
+---
+# api-gateway-secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: api-gateway-secret
+type: kubernetes.io/tls
+data:
+  tls.crt: |
+    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
+
+  tls.key: |
+    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
+    7OPgnyypehvAKmC+EIqImcHr50nq
+---
+# api-gateway-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: docker.io/library/airbnb_backend-api_gateway:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: api-gateway-config
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: api-gateway-secret
+            items:
+              - key: tls.crt
+                path: api-gateway.crt
+              - key: tls.key
+                path: api-gateway.key
+        - name: api-gateway-config
+          configMap:
+            name: api-gateway-configmap
+---
+# api-gateway-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+spec:
+  ports:
+    - port: 8000
+      nodePort: 32000
+      targetPort: gateway-port
+      protocol: TCP
+      name: gateway-port
+  type: NodePort
+  selector:
+    app: api-gateway
+

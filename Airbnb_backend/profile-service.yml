@@ -1,0 +1,154 @@
+# profile-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: profile-configmap
+data:
+  PORT: "8084"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+---
+# profile-secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: profile-tls
+type: kubernetes.io/tls
+data:
+  tls.crt: |
+    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
+
+  tls.key: |
+    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
+    CBjueVf7oOWFuCuvDH0Y+eAdng+B/w==
+---
+# profile-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profile-service
+  template:
+    metadata:
+      labels:
+        app: profile-service
+    spec:
+      containers:
+        - name: profile-server
+          image: docker.io/library/airbnb_backend-profile-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: profile-configmap
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: profile-tls
+            items:
+              - key: tls.crt
+                path: profile-service.crt
+              - key: tls.key
+                path: profile-service.key
+---
+#profile-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-server
+spec:
+  ports:
+    - port: 8084
+      nodePort: 30005
+      targetPort: profile-port
+      protocol: TCP
+      name: profile-port
+  type: NodePort
+  selector:
+    app: profile-service
+
+
