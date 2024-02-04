@@ -80,17 +80,19 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logger.Error("Circuit is open. Authorization service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
+			s.logger.Error("Authorization service is not available.")
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
-
+		s.logger.Error("Error performing authorization request")
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -99,6 +101,7 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
+		s.logger.Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -119,10 +122,12 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logger.Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
+		s.logger.Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -132,6 +137,7 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != domain.Host {
+		s.logger.Error("Permission denied. Only host can create accommodation.")
 		span.SetStatus(codes.Error, "Permission denied. Only hosts can create accommodations.")
 		error2.ReturnJSONError(rw, "Permission denied. Only hosts can create accommodations.", http.StatusForbidden)
 		return
@@ -140,12 +146,14 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 	id := primitive.NewObjectID()
 	accommodation, exists := c.Get("accommodation")
 	if !exists {
+		s.logger.Error("Accommodation not found in context")
 		span.SetStatus(codes.Error, "Accommodation not found in context")
 		error2.ReturnJSONError(rw, "Accommodation not found in context", http.StatusBadRequest)
 		return
 	}
 	acc, ok := accommodation.(domain.AccommodationWithAvailability)
 	if !ok {
+		s.logger.Error("Invalid type for Accommodation")
 		span.SetStatus(codes.Error, "Invalid type for Accommodation")
 		error2.ReturnJSONError(rw, "Invalid type for Accommodation", http.StatusBadRequest)
 		return
@@ -173,6 +181,7 @@ func (s *AccommodationHandler) CreateAccommodations(c *gin.Context) {
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
 		return
 	}
+	s.logger.Info("Successfully created accommodation")
 	span.SetStatus(codes.Ok, "Successfully created accommodation")
 	rw.Write(jsonResponse)
 }
@@ -203,6 +212,7 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 			error2.ReturnJSONError(c.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		s.logger.Info("Search success")
 		span.SetStatus(codes.Ok, "Search success")
 		c.JSON(http.StatusOK, accommodations)
 		return
@@ -215,6 +225,7 @@ func (s *AccommodationHandler) GetAllAccommodations(c *gin.Context) {
 		return
 	}
 	log.Println(accommodations)
+	s.logger.Info("Get all success")
 	span.SetStatus(codes.Ok, "Get all success")
 	c.JSON(http.StatusOK, accommodations)
 }
@@ -228,6 +239,7 @@ func (s *AccommodationHandler) GetAccommodationByID(c *gin.Context) {
 	accommodation, err := s.accommodationService.GetAccommodationByID(accommodationID, spanCtx)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
+			s.logger.Error("Accommodation not found")
 			span.SetStatus(codes.Error, "Accommodation not found")
 			error2.ReturnJSONError(c.Writer, "Accommodation not found", http.StatusNotFound)
 		} else {
@@ -236,6 +248,7 @@ func (s *AccommodationHandler) GetAccommodationByID(c *gin.Context) {
 		}
 		return
 	}
+	s.logger.Info("Get accommodation by id successfully")
 	span.SetStatus(codes.Ok, "Got accommodation by id successfully")
 	c.JSON(http.StatusOK, accommodation)
 }
@@ -248,16 +261,19 @@ func (s *AccommodationHandler) GetAccommodationsByHostId(c *gin.Context) {
 
 	accs, err := s.accommodationService.GetAccommodationsByHostId(hostID, spanCtx)
 	if err != nil {
+		s.logger.Error("Failed to get accommodations")
 		span.SetStatus(codes.Error, "Failed to get accommodations")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get accommodations"})
 		return
 	}
 
 	if len(accs) == 0 {
+		s.logger.Error("No accommodations found for this host")
 		span.SetStatus(codes.Error, "No accommodations found for this host")
 		c.JSON(http.StatusOK, gin.H{"message": "No accommodations found for this host", "accommodations": []interface{}{}})
 		return
 	}
+	s.logger.Info("Got accommodation by host id successfully")
 	span.SetStatus(codes.Ok, "Got accommodation by host id successfully")
 	c.JSON(http.StatusOK, accs)
 }
@@ -282,17 +298,19 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logger.Error("Circuit is open. Authorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
+			s.logger.Error("Authorization service is not available")
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
-
+		s.logger.Info("Error performing authorization request")
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -301,6 +319,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
+		s.logger.Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -323,10 +342,12 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logger.Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
+		s.logger.Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -337,6 +358,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	userId := response.LoggedInUser.ID
 
 	if userRole != domain.Host {
+		s.logger.Error("Permission denied. Only host can delete accommodation")
 		span.SetStatus(codes.Error, "Permission denied. Only hosts can delete accommodations.")
 		error2.ReturnJSONError(rw, "Permission denied. Only hosts can delete accommodations.", http.StatusUnauthorized)
 		return
@@ -344,6 +366,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 
 	accommodation, err := s.accommodationService.GetAccommodationByID(accId, spanCtx)
 	if err != nil {
+		s.logger.Error("Error fetching accommodation details")
 		span.SetStatus(codes.Error, "Error fetching accommodation details.")
 		errorMsg := map[string]string{"error": "Error fetching accommodation details."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -351,6 +374,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	}
 
 	if accommodation.HostId != userId {
+		s.logger.Error("Permission denied. You are not creator of this accommodation")
 		span.SetStatus(codes.Error, "Permission denied. You are not the creator of this accommodation.")
 		errorMsg := map[string]string{"error": "Permission denied. You are not the creator of this accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -363,16 +387,19 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logger.Error("Circuit is open. Authorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 		if ctx.Err() == context.DeadlineExceeded {
+			s.logger.Error("Reservation service is not available")
 			span.SetStatus(codes.Error, "Reservation service is not available.")
 			error2.ReturnJSONError(rw, "Reservation service is not available.", http.StatusBadRequest)
 			return
 		}
 
+		s.logger.Error("Error performing reservation request")
 		span.SetStatus(codes.Error, "Error performing reservation request")
 		error2.ReturnJSONError(rw, "Error performing reservation request", http.StatusBadRequest)
 		return
@@ -381,6 +408,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 
 	statusCode = resp.StatusCode
 	if statusCode != 200 {
+		s.logger.Error("Reservation service error")
 		span.SetStatus(codes.Error, "Reservation service error.")
 		errorMsg := map[string]string{"error": "Reservation service error."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -399,10 +427,12 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&ReservationNumber); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logger.Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
+		s.logger.Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -411,6 +441,7 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	counter := ReservationNumber.Number
 
 	if counter != 0 {
+		s.logger.Error("Cannot delete accommodation thas has reservations in the future or reservation in active")
 		span.SetStatus(codes.Error, "Cannot delete accommodation that has reservations in future or reservation is active.")
 		errorMsg := map[string]string{"error": "Cannot delete accommodation that has reservations in future or reservation is active."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -421,10 +452,12 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	err = s.accommodationService.DeleteAccommodation(accId, userId, spanCtx)
 	if err != nil {
 		fmt.Println(err)
+		s.logger.Error("Failed to delete accommodation")
 		span.SetStatus(codes.Error, "Failed to delete accommodation.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to delete accommodation."})
 		return
 	}
+	s.logger.Info("Accommodation successfully deleted")
 	span.SetStatus(codes.Ok, "Accommodation successfully deleted.")
 	c.JSON(http.StatusOK, gin.H{"message": "Accommodation successfully deleted."})
 	return
@@ -470,6 +503,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
+		s.logger.Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -492,6 +526,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logger.Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			errorMsg := map[string]string{"error": "Invalid date format in the response"}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -515,6 +550,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 
 	accommodation, err := s.accommodationService.GetAccommodationByID(accommodationID, spanCtx)
 	if err != nil {
+		s.logger.Error("Accommodation not found")
 		span.SetStatus(codes.Error, "Accommodation not found.")
 		errorMsg := map[string]string{"error": "Accommodation not found."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -541,6 +577,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 		// Open the uploaded file
 		file, err := fileHeader.Open()
 		if err != nil {
+			s.logger.Error("Error opening one of the upload files")
 			span.SetStatus(codes.Error, "Error opening one of the uploaded files.")
 			errorMsg := map[string]string{"error": "Error opening one of the uploaded files."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -578,6 +615,7 @@ func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {
 			return
 		}
 	}
+	s.logger.Info("Images cached in Redis and stored in HDFS")
 	span.SetStatus(codes.Ok, "Images cached in Redis and stored in HDFS")
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Images cached in Redis and stored in HDFS",
@@ -615,6 +653,7 @@ func (ah *AccommodationHandler) GetAccommodationImages(c *gin.Context) {
 
 	files, err := ah.hdfs.Client.ReadDir(dirName)
 	if err != nil {
+		ah.logger.Error("Unable to read dir.")
 		span.SetStatus(codes.Error, "Unable to read dir.")
 		errorMsg := map[string]string{"error": "Unable to read dir."}
 		error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
@@ -632,6 +671,7 @@ func (ah *AccommodationHandler) GetAccommodationImages(c *gin.Context) {
 		}
 
 		if len(parts) < 1 {
+			ah.logger.Error("Unable to parse name of the file")
 			span.SetStatus(codes.Error, "Unable to parse name of the file.")
 			errorMsg := map[string]string{"error": "Unable to parse name of the file."}
 			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
@@ -641,6 +681,7 @@ func (ah *AccommodationHandler) GetAccommodationImages(c *gin.Context) {
 		// Convert the first part to an integer
 		id, err := strconv.Atoi(parts[1])
 		if err != nil {
+			ah.logger.Error("Unable to parse name of the files")
 			span.SetStatus(codes.Error, "Unable to parse name of the file.")
 			errorMsg := map[string]string{"error": "Unable to parse name of the file."}
 			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
@@ -658,12 +699,14 @@ func (ah *AccommodationHandler) GetAccommodationImages(c *gin.Context) {
 	if len(images) > 0 {
 		err := ah.imageCache.PostAll(accID, images, spanCtx)
 		if err != nil {
+			ah.logger.Error("Unable to write to cache")
 			span.SetStatus(codes.Error, "Unable to write to cache.")
 			errorMsg := map[string]string{"error": "Unable to write to cache."}
 			error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
 			return
 		}
 	}
+	ah.logger.Info("Got accommodation images successfully")
 	span.SetStatus(codes.Ok, "Got accommodation images successfully")
 	c.JSON(http.StatusOK, images)
 }

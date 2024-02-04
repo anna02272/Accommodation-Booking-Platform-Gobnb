@@ -54,7 +54,7 @@ func init() {
 	logger.SetLevel(logrus.DebugLevel)
 
 	lumberjackLog := &lumberjack.Logger{
-		Filename:  "/rating-service/logs/logfile.log",
+		Filename:  "/acc-service/logs/logfile.log",
 		MaxSize:   1,
 		LocalTime: true,
 	}
@@ -64,12 +64,7 @@ func init() {
 			logger.Error("Error closing log file:", err)
 		}
 	}()
-	//defer file.Close()
 
-	// Set the output to the file
-	//logger.SetOutput(file)
-
-	// Example log messages
 	logger.Info("This is an info message, finaly")
 	logger.Error("This is an error message")
 
