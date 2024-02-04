@@ -61,6 +61,7 @@ services:
     volumes:
       - ./reservations-service/reservation-service.crt:/app/reservation-service.crt
       - ./reservations-service/reservation_decrypted_key.pem:/app/reservation_decrypted_key.pem
+      - reservation_logs:/reservation-service/logs
 
   acc-server:
     build:
@@ -125,6 +126,8 @@ services:
     volumes:
       - ./notification-service/notifications-service.crt:/app/notifications-service.crt
       - ./notification-service/notifications_decrypted_key.pem:/app/notifications_decrypted_key.pem
+      - hotification_logs:/notification-service/logs
+
 
 
   profile-server:
@@ -148,6 +151,7 @@ services:
     volumes:
       - ./profile-service/profile-service.crt:/app/profile-service.crt
       - ./profile-service/profile-service.key:/app/profile-service.key
+      - profile_logs:/profile-service/logs
 
   rating-server:
     build:
@@ -382,7 +386,9 @@ volumes:
   rating_logs:
   auth_logs:
   acc_logs:
-#    driver: local
+  hotification_logs:
+  profile_logs:
+  reservation_logs:
 
 
 networks:

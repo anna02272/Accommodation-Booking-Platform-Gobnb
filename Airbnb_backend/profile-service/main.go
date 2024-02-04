@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/otel"
@@ -11,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
 	"os"
@@ -40,6 +42,23 @@ var err error
 func init() {
 	ctx = context.TODO()
 
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/acc-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logger.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logger.Error("Error closing log file:", err)
+		}
+	}()
+
+	logger.Info("This is an info message, finaly")
+	logger.Error("This is an error message")
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err = mongo.Connect(ctx, mongoconn)
 
@@ -61,7 +80,7 @@ func init() {
 	// Collections
 	profileCollection = mongoclient.Database("Gobnb").Collection("profile")
 	profileService = services.NewUserServiceImpl(profileCollection, tracer)
-	ProfileHandler = handlers.NewProfileHandler(profileService, tracer)
+	ProfileHandler = handlers.NewProfileHandler(profileService, tracer, logger)
 	ProfileRouteHandler = routes.NewRouteProfileHandler(ProfileHandler)
 
 	server = gin.Default()
