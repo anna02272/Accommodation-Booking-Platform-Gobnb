@@ -1,17 +1,22 @@
 <h2 class="reservations">
-    <span>Your reservations</span>
-  </h2>
-  <p class="notif" *ngIf="notification" [class]="notification.msgType">
-    {{ notification.msgBody }}
-  </p>
+  <span>Your reservations</span>
+</h2>
+<p class="notif" *ngIf="notification" [class]="notification.msgType">
+  {{ notification.msgBody }}
+</p>
 
-  <p class="notif" *ngIf="reservationServiceAvailable"> Reservations service not available </p>
+<p class="notif" *ngIf="reservationServiceAvailable"> Reservations service not available </p>
 
-  <div *ngFor="let reservation of reservations; let i = index">
-<ul>
+<div *ngFor="let reservation of reservations; let i = index">
+  <ul>
     <li class="card" style="--color:#ececec; --bg-color:#5D8AA8">
       <div class="icon"><i class="fa-solid fa-house"></i></div>
+<<<<<<< HEAD
       <div class="title" [routerLink]="['/accommodation', reservation.accommodation_id]"> {{ reservation.accommodation_name }} </div>
+=======
+      <div class="title" [routerLink]="['/accommodation', reservation.accommodation_id]"> {{
+        reservation.accommodation_name }} </div>
+>>>>>>> ef5055aca70a9d9a11853a23ca8532f2e2ee9f20
       <div class="content">
         <p><strong>Location:</strong> {{ reservation.accommodation_location }}</p>
         <p><strong>Check-in Date:</strong> {{ reservation.check_in_date }}</p>
@@ -19,9 +24,14 @@
         <p><strong>Number of Guests:</strong> {{ reservation.number_of_guests }}</p>
       </div>
       <div class="button">
+<<<<<<< HEAD
       <button class="btn" type="submit" (click)="cancelReservation(reservation.reservation_id_time_created)"
       >Cancel reservation </button>
+=======
+        <button class="btn" type="submit" (click)="cancelReservation(reservation.reservation_id_time_created)">Cancel
+          reservation </button>
+>>>>>>> ef5055aca70a9d9a11853a23ca8532f2e2ee9f20
       </div>
- </li>
+    </li>
   </ul>
-  </div>
+</div>
