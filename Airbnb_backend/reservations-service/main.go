@@ -100,12 +100,12 @@ func main() {
 	logg.SetOutput(lumberjackLog)
 	defer func() {
 		if err := lumberjackLog.Close(); err != nil {
-			logg.Error("Error closing log file:", err)
+			logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("Error closing log file:", err)
 		}
 	}()
 
-	logg.Info("This is an info message, finaly")
-	logg.Error("This is an error message")
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Info("This is an info message, finaly")
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("This is an error message")
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
@@ -157,8 +157,8 @@ func main() {
 	reportStore.CreateTableDailyReport()
 	reportStore.CreateTableMonthlyReport()
 	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer, logg)
-	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
-	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer, logg)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer, logg)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()

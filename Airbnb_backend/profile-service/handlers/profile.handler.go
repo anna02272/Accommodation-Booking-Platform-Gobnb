@@ -31,7 +31,7 @@ func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 	var user *domain.User
 
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ph.logger.Errorf("Error : %v", err.Error())
+		ph.logger.WithFields(logrus.Fields{"path": "profile/createProfile"}).Errorf("Error : %v", err.Error())
 		span.SetStatus(codes.Error, err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
@@ -39,12 +39,12 @@ func (ph *ProfileHandler) CreateProfile(ctx *gin.Context) {
 
 	err := ph.profileService.Registration(user, spanCtx)
 	if err != nil {
-		ph.logger.Errorf("Error: %v", err.Error())
+		ph.logger.WithFields(logrus.Fields{"path": "profile/createProfile"}).Errorf("Error: %v", err.Error())
 		span.SetStatus(codes.Error, err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-	ph.logger.Info("Profile created successfully")
+	ph.logger.WithFields(logrus.Fields{"path": "profile/createProfile"}).Info("Profile created successfully")
 	span.SetStatus(codes.Ok, "Profile created successfully")
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile created successfully"})
 }
@@ -56,7 +56,7 @@ func (ph *ProfileHandler) DeleteProfile(ctx *gin.Context) {
 	email := ctx.Params.ByName("email")
 	errP := ph.profileService.FindUserByEmail(email, spanCtx)
 	if errP != nil {
-		ph.logger.Errorf("Error: %v", errP.Error())
+		ph.logger.WithFields(logrus.Fields{"path": "profile/deleteProfile"}).Errorf("Error: %v", errP.Error())
 		span.SetStatus(codes.Error, errP.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": errP.Error()})
 		return
@@ -69,7 +69,7 @@ func (ph *ProfileHandler) DeleteProfile(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-	ph.logger.Info("Profile deleted successfully")
+	ph.logger.WithFields(logrus.Fields{"path": "profile/deleteProfile"}).Info("Profile deleted successfully")
 	span.SetStatus(codes.Ok, "Profile deleted successfully")
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile deleted successfully"})
 }
@@ -80,7 +80,7 @@ func (ph *ProfileHandler) UpdateUser(ctx *gin.Context) {
 	var user *domain.User
 	log.Println(user)
 	if err := ctx.ShouldBindJSON(&user); err != nil {
-		ph.logger.Errorf("Error: %v", err.Error())
+		ph.logger.WithFields(logrus.Fields{"path": "profile/updateUser"}).Errorf("Error: %v", err.Error())
 		span.SetStatus(codes.Error, err.Error())
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
@@ -93,18 +93,17 @@ func (ph *ProfileHandler) UpdateUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": err.Error()})
 		return
 	}
-	ph.logger.Info("Profile updated successfully.")
+	ph.logger.WithFields(logrus.Fields{"path": "profile/updateUser"}).Info("Profile updated successfully.")
 	span.SetStatus(codes.Ok, "Profile updated successfully")
 	ctx.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile updated successfully"})
 }
 func (ph *ProfileHandler) FindUserByEmail(ctx *gin.Context) {
 	spanCtx, span := ph.Tracer.Start(ctx.Request.Context(), "ProfileHandler.FindUserByEmail")
 	defer span.End()
-
 	email := ctx.Param("email")
-
+	log.Println(email)
 	if email == "" {
-		ph.logger.Error("Email is required")
+		ph.logger.WithFields(logrus.Fields{"path": "profile/findUserByEmail"}).Error("Email is required")
 		span.SetStatus(codes.Error, "Email is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
 		return
@@ -112,12 +111,12 @@ func (ph *ProfileHandler) FindUserByEmail(ctx *gin.Context) {
 
 	user, err := ph.profileService.FindProfileByEmail(email, spanCtx)
 	if err != nil {
-		ph.logger.Error("User not found")
+		ph.logger.WithFields(logrus.Fields{"path": "profile/findUserByEmail"}).Error("User not found")
 		span.SetStatus(codes.Error, "User not found")
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	ph.logger.Info("Find user by email successfully.")
+	ph.logger.WithFields(logrus.Fields{"path": "profile/findUserByEmail"}).Info("Find user by email successfully.")
 	span.SetStatus(codes.Ok, "Found user by email successfully")
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
