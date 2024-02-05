@@ -25,9 +25,13 @@ type ImageCache struct {
 
 // Construct Redis client
 func New(logger *log.Logger, tracer trace.Tracer) *ImageCache {
+
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisAddress := fmt.Sprintf("%s:%s", redisHost, redisPort)
+	logger.Printf(redisHost)
+	logger.Printf(redisPort)
+	logger.Printf(redisAddress)
 
 	client := redis.NewClient(&redis.Options{
 		Addr: redisAddress,

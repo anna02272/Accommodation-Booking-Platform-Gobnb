@@ -13,99 +13,7 @@ data:
   SMTP_PORT: "587"
   JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
 ---
-# auth-secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: auth-tls
-type: kubernetes.io/tls
-data:
-  tls.crt: |
-    MIIF6TCCA9GgAwIBAgIUe7uGEKiSLc5KzGg8Xx+7o5DrGpcwDQYJKoZIhvcNAQEN
-    BQAwgYQxCzAJBgNVBAYTAlJTMRIwEAYDVQQIDAlWb2p2b2RpbmExETAPBgNVBAcM
-    CE5vdmkgU2FkMQwwCgYDVQQKDANGVE4xCzAJBgNVBAsMAklUMRMwEQYDVQQDDApH
-    b2JuYl9hdXRoMR4wHAYJKoZIhvcNAQkBFg9nb2JuYkBnbWFpbC5jb20wHhcNMjQw
-    MjAyMTA1MjA5WhcNMjQwMzAzMTA1MjA5WjCBhDELMAkGA1UEBhMCUlMxEjAQBgNV
-    BAgMCVZvanZvZGluYTERMA8GA1UEBwwITm92aSBTYWQxDDAKBgNVBAoMA0ZUTjEL
-    MAkGA1UECwwCSVQxEzARBgNVBAMMCkdvYm5iX2F1dGgxHjAcBgkqhkiG9w0BCQEW
-    D2dvYm5iQGdtYWlsLmNvbTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIB
-    AKDEasu/KxxUACR22aplveXwnGLSiZlIlP+Slnq9zGchgQ8D4mVmFeK3t4Pd90tT
-    7843SG+Bhy/CvKny6LPytZ/qf6vwCwny9hGu0hWMdXDrnb4noPMCtxXx8Ggml8lo
-    phRQ1OKBKTdueDRLV++MUHW6/aIn9FTKBLXv3VMZCXvxNAmxQU54uiep7JPyW9uS
-    aCMPfm1FVzYxgGLWrT8h8YStQ6wdp9BjlyhT+C8uqDWWjKJuhyMQuJLBrt6SkN7x
-    CTwXbWJq1u7+9q0ICLBDSEKikh/U2TcBhBZXr7dY7yzfyfspCuX0dK4babkBZXtr
-    rMD5oLBUQC2sl0A2w2EjTtB0YG5OYMR2YXAKfaaRqkmHn5/RWqvBBRHU1NeDe4Mu
-    icVusw5cssJtO/m/7OGcL8OMV2VXm5xaVP9GUKvFLll2mqBcnvalZiwsTzTaqZE/
-    ZeDdTgD73GVZ2ETIlc2/LxSPZXz897Jxv65AYhQyCbQz62hHhAC98U85fGSq+PTL
-    p4bXjpQn74AA3GGDjPnJePon/etWPWck+JOimRl1lBvsI0Q9PrvIMJyLpa1OknwO
-    mBdNKdqafjfUsTIiuyv5EBWLxoTiADZVuouQUtr0hZzp2qdheDWaNyrMft9XJNis
-    gpdRmd8d9aX61ISGcZO/3jT79UpgLbbKUMglSMmwyMdrAgMBAAGjUTBPMC4GA1Ud
-    EQQnMCWCCWxvY2FsaG9zdIILKi5sb2NhbGhvc3SCC2F1dGgtc2VydmVyMB0GA1Ud
-    DgQWBBQzS9R2UHww/OwBHEo3UzVTsFa26TANBgkqhkiG9w0BAQ0FAAOCAgEAHZ0K
-    dfELnSJb2xNQsL1kPSKTRQaUjacz2imaqGIWXjL1IkpCGsTHmXZPUz5JjgFmwErL
-    1pdHOMnqGjgiiewCyMpoLha5rhu24r2k6N7x9/rwoVwUSdsodDcKLm6SAIusZDiJ
-    vi6MDpvxyJb+2yHf83hG7BLZKnKUsPwNUMSPP1yXvywl6eNB+9BitJOMt2vCRJw1
-    aCLlYSrBWWb1hv+JnIISVGa5uNhcqEzSD/L/dS1pQsYSzcuIzAepd6oVN0ox9eX1
-    9oWuwb2dtawVEH72qNYxP8PHeXj+qxfIPeSMSReSzRxEDkjb/K+kHRkbZMtTJ3Av
-    c/+y6A5ZGxQUX4c8jQ0Saa4cWGO/jdt+OPfA1C1QicfUnrf99YgwaQho5/6UnFDb
-    8S83THUN2JYuYmQY17o8j2rIgHv0jeS7kUDRd7Ow9ivW2Ewz+AIXkEz434qH/r2Q
-    VSycnGV4sg6iWbDcdLin4rYy/Q422r580F6mOQPdbqOeSCY0iIjdYCSZFZg0j/En
-    9xSP3wOJAGAdtqzameHyBxLwOf8BgDDsqdet0pUrd+7Ks8aWSJvAt/ge64Zh7eJp
-    5MzK3xazqJukkaB/f/TFqzjRhFzKWA5IWkSfrow4yAMp5mkvKA9xdnCOZNxrM4P6
-    SKDwbmPMnWwOdYxtg5XDN6OQIQVzOwPiPBXXkNg=
 
-  tls.key: |
-    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
-    viaGZnaRqVveD+sY9dCt4j6b6moJQQ==
----
 # auth-service-deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -127,19 +35,16 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
-              name: auth-port
           envFrom:
             - configMapRef:
                 name: auth-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: auth-logs
       volumes:
-        - name: tls-certs
-          secret:
-            secretName: auth-tls
-            items:
-              - key: tls.crt
-                path: auth-service.crt
-              - key: tls.key
-                path: auth-service.key
+        - name: auth-logs
+          emptyDir: { }
+
 ---
 #auth-service
 apiVersion: v1
@@ -149,11 +54,8 @@ metadata:
 spec:
   ports:
     - port: 8080
-      nodePort: 30001
-      targetPort: auth-port
+      targetPort: 8080
       protocol: TCP
-      name: auth-service-port
-  type: NodePort
   selector:
     app: auth-service
 

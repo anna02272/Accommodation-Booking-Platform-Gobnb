@@ -54,6 +54,7 @@ spec:
       targetPort: 16686
       protocol: TCP
       name: jeager-port
+  type: LoadBalancer
   selector:
     app: jeager
 

@@ -10,7 +10,26 @@ spec:
     requests:
       storage: 1Gi
 ---
-
+# datanode-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datanode-configmap
+data:
+  SERVICE_PRECONDITION: "namenode:9870"
+  CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+  CORE_CONF_hadoop_http_staticuser_user: "root"
+  CORE_CONF_hadoop_proxyuser_hue_hosts: "*"
+  CORE_CONF_hadoop_proxyuser_hue_groups: "*"
+  CORE_CONF_io_compression_codecs: "org.apache.hadoop.io.compress.SnappyCodec"
+  HDFS_CONF_dfs_webhdfs_enabled: "true"
+  HDFS_CONF_dfs_permissions_enabled: "false"
+  HDFS_CONF_dfs_namenode_datanode_registration_ip__hostname__check: "false"
+  HDFS_NAMENODE_PORT: "9870"
+  HDFS_NAMENODE_RPC_PORT: "9000"
+  HDFS_DATANODE_PORT: "9864"
+  HDFS_DATANODE_HTTP_PORT: "9866"
+---
 # datanode-statefulSet
 apiVersion: apps/v1
 kind: StatefulSet
@@ -33,12 +52,12 @@ spec:
           ports:
             - containerPort: 9864
             - containerPort: 9866
-          env:
-            - name: SERVICE_PRECONDITION
-              value: "namenode:9870"
-#          volumeMounts:
-#            - name: hadoop-datanode
-#              mountPath: /hadoop/dfs/name
+          envFrom:
+            - configMapRef:
+                name: datanode-configmap
+          volumeMounts:
+            - name: hadoop-datanode
+              mountPath: /hadoop/dfs/name
       volumes:
         - name: hadoop-datanode
           persistentVolumeClaim:

@@ -53,6 +53,7 @@ kind: Service
 metadata:
   name: neo4j
 spec:
+  type: LoadBalancer
   selector:
     app: neo4j
   ports:

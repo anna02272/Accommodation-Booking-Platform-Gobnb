@@ -10,6 +10,26 @@ spec:
     requests:
       storage: 1Gi
 ---
+# namenode-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: namenode-configmap
+data:
+  CLUSTER_NAME: "gobnb"
+  CORE_CONF_fs_defaultFS: "hdfs://namenode:9000"
+  CORE_CONF_hadoop_http_staticuser_user: "root"
+  CORE_CONF_hadoop_proxyuser_hue_hosts: "*"
+  CORE_CONF_hadoop_proxyuser_hue_groups: "*"
+  CORE_CONF_io_compression_codecs: "org.apache.hadoop.io.compress.SnappyCodec"
+  HDFS_CONF_dfs_webhdfs_enabled: "true"
+  HDFS_CONF_dfs_permissions_enabled: "false"
+  HDFS_CONF_dfs_namenode_datanode_registration_ip__hostname__check: "false"
+  HDFS_NAMENODE_PORT: "9870"
+  HDFS_NAMENODE_RPC_PORT: "9000"
+  HDFS_DATANODE_PORT: "9864"
+  HDFS_DATANODE_HTTP_PORT: "9866"
+---
 # namenode-statefulSet
 apiVersion: apps/v1
 kind: StatefulSet
@@ -32,12 +52,12 @@ spec:
           ports:
             - containerPort: 9870
             - containerPort: 9000
-          env:
-            - name: CLUSTER_NAME
-              value: "gobnb"
-#          volumeMounts:
-#            - name: hadoop-namenode
-#              mountPath: /hadoop/dfs/name
+          envFrom:
+            - configMapRef:
+                name: namenode-configmap
+          volumeMounts:
+            - name: hadoop-namenode
+              mountPath: /hadoop/dfs/name
       volumes:
         - name: hadoop-namenode
           persistentVolumeClaim:
@@ -51,6 +71,7 @@ metadata:
     app: namenode
   name: namenode
 spec:
+  type: LoadBalancer
   ports:
     - port: 9870
       targetPort: 9870
