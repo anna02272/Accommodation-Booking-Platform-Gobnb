@@ -118,7 +118,7 @@ export class EditProfileComponent implements OnInit {
     console.log(this.new)
 
 
-    this.http.post('https://localhost:8084/api/profile/updateUser', this.new).subscribe(
+    this.http.post('https://localhost:8000/api/profile/updateUser', this.new).subscribe(
       () => {
         this.notification2 = { msgType: 'success', msgBody: 'Profile updated successfully.' };
       },

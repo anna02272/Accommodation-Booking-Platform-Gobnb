@@ -100,12 +100,12 @@ func main() {
 	logg.SetOutput(lumberjackLog)
 	defer func() {
 		if err := lumberjackLog.Close(); err != nil {
-			logg.Error("Error closing log file:", err)
+			logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("Error closing log file:", err)
 		}
 	}()
 
-	logg.Info("This is an info message, finaly")
-	logg.Error("This is an error message")
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Info("This is an info message, finaly")
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("This is an error message")
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 1000*time.Second)

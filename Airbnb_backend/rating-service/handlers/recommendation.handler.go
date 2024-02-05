@@ -35,13 +35,13 @@ func (r *RecommendationHandler) CreateUser(c *gin.Context) {
 func (r *RecommendationHandler) CreateUserNext(rw http.ResponseWriter, h *http.Request, user *domain.NeoUser) {
 
 	if user == nil {
-		r.logger.Info("User not found in the context or not of type *domain.NeoUser2")
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateUserNext"}).Info("User not found in the context or not of type *domain.NeoUser2")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateUser(user)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateUserNext"}).Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -51,7 +51,7 @@ func (r *RecommendationHandler) CreateUserNext(rw http.ResponseWriter, h *http.R
 func (r *RecommendationHandler) CreateReservation(c *gin.Context) {
 	var reservation domain.ReservationByGuest
 	if err := c.ShouldBindJSON(&reservation); err != nil {
-		r.logger.Errorf("Error to get reservation info(createReservation): %s", err.Error())
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateReservation"}).Errorf("Error to get reservation info(createReservation): %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -61,17 +61,17 @@ func (r *RecommendationHandler) CreateReservation(c *gin.Context) {
 func (r *RecommendationHandler) CreateReservationNext(rw http.ResponseWriter, h *http.Request, reservation *domain.ReservationByGuest) {
 
 	if reservation == nil {
-		r.logger.Info("Resevation not found in the context or not of type *domain.Reservation", http.StatusBadRequest)
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateReservationNext"}).Info("Resevation not found in the context or not of type *domain.Reservation", http.StatusBadRequest)
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateReservation(reservation)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateReservationNext"}).Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	r.logger.Info("Reservation created ", http.StatusCreated)
+	r.logger.WithFields(logger.Fields{"path": "rating/CreateReservationNext"}).Info("Reservation created ", http.StatusCreated)
 	rw.WriteHeader(http.StatusCreated)
 
 }
@@ -79,7 +79,7 @@ func (r *RecommendationHandler) CreateAccommodation(c *gin.Context) {
 
 	var accommodation domain.AccommodationRec
 	if err := c.ShouldBindJSON(&accommodation); err != nil {
-		r.logger.Errorf("Error in createAccommodation method %s", err.Error())
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateAccommodation"}).Errorf("Error in createAccommodation method %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -90,13 +90,13 @@ func (r *RecommendationHandler) CreateAccommodation(c *gin.Context) {
 func (r *RecommendationHandler) CreateAccommodationNext(rw http.ResponseWriter, h *http.Request, accommodation *domain.AccommodationRec) {
 
 	if accommodation == nil {
-		r.logger.Info("Accommodation not found in the context or not of type *domain.AccommodationRec")
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateAccommodationNext"}).Error("Accommodation not found in the context or not of type *domain.AccommodationRec")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateAccommodation(accommodation)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateAccommodationNext"}).Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -107,7 +107,7 @@ func (r *RecommendationHandler) CreateRecomRate(c *gin.Context) {
 
 	var rate domain.RateAccommodationRec
 	if err := c.ShouldBindJSON(&rate); err != nil {
-		r.logger.Error("Error in CreateRate method:")
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateRecomRate"}).Error("Error in CreateRate method:")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -118,13 +118,13 @@ func (r *RecommendationHandler) CreateRecomRate(c *gin.Context) {
 func (r *RecommendationHandler) CreateRecomRateNext(rw http.ResponseWriter, h *http.Request, rate *domain.RateAccommodationRec) {
 
 	if rate == nil {
-		r.logger.Info("Rate not found in the context or not of type *domain.RateAccommodationRec")
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateRecomRateNext"}).Info("Rate not found in the context or not of type *domain.RateAccommodationRec")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateRate(rate)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/CreateRecomRateNext"}).Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -136,6 +136,7 @@ func (r *RecommendationHandler) GetRecommendation(ctx *gin.Context) {
 	defer span.End()
 	id := ctx.Param("id")
 	if id == "" {
+		r.logger.WithFields(logger.Fields{"path": "rating/GetRecommendationg"}).Error("Id is required")
 		span.SetStatus(codes.Error, "Id is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Id is required"})
 		return
@@ -143,10 +144,12 @@ func (r *RecommendationHandler) GetRecommendation(ctx *gin.Context) {
 
 	acc, result := r.rec.GetRecommendation(id)
 	if result != nil {
+		r.logger.WithFields(logger.Fields{"path": "rating/GetRecommendationg"}).Error("Accommodation not found")
 		span.SetStatus(codes.Error, "Accommodation not found")
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Accommodation not found"})
 		return
 	}
+	r.logger.WithFields(logger.Fields{"path": "rating/GetRecommendationg"}).Info("Found accommodation by id successfully")
 	span.SetStatus(codes.Ok, "Found accommodation by id successfully")
 	ctx.JSON(http.StatusOK, acc)
 }
@@ -168,11 +171,11 @@ func (r *RecommendationHandler) DeleteReservation(c *gin.Context) {
 	}
 	err := r.rec.DeleteReservation(accommodationId, guestId)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/DeleteReservation"}).Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting reservation"})
 		return
 	}
-
+	r.logger.WithFields(logger.Fields{"path": "rating/DeleteReservation"}).Info("Reservation deleted successfully")
 	c.JSON(http.StatusOK, gin.H{"message": "Reservation deleted successfully"})
 }
 
@@ -194,10 +197,11 @@ func (r *RecommendationHandler) DeleteRate(c *gin.Context) {
 	}
 	err := r.rec.DeleteRate(accommodation, guestId)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/DeleteRate"}).Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting rate"})
 		return
 	}
+	r.logger.WithFields(logger.Fields{"path": "rating/DeleteRate"}).Info("Rate deleted successfully")
 
 	c.JSON(http.StatusOK, gin.H{"message": "Rate deleted successfully"})
 }
@@ -216,11 +220,11 @@ func (r *RecommendationHandler) DeleteUser(c *gin.Context) {
 	}
 	err := r.rec.DeleteUser(userId)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/DeleteUser"}).Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting user"})
 		return
 	}
-
+	r.logger.WithFields(logger.Fields{"path": "rating/DeleteUser"}).Info("User deleted successfully")
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
 func (r *RecommendationHandler) DeleteAccommodation(c *gin.Context) {
@@ -236,10 +240,10 @@ func (r *RecommendationHandler) DeleteAccommodation(c *gin.Context) {
 	}
 	err := r.rec.DeleteAccommodation(accommodationId)
 	if err != nil {
-		r.logger.Errorf("Database exception: %s", err)
+		r.logger.WithFields(logger.Fields{"path": "rating/DeleteAccommodation"}).Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting accommodation"})
 		return
 	}
-
+	r.logger.WithFields(logger.Fields{"path": "rating/DeleteReservation"}).Info("Accommodation deleted successfully")
 	c.JSON(http.StatusOK, gin.H{"message": "Accommodation deleted successfully"})
 }

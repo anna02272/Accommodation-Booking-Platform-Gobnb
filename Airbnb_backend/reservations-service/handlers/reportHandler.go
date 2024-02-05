@@ -60,7 +60,7 @@ func NewReportHandler(l *log.Logger, r *repository.ReportRepo, er *repository.Ev
 func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "ReportHandler.GenerateDailyReportForAccommodation")
 	defer span.End()
-	s.logg.Info("ReportHandler.GenerateDailyReportForAccommodation")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Info("ReportHandler.GenerateDailyReportForAccommodation")
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
@@ -74,20 +74,20 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circut is open. Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Circut is open. Authorization service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Authorization service is not available.")
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 			return
 		}
-		s.logg.Error("Authorization service is not available.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Authorization service is not available.")
 		span.SetStatus(codes.Error, "Authorization service not available")
 		errorMsg := map[string]string{"error": "Authorization service not available.."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -97,7 +97,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logg.Error("Unauthorized.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Unauthorized.")
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -120,19 +120,19 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format in the ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Invalid date format in the ")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if response.LoggedInUser.UserRole != data.Host {
-		s.logg.Error("Only host can see/generate reports!")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Only host can see/generate reports!")
 		span.SetStatus(codes.Error, "Only hosts can see/generate reports!")
 		error2.ReturnJSONError(rw, "Only hosts can see/generate reports!", http.StatusForbidden)
 		return
@@ -148,20 +148,20 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Circuit is open. Authorization service is not available. ")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Accommdoation is not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Accommdoation is not available")
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Accommdoation is not available")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Accommdoation is not available")
 		span.SetStatus(codes.Error, "Accommodation service is not available")
 		errorMsg := map[string]string{"error": "Accommodation service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -172,7 +172,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
-		s.logg.Error("Accommdoation with that id does not exist")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Accommdoation with that id does not exist")
 		span.SetStatus(codes.Error, "Accommodation with that id does not exist")
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -191,20 +191,20 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Invalid date format.")
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Error decoding JSON response. ")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if responseAccommodation.AccommodationHostId != response.LoggedInUser.ID {
-		s.logg.Error("Unauthorized")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized: That is not your accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -215,7 +215,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 	if err != nil {
 		fmt.Println(err)
 		fmt.Println("here")
-		s.logg.Error("Error counting reservations!")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Error counting reservations!")
 		span.SetStatus(codes.Error, "Error counting reservations!")
 		error2.ReturnJSONError(rw, "Error counting reservations!", http.StatusBadRequest)
 		return
@@ -223,7 +223,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 	countRatings, err := s.EventRepo.CountRatingsForCurrentDay(ctx, accID)
 	if err != nil {
-		s.logg.Error("Error counting ratings")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Error counting ratings")
 		span.SetStatus(codes.Error, "Error counting ratings!")
 		error2.ReturnJSONError(rw, "Error counting ratings!", http.StatusBadRequest)
 		return
@@ -260,7 +260,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 
 	errReport := s.Repo.InsertDailyReport(ctx, report)
 	if errReport != nil {
-		s.logg.Error("Error storing report")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateDailyReportForAccommodation"}).Error("Error storing report")
 		span.SetStatus(codes.Error, "Error storing report")
 		s.logger.Print("Database exception: ", errReport)
 		errorMsg := map[string]string{"error": "Error storing report"}
@@ -278,7 +278,7 @@ func (s *ReportHandler) GenerateDailyReportForAccommodation(rw http.ResponseWrit
 func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "ReportHandler.GenerateMonthlyReportForAccommodation")
 	defer span.End()
-	s.logg.Info("ReportHandler.GenerateMonthlyReportForAccommodation")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Info("ReportHandler.GenerateMonthlyReportForAccommodation")
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
@@ -292,20 +292,20 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Circuit is open. Authorization service is not available. ")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization service not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Authorization service not available. ")
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
 			return
 		}
-		s.logg.Error("Authorization service not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Authorization service not available. ")
 		span.SetStatus(codes.Error, "Authorization service not available")
 		errorMsg := map[string]string{"error": "Authorization service not available.."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -315,7 +315,7 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logg.Error("Unauthorized")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -338,19 +338,19 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format in the response. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Invalid date format in the response. ")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if response.LoggedInUser.UserRole != data.Host {
-		s.logg.Error("Only hosts can see/generate reports!")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Only hosts can see/generate reports!")
 		span.SetStatus(codes.Error, "Only hosts can see/generate reports!")
 		error2.ReturnJSONError(rw, "Only hosts can see/generate reports!", http.StatusForbidden)
 		return
@@ -366,20 +366,20 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Circuit is open. Authorization service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Accommodation service is not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Accommodation service is not available")
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Accommodation service is not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Accommodation service is not available. ")
 		span.SetStatus(codes.Error, "Accommodation service is not available")
 		errorMsg := map[string]string{"error": "Accommodation service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -390,7 +390,7 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
-		s.logg.Error("Accommodation with that id does not exist")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Accommodation with that id does not exist")
 		span.SetStatus(codes.Error, "Accommodation with that id does not exist")
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -409,20 +409,20 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Invalid date format")
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if responseAccommodation.AccommodationHostId != response.LoggedInUser.ID {
-		s.logg.Error("Unauthorized")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized: That is not your accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -431,7 +431,7 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 	countReservations, err := s.EventRepo.CountReservationsForCurrentMonth(ctx, accID)
 	if err != nil {
-		s.logg.Error("Error counting resevations!")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Error counting resevations!")
 		span.SetStatus(codes.Error, "Error counting reservations!")
 		error2.ReturnJSONError(rw, "Error counting reservations!", http.StatusBadRequest)
 		return
@@ -439,7 +439,7 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 
 	countRatings, err := s.EventRepo.CountRatingsForCurrentMonth(ctx, accID)
 	if err != nil {
-		s.logg.Error("Error counting ratings")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Error counting ratings")
 		span.SetStatus(codes.Error, "Error counting ratings!")
 		error2.ReturnJSONError(rw, "Error counting ratings!", http.StatusBadRequest)
 		return
@@ -486,7 +486,7 @@ func (s *ReportHandler) GenerateMonthlyReportForAccommodation(rw http.ResponseWr
 	if errReport != nil {
 		fmt.Println("here error")
 		fmt.Println(errReport)
-		s.logg.Error("Error storing report")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GenerateMonthlyReportForAccommodation"}).Error("Error storing report")
 		span.SetStatus(codes.Error, "Error storing report")
 		s.logger.Print("Database exception: ", errReport)
 		errorMsg := map[string]string{"error": "Error storing report"}
