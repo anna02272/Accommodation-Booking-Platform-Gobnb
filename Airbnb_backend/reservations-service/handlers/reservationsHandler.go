@@ -80,14 +80,14 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization server is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Circuit is open. Authorization server is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization service is not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Authorization service is not available")
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -102,6 +102,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -125,10 +126,12 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Inavelid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -141,6 +144,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Guest {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Permission denied. Only guests can create reservations")
 		span.SetStatus(codes.Error, "Permission denied. Only guests can create reservations")
 		errorMsg := map[string]string{"error": "Permission denied. Only guests can create reservations"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
@@ -157,17 +161,20 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Circuit is open. Authorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Accommodation service is not available")
 			span.SetStatus(codes.Error, "Accommodation service is not available")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Accommodation service is not available")
 		span.SetStatus(codes.Error, "Accommodation service is not available")
 		errorMsg := map[string]string{"error": "Accommodation service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -178,6 +185,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Accommodation with that id does not exist")
 		span.SetStatus(codes.Error, "Accommodation with that id does not exist")
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -191,12 +199,14 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 			field := err.Field()
 			validationErrors[field] = fmt.Sprintf("Field %s is required", field)
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Field is required")
 		span.SetStatus(codes.Error, "Field is required")
 		error2.ReturnJSONError(rw, validationErrors, http.StatusBadRequest)
 		return
 	}
 
 	if guestReservation.CheckInDate.IsZero() || guestReservation.CheckOutDate.IsZero() {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Check-in and check-out dates are required")
 		span.SetStatus(codes.Error, "Check-in and check-out dates are required.")
 		errorMsg := map[string]string{"error": "Check-in and check-out dates are required."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -210,6 +220,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	//}
 
 	if guestReservation.CheckInDate.Before(time.Now()) {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Check-in date mus be in the future")
 		span.SetStatus(codes.Error, "Check-in date must be in the future")
 		errorMsg := map[string]string{"error": "Check-in date must be in the future."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -217,6 +228,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 
 	if guestReservation.CheckInDate.After(guestReservation.CheckOutDate) {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Check-in date must be before check out date")
 		span.SetStatus(codes.Error, "Check-in date must be before check out date")
 		errorMsg := map[string]string{"error": "Check-in date must be before check out date."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -224,6 +236,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	}
 
 	if !utils.IsValidInteger(guestReservation.NumberOfGuests) {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Invalid field number_of_guests. Its a whole number")
 		span.SetStatus(codes.Error, "Invalid field number_of_guests. It's a whole number.")
 		errorMsg := map[string]string{"error": "Invalid field number_of_guests. It's a whole number."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -243,17 +256,20 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Invalid date format")
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if responseAccommodation.AccommodationMaxGuests < guestReservation.NumberOfGuests {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Too much guests. Double check the capasity of accommodation")
 		span.SetStatus(codes.Error, "Too much guests.Double check the capacity of accommodation.")
 		errorMsg := map[string]string{"error": "Too much guests.Double check the capacity of accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -271,6 +287,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	//}
 
 	if !isAvailable {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Accommodation is not available fot the specified dates")
 		span.SetStatus(codes.Error, "Accommodation is not available for the specified dates")
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -282,6 +299,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	if errReservation != nil {
 		span.SetStatus(codes.Error, "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date")
 		s.logger.Print("Database exception: ", errReservation)
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Cannot reserve. Please double check if you already reserved exactly the accommodation")
 		errorMsg := map[string]string{"error": "Cannot reserve. Please double check if you already reserved exactly the accommodation and check in date"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
@@ -289,6 +307,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	errBookAccommodation := s.serviceAv.BookAccommodation(guestRsvPrimitive, guestReservation.CheckInDate, guestReservation.CheckOutDate, ctx)
 	if errBookAccommodation != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error booking accommodation")
 		span.SetStatus(codes.Error, "Error booking accommodation.")
 		errorMsg := map[string]string{"error": "Error booking accommodation."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -303,16 +322,19 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Circuit is open. Authorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 		if ctxx.Err() == context.DeadlineExceeded {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Authorization service is  not available")
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Authhorization service is not available")
 		span.SetStatus(codes.Error, "Authorization service is not available.")
 		errorMsg := map[string]string{"error": "Authorization service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -323,6 +345,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	statusCodeHostCheck := resp.StatusCode
 	fmt.Println(statusCodeHostCheck)
 	if statusCodeHostCheck != 200 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Host with that id does not exist")
 		span.SetStatus(codes.Error, "Host with that id does not exist.")
 		errorMsg := map[string]string{"error": "Host with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -342,11 +365,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseHost); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Invalid date format")
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response: "+err.Error())
 		fmt.Println("User has errored")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
@@ -362,6 +387,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
 	if err != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error creating notification payload")
 		span.SetStatus(codes.Error, "Error creating notification payload.")
 		errorMsg := map[string]string{"error": "Error creating notification payload."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -373,11 +399,13 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	resp, err = s.HTTPSperformAuthorizationRequestWithContextAndBodyAccCircuitBreaker(ctx, token, notificationURL, "POST", notificationPayloadJSON)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error creating notification request")
 			span.SetStatus(codes.Error, "Error creating notification request.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Notification serviec is not available")
 		span.SetStatus(codes.Error, "Notification service is not available.")
 		errorMsg := map[string]string{"error": "Notification service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -387,6 +415,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error creating notification")
 		span.SetStatus(codes.Error, "Error creating notification.")
 		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -395,11 +424,12 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	responseJSON, err := json.Marshal(guestReservation)
 	if err != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error creating JSON response")
 		span.SetStatus(codes.Error, "Error creating JSON response")
 		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
 		return
 	}
-
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Info("Created reservation")
 	span.SetStatus(codes.Ok, "Created reservation")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusCreated)
@@ -412,6 +442,7 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 	err = s.EventRepo.InsertEvent(ctx, event)
 	if err != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CreateReservationForGuest"}).Error("Error storing reservation event")
 		span.SetStatus(codes.Error, "Error storing reservation event")
 		errorMsg := map[string]string{"error": "Error storing reservation event"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -438,17 +469,20 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Circuit is open. Authorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Authorization service not available")
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Authorization service not available")
 		span.SetStatus(codes.Error, "Authorization service not available.")
 		errorMsg := map[string]string{"error": "Authorization service not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -458,6 +492,7 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -475,10 +510,12 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	}
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -487,6 +524,7 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Guest {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Permission denied. Only guests can get reservation")
 		span.SetStatus(codes.Error, "Permission denied. Only guests can get reservations")
 		errorMsg := map[string]string{"error": "Permission denied. Only guests can get reservations"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
@@ -495,21 +533,24 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 
 	reservations, err := s.Repo.GetAllReservations(ctx, guestID)
 	if err != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Error getting reservations")
 		span.SetStatus(codes.Error, "Error getting reservations: "+err.Error())
 		s.logger.Print("Error getting reservations: ", err)
 		error2.ReturnJSONError(rw, err, http.StatusBadRequest)
 		return
 	}
 	if len(reservations) == 0 {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("No reservations found")
 		span.SetStatus(codes.Error, "No reservations found")
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
-
+	s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Info("Ger all successfully")
 	span.SetStatus(codes.Ok, "Get all successful")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
 	if err := reservations.ToJSON(rw); err != nil {
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetAllReservations"}).Error("Error encoding JSON")
 		span.SetStatus(codes.Error, "Error encoding JSON:"+err.Error())
 		s.logger.Println("Error encoding JSON:", err)
 	}
@@ -518,7 +559,8 @@ func (s *ReservationsHandler) GetAllReservations(rw http.ResponseWriter, h *http
 func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.CancelReservation")
 	defer span.End()
-	s.logg.Info("ReservationHandler.CancelReservation")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Info("ReservationHandler.CancelReservation")
+
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
@@ -532,20 +574,23 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Circuit is open. Authorization service is not available.")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization service not available. Try again later.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Authorization service not available. Try again later.")
+
 			span.SetStatus(codes.Error, "Authorization service not available. Try again later")
 			errorMsg := map[string]string{"error": "Authorization service not available. Try again later"}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Authorization service not available. Try again later.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Authorization service not available. Try again later.")
+
 		span.SetStatus(codes.Error, "Authorization service not available. Try again later")
 		errorMsg := map[string]string{"error": "Authorization service not available. Try again later"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -555,7 +600,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logg.Error("Unauthorized")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Unauthorized")
+
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -574,12 +620,14 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format in the response. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Invalid date format in the response. ")
+
 			span.SetStatus(codes.Error, "Invalid date format in the response.")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error decoding JSON response. ")
+
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -588,7 +636,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Guest {
-		s.logg.Error("Permission denied. Only guests can delete reservations. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Permission denied. Only guests can delete reservations. ")
+
 		span.SetStatus(codes.Error, "Permission denied. Only guests can delete reservations")
 		errorMsg := map[string]string{"error": "Permission denied. Only guests can delete reservations"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
@@ -606,7 +655,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 	checkInDate, err := s.Repo.GetReservationCheckInDate(ctx, reservationIDString, guestID)
 	if err != nil {
-		s.logg.Errorf("Error getting check-in date: %v", err.Error())
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Errorf("Error getting check-in date: %v", err.Error())
+
 		span.SetStatus(codes.Error, "Error getting check-in date: "+err.Error())
 		s.logger.Println("Error getting check-in date:", err)
 		errorMsg := map[string]string{"error": "Error getting check-in date"}
@@ -615,7 +665,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 	checkOutDate, err := s.Repo.GetReservationCheckOutDate(ctx, reservationIDString, guestID)
 	if err != nil {
-		s.logg.Errorf("Error getting check-out date")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Errorf("Error getting check-out date")
+
 		span.SetStatus(codes.Error, "Error getting check-ou date: "+err.Error())
 		s.logger.Println("Error getting check-out date:", err)
 		errorMsg := map[string]string{"error": "Error getting check-out date"}
@@ -628,11 +679,12 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 		return
 	}
 	if err := s.Repo.CancelReservationByID(ctx, guestID, reservationIDString, checkInDate); err != nil {
-		s.logg.Error("Error canceling reservation.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error canceling reservation.")
 		span.SetStatus(codes.Error, "Error canceling reservation:"+err.Error())
 		s.logger.Println("Error canceling reservation:", err)
 		if strings.Contains(err.Error(), "Cannot cancel reservation, check-in date has already started") {
-			s.logg.Error("Cannot cancel reservation, check-in date has already started")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Cannot cancel reservation, check-in date has already started")
+
 			span.SetStatus(codes.Error, "Cannot cancel reservation, check-in date has already started")
 			rw.WriteHeader(http.StatusBadRequest)
 			rw.Write([]byte(`{"error":"Cannot cancel reservation, check-in date has already started"}`))
@@ -645,7 +697,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	}
 	err1 := s.serviceAv.MakeAccommodationAvailable(accommodationID, checkInDate, checkOutDate, ctx)
 	if err1 != nil {
-		s.logg.Error("Error making accommodation available")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error making accommodation available")
+
 		span.SetStatus(codes.Error, "Error making accommodation available.")
 		errorMsg := map[string]string{"error": "Error making accommodation available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -659,20 +712,23 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Circuit is open. Authorization service is not available")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Accommodation service is not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Accommodation service is not available. ")
+
 			span.SetStatus(codes.Error, "Accommodation service is not available.")
 			errorMsg := map[string]string{"error": "Accommodation service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Accommodation service is not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Accommodation service is not available. ")
+
 		span.SetStatus(codes.Error, "Accommodation service is not available.")
 		errorMsg := map[string]string{"error": "Accommodation service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -683,7 +739,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	statusCodeAccommodation := resp.StatusCode
 	fmt.Println(statusCodeAccommodation)
 	if statusCodeAccommodation != 200 {
-		s.logg.Error("Accommodation with that is does not exist. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Accommodation with that is does not exist. ")
+
 		span.SetStatus(codes.Error, "Accommodation with that id does not exist.")
 		errorMsg := map[string]string{"error": "Accommodation with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -702,13 +759,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseAccommodation); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Invalid date format.")
+
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error decoding JSON response. ")
+
 		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -720,20 +779,23 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorisation service is not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Circuit is open. Authorisation service is not available. ")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization service is not available. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Authorization service is not available. ")
+
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			errorMsg := map[string]string{"error": "Authorization service is not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Authorization service is not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Authorization service is not available. ")
+
 		span.SetStatus(codes.Error, "Authorization service is not available.")
 		errorMsg := map[string]string{"error": "Authorization service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -744,7 +806,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	statusCodeHostCheck := resp.StatusCode
 	fmt.Println(statusCodeHostCheck)
 	if statusCodeHostCheck != 200 {
-		s.logg.Error("Host with that id does not exist. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Host with that id does not exist. ")
+
 		span.SetStatus(codes.Error, "Host with that id does not exist.")
 		errorMsg := map[string]string{"error": "Host with that id does not exist."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -764,14 +827,16 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&responseHost); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Invalid date format. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Invalid date format. ")
+
 			span.SetStatus(codes.Error, "Invalid date format.")
 			errorMsg := map[string]string{"error": "Invalid date format."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
 		fmt.Println("User has errored")
-		s.logg.Error("Error decoding JSON response. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error decoding JSON response. ")
+
 		span.SetStatus(codes.Error, "Error decoding JSON response"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -786,7 +851,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
 	if err != nil {
-		s.logg.Error("Error creating notification payload. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error creating notification payload. ")
+
 		span.SetStatus(codes.Error, "Error creating notification payload.")
 		errorMsg := map[string]string{"error": "Error creating notification payload."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -800,20 +866,23 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Circuit is open. Authorization service is not available.")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Notification service is not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Notification service is not available")
+
 			span.SetStatus(codes.Error, "Notification service is not available.")
 			errorMsg := map[string]string{"error": "Error creating notification request."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Notification service is not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Notification service is not available. ")
+
 		span.SetStatus(codes.Error, "Notification service is not available.")
 		errorMsg := map[string]string{"error": "Notification service is not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -823,13 +892,15 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 {
-		s.logg.Error("Error creating notification. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error creating notification. ")
+
 		span.SetStatus(codes.Error, "Error creating notification.")
 		errorMsg := map[string]string{"error": "Error creating notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
-	s.logg.Info("Canceled reservation")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Info("Canceled reservation")
+
 	span.SetStatus(codes.Ok, "Canceled reservation")
 
 	event := &data.AccommodationEvent{
@@ -840,7 +911,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 
 	err = s.EventRepo.InsertEvent(ctx, event)
 	if err != nil {
-		s.logg.Error("Error storing reservation event. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CancelReservation"}).Error("Error storing reservation event. ")
+
 		span.SetStatus(codes.Error, "Error storing reservation event")
 		errorMsg := map[string]string{"error": "Error storing reservation event"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -853,7 +925,8 @@ func (s *ReservationsHandler) CancelReservation(rw http.ResponseWriter, h *http.
 func (s *ReservationsHandler) SendToDelete(rw http.ResponseWriter, accommodationId string, guestId string, ctx context.Context) error {
 	ctx, span := s.Tracer.Start(ctx, "ReservationService.SendToDelete")
 	defer span.End()
-	s.logg.Info("ReservationService.SendToDelete")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/sendToDelete"}).Info("ReservationService.SendToDelete")
+
 
 	url := "https://rating-server:8087/api/rating/deleteReservation"
 
@@ -864,13 +937,15 @@ func (s *ReservationsHandler) SendToDelete(rw http.ResponseWriter, accommodation
 	resp, err := s.HTTPSperformAuthorizationRequestWithContexttt(ctx, accommodationId, guestId, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Rating service not available")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/sendToDelete"}).Error("Rating service not available")
+
 			span.SetStatus(codes.Error, "Rating service not available..")
 			errorMsg := map[string]string{"error": "Rating service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return nil
 		}
-		s.logg.Error("Rating service not available")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/sendToDelete"}).Error("Rating service not available")
+
 		span.SetStatus(codes.Error, "Rating service not available..")
 		errorMsg := map[string]string{"error": "Rating service not available.."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -913,7 +988,8 @@ func (s *ReservationsHandler) HTTPSperformAuthorizationRequestWithContexttt(ctx 
 func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.GetReservationByAccommodationIdAndCheckOut")
 	defer span.End()
-	s.logg.Info("ReservationHandler.GetReservatuonByAccommodationIdAndCheckOut")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Info("ReservationHandler.GetReservatuonByAccommodationIdAndCheckOut")
+
 
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
@@ -927,20 +1003,23 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logg.Error("Circuit is open. Authorization service is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Circuit is open. Authorization service is not available.")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Authorization servie is not available.")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Authorization servie is not available.")
+
 			span.SetStatus(codes.Error, "Authorization service not available.")
 			errorMsg := map[string]string{"error": "Authorization service not available."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Authorization servie is not available.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Authorization servie is not available.")
+
 		span.SetStatus(codes.Error, "Authorization service not available.")
 		errorMsg := map[string]string{"error": "Authorization service not available."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -950,7 +1029,8 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logg.Error("Unauthorized")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Unauthorized")
+
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -969,12 +1049,14 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logg.Error("Ivalid date format in the response. ")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Ivalid date format in the response. ")
+
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logg.Error("Error decoding JSON response. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Error decoding JSON response. ")
+
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -984,7 +1066,8 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != data.Host {
-		s.logg.Error("Permission denied. Only hosts can see reservations for their guests")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Permission denied. Only hosts can see reservations for their guests")
+
 		span.SetStatus(codes.Error, "Permission denied. Only hosts can see reservations for their guests")
 		errorMsg := map[string]string{"error": "Permission denied. Only hosts can see reservations for their guests"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
@@ -993,7 +1076,8 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 	counter := s.Repo.GetReservationByAccommodationIDAndCheckOut(ctx, accIDString)
 	if counter == -1 {
-		s.logg.Error("Error fetching reservations")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Error fetching reservations")
+
 		span.SetStatus(codes.Error, "Error fetching reservations")
 		s.logger.Println("Error fetching reservations:", counter)
 		error2.ReturnJSONError(rw, counter, http.StatusBadRequest)
@@ -1008,12 +1092,14 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 
 	responseJSON, err := json.Marshal(Number)
 	if err != nil {
-		s.logg.Error("Error creating JSON response")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Error("Error creating JSON response")
+
 		span.SetStatus(codes.Error, "Error creating JSON response:")
 		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
 		return
 	}
-	s.logg.Info("Get reservation by accommodation ID and check out fate successfully")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/GetReservationByAccommodationIdAndCheckOut"}).Info("Get reservation by accommodation ID and check out fate successfully")
+
 	span.SetStatus(codes.Ok, "Get reservation by accommodation ID and check out date successful")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
@@ -1024,7 +1110,8 @@ func (s *ReservationsHandler) GetReservationByAccommodationIdAndCheckOut(rw http
 func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.Request) {
 	ctx, span := s.Tracer.Start(h.Context(), "ReservationsHandler.CheckAvailability")
 	defer span.End()
-	s.logg.Info("ReservationHandler.CheckAvailability")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Info("ReservationHandler.CheckAvailability")
+
 
 	// token := h.Header.Get("Authorization")
 	// url := "https://auth-server:8080/api/users/currentUser"
@@ -1090,7 +1177,8 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	vars := mux.Vars(h)
 	accIDString, ok := vars["accId"]
 	if !ok {
-		s.logg.Error("Missing accommodationId in the URL.")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Error("Missing accommodationId in the URL.")
+
 		span.SetStatus(codes.Error, "Missing accommodationId in the URL")
 		errorMsg := map[string]string{"error": "Missing accommodationId in the URL"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -1099,7 +1187,8 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 
 	var checkAvailabilityRequest data.CheckAvailability
 	if err := json.NewDecoder(h.Body).Decode(&checkAvailabilityRequest); err != nil {
-		s.logg.Error("Invalid request body. Check the request format. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Error("Invalid request body. Check the request format. ")
+
 		span.SetStatus(codes.Error, "Invalid request body. Check the request format.")
 		errorMsg := map[string]string{"error": "Invalid request body. Check the request format."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -1129,7 +1218,8 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 
 	if err != nil {
 		fmt.Println(err)
-		s.logg.Error("Accmmodation is not available for the specified dates, try another ones. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Error("Accmmodation is not available for the specified dates, try another ones. ")
+
 		span.SetStatus(codes.Error, "Accommodation is not available for the specified dates, try another ones.")
 		errorMsg := map[string]string{"error": "Accommodation is not available for the specified dates, try another ones."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -1137,13 +1227,15 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 	}
 
 	if !isAvailable {
-		s.logg.Error("Accommodation is booked for the specified dates, trry another ones. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Error("Accommodation is booked for the specified dates, trry another ones. ")
+
 		span.SetStatus(codes.Error, "Accommodation is booked for the specified dates, try another ones.")
 		errorMsg := map[string]string{"error": "Accommodation is booked for the specified dates, try another ones."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 		return
 	}
-	s.logg.Info("Accommodation is available for the specified. ")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Info("Accommodation is available for the specified. ")
+
 	successMsg := map[string]string{"message": "Accommodation is available for the specified dates."}
 	span.SetStatus(codes.Ok, "Accommodation is available for the specified dates.")
 	responseJSON, err := json.Marshal(successMsg)
@@ -1152,7 +1244,8 @@ func (s *ReservationsHandler) CheckAvailability(rw http.ResponseWriter, h *http.
 		error2.ReturnJSONError(rw, "Error creating JSON response", http.StatusInternalServerError)
 		return
 	}
-	s.logg.Info("Check availability successful")
+	s.logg.WithFields(logrus.Fields{"path": "reservation/CheckAvailability"}).Info("Check availability successful")
+
 	span.SetStatus(codes.Ok, "Check availability successful")
 	rw.Header().Set("Content-Type", "application/json")
 	rw.WriteHeader(http.StatusOK)
@@ -1420,13 +1513,15 @@ func (s *ReservationsHandler) SendToRatingService(reservation *data.ReservationB
 	resp, err := s.HTTPSperformAuthorizationRequest(ctx, reservation, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
-			s.logg.Error("Rating service not available..")
+			s.logg.WithFields(logrus.Fields{"path": "reservation/SendToRatingService"}).Error("Rating service not available..")
+
 			span.SetStatus(codes.Error, "Rating service not available..")
 			errorMsg := map[string]string{"error": "Rating service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
 			return nil
 		}
-		s.logg.Error("Rating service not available. ")
+		s.logg.WithFields(logrus.Fields{"path": "reservation/SendToRatingService"}).Error("Rating service not available. ")
+
 		span.SetStatus(codes.Error, "Rating service not available..")
 		errorMsg := map[string]string{"error": "Rating service not available.."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)

@@ -49,12 +49,12 @@ func init() {
 	logger.SetOutput(lumberjackLog)
 	defer func() {
 		if err := lumberjackLog.Close(); err != nil {
-			logger.Error("Error closing log file:", err)
+			logger.WithFields(logrus.Fields{"path": "notification/main"}).Error("Error closing log file:", err)
 		}
 	}()
 
-	logger.Info("This is an info message, finaly")
-	logger.Error("This is an error message")
+	logger.WithFields(logrus.Fields{"path": "notification/main"}).Info("This is an info message, finaly")
+	logger.WithFields(logrus.Fields{"path": "notification/main"}).Error("This is an error message")
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
