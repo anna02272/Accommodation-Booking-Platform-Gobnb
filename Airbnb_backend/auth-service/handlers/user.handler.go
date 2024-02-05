@@ -49,13 +49,13 @@ var currentProfileUser *domain.User
 func (ac *UserHandler) CurrentUserProfile(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "UserHandler.CurrentUserProfile")
 	defer span.End()
-	ac.logger.Info("UserHandler.CurrentUserProfile")
+	ac.logger.WithFields(logger.Fields{"path": "auth/currentUserProfile"}).Info("UserHandler.CurrentUserProfile")
 
 	tokenString := ctx.GetHeader("Authorization")
 	tokenString = html.EscapeString(tokenString)
 
 	if tokenString == "" {
-		ac.logger.Error("Missing authorization header")
+		ac.logger.WithFields(logger.Fields{"path": "auth/currentUserProfile"}).Error("Missing authorization header")
 		span.SetStatus(codes.Error, "Missing authorization header")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
 		return
@@ -64,14 +64,14 @@ func (ac *UserHandler) CurrentUserProfile(ctx *gin.Context) {
 
 	user, err := GetUserFromToken(tokenString, ac.userService, spanCtx, ac.Tracer)
 	if err != nil {
-		ac.logger.Error("Invalid token")
+		ac.logger.WithFields(logger.Fields{"path": "auth/currentUserProfile"}).Error("Invalid token")
 		span.SetStatus(codes.Error, "Invalid token")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
 	_, err = ac.userService.FindProfileInfoByEmail(spanCtx, user.Email)
 	println(currentProfileUser)
-	ac.logger.Info("Current user retrieved successfully")
+	ac.logger.WithFields(logger.Fields{"path": "auth/currentUserProfile"}).Info("Current user retrieved successfully")
 	span.SetStatus(codes.Ok, "Current user retrieved successfully")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": currentProfileUser})
 }
@@ -79,13 +79,13 @@ func (ac *UserHandler) CurrentUserProfile(ctx *gin.Context) {
 func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "UserHandler.CurrentUser")
 	defer span.End()
-	ac.logger.Info("UserHandler.CurrentUser")
+	ac.logger.WithFields(logger.Fields{"path": "auth/currentUser"}).Info("UserHandler.CurrentUser")
 
 	tokenString := ctx.GetHeader("Authorization")
 	tokenString = html.EscapeString(tokenString)
 
 	if tokenString == "" {
-		ac.logger.Error("Missing authorization header")
+		ac.logger.WithFields(logger.Fields{"path": "auth/currentUser"}).Error("Missing authorization header")
 		span.SetStatus(codes.Error, "Missing authorization header")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
 		return
@@ -94,12 +94,12 @@ func (ac *UserHandler) CurrentUser(ctx *gin.Context) {
 
 	user, err := GetUserFromToken(tokenString, ac.userService, spanCtx, ac.Tracer)
 	if err != nil {
-		ac.logger.Error("Invalid token")
+		ac.logger.WithFields(logger.Fields{"path": "auth/currentUser"}).Error("Invalid token")
 		span.SetStatus(codes.Error, "Invalid token")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
-	ac.logger.Info("Current user retrieved successfully")
+	ac.logger.WithFields(logger.Fields{"path": "auth/currentUser"}).Info("Current user retrieved successfully")
 	span.SetStatus(codes.Ok, "Current user retrieved successfully")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Token is valid", "user": user})
 }
@@ -135,11 +135,11 @@ func GetUserFromToken(tokenString string, userService services.UserService, ctx 
 func (uh *UserHandler) GetUserById(ctx *gin.Context) {
 	spanCtx, span := uh.Tracer.Start(ctx.Request.Context(), "UserHandler.GetUserById")
 	defer span.End()
-	uh.logger.Info("UserHandler.GetUserById")
+	uh.logger.WithFields(logger.Fields{"path": "auth/getUserById"}).Info("UserHandler.GetUserById")
 	userID := ctx.Param("userId")
 
 	if userID == "" {
-		uh.logger.Error("User ID is required")
+		uh.logger.WithFields(logger.Fields{"path": "auth/getUserById"}).Error("User ID is required")
 		span.SetStatus(codes.Error, "User ID is required")
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "User ID is required"})
 		return
@@ -147,19 +147,19 @@ func (uh *UserHandler) GetUserById(ctx *gin.Context) {
 
 	user, err := uh.userService.FindUserById(userID, spanCtx)
 	if err != nil {
-		uh.logger.Error("User not found")
+		uh.logger.WithFields(logger.Fields{"path": "auth/getUserById"}).Error("User not found")
 		span.SetStatus(codes.Error, "User not found")
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	uh.logger.Info("Get user by id successful")
+	uh.logger.WithFields(logger.Fields{"path": "auth/getUserById"}).Info("Get user by id successful")
 	span.SetStatus(codes.Ok, "Get user by id successful")
 	ctx.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "UserHandler.ChangePassword")
-	ac.logger.Info("UserHandler.ChangePassword")
+	ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Info("UserHandler.ChangePassword")
 	defer span.End()
 
 	var updatePassword *domain.PasswordChangeRequest
@@ -167,7 +167,7 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	tokenString := ctx.GetHeader("Authorization")
 
 	if tokenString == "" {
-		ac.logger.Error("Missing authorization header")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Missing authorization header")
 
 		span.SetStatus(codes.Error, "Missing authorization header")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
@@ -178,14 +178,14 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	user, err := GetUserFromToken(tokenString, ac.userService, spanCtx, ac.Tracer)
 
 	if err != nil {
-		ac.logger.Error("Invalid token")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Invalid token")
 		span.SetStatus(codes.Error, "Invalid token")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
 
 	if err := ctx.ShouldBindJSON(&updatePassword); err != nil {
-		ac.logger.Error("Invalid request body")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Invalid request body")
 		span.SetStatus(codes.Error, "Invalid request body")
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Invalid request body"})
 		return
@@ -193,34 +193,34 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	passwordExistsBlackList, err := utils.CheckBlackList(updatePassword.NewPassword, "blacklist.txt")
 
 	if passwordExistsBlackList {
-		ac.logger.Error("Password is in blacklist")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Password is in blacklist")
 		span.SetStatus(codes.Error, "Password is in blacklist!")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Password is in blacklist!"})
 		return
 	}
 
 	if !utils.ValidatePassword(updatePassword.NewPassword) {
-		ac.logger.Error("Invalid password format")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Invalid password format")
 		span.SetStatus(codes.Error, "Invalid password format")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Invalid password format"})
 		return
 	}
 
 	if updatePassword.NewPassword != updatePassword.ConfirmNewPassword {
-		ac.logger.Error("Passwords do not match")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Passwords do not match")
 		span.SetStatus(codes.Error, "Passwords do not match")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Passwords do not match"})
 		return
 	}
 	if err := utils.VerifyPassword(user.Password, updatePassword.CurrentPassword); err != nil {
-		ac.logger.Error("Current password and new password do not match")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Current password and new password do not match")
 		span.SetStatus(codes.Error, "Current password and new password do not match")
 		ctx.JSON(http.StatusBadRequest, gin.H{"status": "fail", "message": "Current password and new password do not match"})
 		return
 	}
 	hashedNewPassword, err := utils.HashPassword(updatePassword.NewPassword)
 	if err != nil {
-		ac.logger.Error("Failed to hash new password")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Failed to hash new password")
 		span.SetStatus(codes.Error, "Failed to hash new password")
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to hash new password"})
 		return
@@ -229,12 +229,12 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 	user.Password = hashedNewPassword
 
 	if err := ac.userService.UpdateUser(user, spanCtx); err != nil {
-		ac.logger.Error("Failed to update password")
+		ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Error("Failed to update password")
 		span.SetStatus(codes.Error, "Failed to update password")
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": "Failed to update password"})
 		return
 	}
-	ac.logger.Info("Password updated saccussfully")
+	ac.logger.WithFields(logger.Fields{"path": "auth/changePassword"}).Info("Password updated saccussfully")
 	span.SetStatus(codes.Ok, "Password updated successfully")
 	ctx.JSON(http.StatusOK, gin.H{"message": "Password updated successfully"})
 }
@@ -242,7 +242,7 @@ func (ac *UserHandler) ChangePassword(ctx *gin.Context) {
 func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	spanCtx, span := ac.Tracer.Start(ctx.Request.Context(), "UserHandler.DeleteUser")
 	defer span.End()
-	ac.logger.Info("UserHandler.DeleteUser")
+	ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Info("UserHandler.DeleteUser")
 	rw := ctx.Writer
 	//h := ctx.Request
 
@@ -250,7 +250,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	tokenString := html.EscapeString(tokenStringHeader)
 
 	if tokenString == "" {
-		ac.logger.Error("Missing authorization header")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Missing authorization header")
 		span.SetStatus(codes.Error, "Missing authorization header")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Missing authorization header"})
 		return
@@ -259,14 +259,14 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	user, err := GetUserFromToken(tokenString, ac.userService, spanCtx, ac.Tracer)
 
 	if err != nil {
-		ac.logger.Error("Invalid token")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Invalid token")
 		span.SetStatus(codes.Error, "Invalid token")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
 	}
 
 	if user == nil {
-		ac.logger.Error("Invalid token")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Invalid token")
 		span.SetStatus(codes.Error, "Invalid token")
 		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "Invalid token"})
 		return
@@ -287,19 +287,19 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		if errRes != nil {
 			if errors.Is(err, gobreaker.ErrOpenState) {
 				// Circuit is open
-				ac.logger.Error("Circuit is open. Reservation service is not available.")
+				ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Circuit is open. Reservation service is not available.")
 				span.SetStatus(codes.Error, "Circuit is open. Reservation service is not available.")
 				error2.ReturnJSONError(rw, "Reservation service is not available.", http.StatusBadRequest)
 				return
 			}
 
 			if ctxRest.Err() == context.DeadlineExceeded {
-				ac.logger.Error("Failed to fetch user reservations")
+				ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to fetch user reservations")
 				span.SetStatus(codes.Error, "Failed to fetch user reservations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
 				return
 			}
-			ac.logger.Error("Failed to fetch user reservations")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to fetch user reservations")
 			span.SetStatus(codes.Error, "Failed to fetch user reservations")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch user reservations"})
 			return
@@ -307,7 +307,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		defer respRes.Body.Close()
 
 		if respRes.StatusCode != 404 {
-			ac.logger.Error("You cannot delete your profile, you have active reservations")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("You cannot delete your profile, you have active reservations")
 			span.SetStatus(codes.Error, "You cannot delete your profile, you have active reservations")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have active reservations"})
 			return
@@ -327,19 +327,19 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 		respRes, errRes := ac.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, tokenStringHeader, urlCheckReservations, "GET")
 		if errRes != nil {
 			if errors.Is(err, gobreaker.ErrOpenState) {
-				ac.logger.Error("Circuit is open. Accommodation service is not available.")
+				ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Circuit is open. Accommodation service is not available.")
 				span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
 				error2.ReturnJSONError(rw, "Accommodation service is not available.", http.StatusBadRequest)
 				return
 			}
 
 			if ctxRest.Err() == context.DeadlineExceeded {
-				ac.logger.Error("Failed to fetch host accommodations")
+				ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to fetch host accommodations")
 				span.SetStatus(codes.Error, "Failed to fetch host accommodations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
 				return
 			}
-			ac.logger.Error("Failed to fetch host accommodations")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to fetch host accommodations")
 			span.SetStatus(codes.Error, "Failed to fetch host accommodations")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to fetch host accommodations"})
 			return
@@ -348,7 +348,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 
 		var response map[string]interface{}
 		if err := json.NewDecoder(respRes.Body).Decode(&response); err != nil {
-			ac.logger.Error("Failed to decode response")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to decode response")
 			span.SetStatus(codes.Error, "Failed to decode response")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to decode response"})
 			return
@@ -356,7 +356,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 
 		if accommodations, ok := response["accommodations"].([]interface{}); ok {
 			if len(accommodations) > 0 {
-				ac.logger.Error("You cannot delete your profile, you have created accommodations")
+				ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("You cannot delete your profile, you have created accommodations")
 				span.SetStatus(codes.Error, "You cannot delete your profile, you have created accommodations")
 				ctx.JSON(http.StatusBadRequest, gin.H{"message": "You cannot delete your profile, you have created accommodations"})
 				return
@@ -374,19 +374,19 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	if errRes != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			ac.logger.Error("Circuit is open. Reservation service is not available.")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Circuit is open. Reservation service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Reservation service is not available.")
 			error2.ReturnJSONError(rw, "Reservation service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxRest.Err() == context.DeadlineExceeded {
-			ac.logger.Info("Failed to delete user credentials")
+			ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to delete user credentials")
 			span.SetStatus(codes.Error, "Failed to delete user credentials")
 			ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 			return
 		}
-		ac.logger.Info("Failed to delete user credentials")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to delete user credentials")
 		span.SetStatus(codes.Error, "Failed to delete user credentials")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 		return
@@ -394,7 +394,7 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		ac.logger.Info("Failed to delete user credentials")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to delete user credentials")
 		span.SetStatus(codes.Error, "Failed to delete user credentials")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 		return
@@ -402,12 +402,12 @@ func (ac *UserHandler) DeleteUser(ctx *gin.Context) {
 
 	err = ac.userService.DeleteCredentials(user, spanCtx)
 	if err != nil {
-		ac.logger.Info("Failed to delete user credentials")
+		ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Error("Failed to delete user credentials")
 		span.SetStatus(codes.Error, "Failed to delete user credentials")
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": "Failed to delete user credentials"})
 		return
 	}
-	ac.logger.Info("User deleted successfully")
+	ac.logger.WithFields(logger.Fields{"path": "auth/deleteUser"}).Info("User deleted successfully")
 	span.SetStatus(codes.Ok, "User deleted successfully")
 	ctx.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

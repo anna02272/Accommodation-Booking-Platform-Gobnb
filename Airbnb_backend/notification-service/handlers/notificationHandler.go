@@ -66,19 +66,19 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logger.Error("Circuit is open. Authorization service is not available.")
+			s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Circuit is open. Authorization service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
-			s.logger.Error("Authorization service is not available")
+			s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Authorization service is not available")
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("Error performing authotization request")
+		s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Error performing authotization request")
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -87,7 +87,7 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logger.Error("Unauthorized")
+		s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Unauthorized")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -110,12 +110,12 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logger.Error("Ivalid date format in the response")
+			s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Ivalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("Error decoding JSON response")
+		s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response: "+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -123,7 +123,7 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 
 	notification, exists := c.Get("notification")
 	if !exists {
-		s.logger.Error("Notification not found in context")
+		s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Notification not found in context")
 		span.SetStatus(codes.Error, "Notification not found in context")
 		error2.ReturnJSONError(rw, "Notification not found in context", http.StatusBadRequest)
 		return
@@ -132,7 +132,7 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 	notif, ok := notification.(domain.NotificationCreate)
 	if !ok {
 		fmt.Println(notif)
-		s.logger.Error("Invalid type for notification")
+		s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Error("Invalid type for notification")
 		span.SetStatus(codes.Error, "Invalid type for notification.")
 		errorMsg := map[string]string{"error": "Invalid type for notification."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
@@ -152,7 +152,7 @@ func (s *NotificationHandler) CreateNotification(c *gin.Context) {
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error marshaling JSON: %s", err1), http.StatusInternalServerError)
 		return
 	}
-	s.logger.Info("Created notification successfully")
+	s.logger.WithFields(logrus.Fields{"path": "notification/createNotification"}).Info("Created notification successfully")
 	span.SetStatus(codes.Ok, "Created notification successfully")
 	rw.Write(jsonResponse)
 }
@@ -175,19 +175,19 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
-			s.logger.Error("Circuit is open. AAuthorization service is not available")
+			s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Circuit is open. AAuthorization service is not available")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctx.Err() == context.DeadlineExceeded {
-			s.logger.Error("Authorization service is not available.")
+			s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Authorization service is not available.")
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("Error performing authorization request")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Error performing authorization request")
 		span.SetStatus(codes.Error, "Error performing authorization request")
 		error2.ReturnJSONError(rw, "Error performing authorization request", http.StatusBadRequest)
 		return
@@ -196,7 +196,7 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
-		s.logger.Error("Unauthorized.")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Unauthorized.")
 		span.SetStatus(codes.Error, "Unauthorized.")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -219,12 +219,12 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	// Decode the JSON response into the struct
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
-			s.logger.Error("Invalid date format in the response")
+			s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Invalid date format in the response")
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
-		s.logger.Error("Error decoding JSON response")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Error decoding JSON response")
 		span.SetStatus(codes.Error, "Error decoding JSON response:"+err.Error())
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -234,7 +234,7 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	userRole := response.LoggedInUser.UserRole
 
 	if userRole != domain.Host {
-		s.logger.Error("Permission denied. Only hosts have notifications")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Permission denied. Only hosts have notifications")
 		span.SetStatus(codes.Error, "Permission denied. Only hosts have notifications")
 		errorMsg := map[string]string{"error": "Permission denied. Only hosts have notifications"}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusForbidden)
@@ -242,19 +242,19 @@ func (s *NotificationHandler) GetNoitifcationsForHost(c *gin.Context) {
 	}
 	notifs, err := s.notificationService.GetNotificationsByHostId(hostID, spanCtx)
 	if err != nil {
-		s.logger.Error("Failed to get notifications")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("Failed to get notifications")
 		span.SetStatus(codes.Error, "Failed to get notifications")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get notifications"})
 		return
 	}
 
 	if len(notifs) == 0 {
-		s.logger.Error("No notification for this host")
+		s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Error("No notification for this host")
 		span.SetStatus(codes.Error, "No notifications found for this host")
 		c.JSON(http.StatusOK, gin.H{"message": "No notifications found for this host", "notifications": []interface{}{}})
 		return
 	}
-	s.logger.Info("Got notification for host successfully")
+	s.logger.WithFields(logrus.Fields{"path": "notification/getNotificationForHost"}).Info("Got notification for host successfully")
 	span.SetStatus(codes.Ok, "Got notification for host successfully")
 	c.JSON(http.StatusOK, notifs)
 
