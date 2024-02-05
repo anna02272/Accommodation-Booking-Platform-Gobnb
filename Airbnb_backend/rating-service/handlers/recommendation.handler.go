@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	logger "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-	"log"
 	"net/http"
 	"rating-service/domain"
 	"rating-service/services"
@@ -15,12 +15,12 @@ type RecommendationHandler struct {
 	rec    services.RecommendationService
 	driver neo4j.DriverWithContext
 	Tracer trace.Tracer
-	logger *log.Logger
+	logger *logger.Logger
 }
 type KeyProduct struct{}
 
-func NewRecommendationHandler(recommendationService services.RecommendationService, driver neo4j.DriverWithContext, tr trace.Tracer, l *log.Logger) RecommendationHandler {
-	return RecommendationHandler{recommendationService, driver, tr, l}
+func NewRecommendationHandler(recommendationService services.RecommendationService, driver neo4j.DriverWithContext, tr trace.Tracer, logger *logger.Logger) RecommendationHandler {
+	return RecommendationHandler{recommendationService, driver, tr, logger}
 }
 func (r *RecommendationHandler) CreateUser(c *gin.Context) {
 	var user domain.NeoUser
@@ -35,13 +35,13 @@ func (r *RecommendationHandler) CreateUser(c *gin.Context) {
 func (r *RecommendationHandler) CreateUserNext(rw http.ResponseWriter, h *http.Request, user *domain.NeoUser) {
 
 	if user == nil {
-		log.Println("User not found in the context or not of type *domain.NeoUser2")
+		r.logger.Info("User not found in the context or not of type *domain.NeoUser2")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateUser(user)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -51,6 +51,7 @@ func (r *RecommendationHandler) CreateUserNext(rw http.ResponseWriter, h *http.R
 func (r *RecommendationHandler) CreateReservation(c *gin.Context) {
 	var reservation domain.ReservationByGuest
 	if err := c.ShouldBindJSON(&reservation); err != nil {
+		r.logger.Errorf("Error to get reservation info(createReservation): %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -60,16 +61,17 @@ func (r *RecommendationHandler) CreateReservation(c *gin.Context) {
 func (r *RecommendationHandler) CreateReservationNext(rw http.ResponseWriter, h *http.Request, reservation *domain.ReservationByGuest) {
 
 	if reservation == nil {
-		log.Println("Resevation not found in the context or not of type *domain.Reservation")
+		r.logger.Info("Resevation not found in the context or not of type *domain.Reservation", http.StatusBadRequest)
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateReservation(reservation)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	r.logger.Info("Reservation created ", http.StatusCreated)
 	rw.WriteHeader(http.StatusCreated)
 
 }
@@ -77,6 +79,7 @@ func (r *RecommendationHandler) CreateAccommodation(c *gin.Context) {
 
 	var accommodation domain.AccommodationRec
 	if err := c.ShouldBindJSON(&accommodation); err != nil {
+		r.logger.Errorf("Error in createAccommodation method %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -87,13 +90,13 @@ func (r *RecommendationHandler) CreateAccommodation(c *gin.Context) {
 func (r *RecommendationHandler) CreateAccommodationNext(rw http.ResponseWriter, h *http.Request, accommodation *domain.AccommodationRec) {
 
 	if accommodation == nil {
-		log.Println("Accommodation not found in the context or not of type *domain.AccommodationRec")
+		r.logger.Info("Accommodation not found in the context or not of type *domain.AccommodationRec")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateAccommodation(accommodation)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -104,6 +107,7 @@ func (r *RecommendationHandler) CreateRecomRate(c *gin.Context) {
 
 	var rate domain.RateAccommodationRec
 	if err := c.ShouldBindJSON(&rate); err != nil {
+		r.logger.Error("Error in CreateRate method:")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -114,13 +118,13 @@ func (r *RecommendationHandler) CreateRecomRate(c *gin.Context) {
 func (r *RecommendationHandler) CreateRecomRateNext(rw http.ResponseWriter, h *http.Request, rate *domain.RateAccommodationRec) {
 
 	if rate == nil {
-		log.Println("Rate not found in the context or not of type *domain.RateAccommodationRec")
+		r.logger.Info("Rate not found in the context or not of type *domain.RateAccommodationRec")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	err := r.rec.CreateRate(rate)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -164,7 +168,7 @@ func (r *RecommendationHandler) DeleteReservation(c *gin.Context) {
 	}
 	err := r.rec.DeleteReservation(accommodationId, guestId)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting reservation"})
 		return
 	}
@@ -190,7 +194,7 @@ func (r *RecommendationHandler) DeleteRate(c *gin.Context) {
 	}
 	err := r.rec.DeleteRate(accommodation, guestId)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting rate"})
 		return
 	}
@@ -212,7 +216,7 @@ func (r *RecommendationHandler) DeleteUser(c *gin.Context) {
 	}
 	err := r.rec.DeleteUser(userId)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting user"})
 		return
 	}
@@ -232,7 +236,7 @@ func (r *RecommendationHandler) DeleteAccommodation(c *gin.Context) {
 	}
 	err := r.rec.DeleteAccommodation(accommodationId)
 	if err != nil {
-		r.logger.Print("Database exception: ", err)
+		r.logger.Errorf("Database exception: %s", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error deleting accommodation"})
 		return
 	}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,9 +40,10 @@ type ReservationsHandler struct {
 	DB             *mongo.Collection
 	Tracer         trace.Tracer
 	CircuitBreaker *gobreaker.CircuitBreaker
+	logg           *logrus.Logger
 }
 
-func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer) ReservationsHandler {
+func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *repository.ReservationRepo, er *repository.EventRepo, db *mongo.Collection, tracer trace.Tracer, logg *logrus.Logger) ReservationsHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -56,6 +58,7 @@ func NewReservationsHandler(l *log.Logger, srv services.AvailabilityService, r *
 		DB:             db,
 		Tracer:         tracer,
 		CircuitBreaker: circuitBreaker,
+		logg:           logg,
 	}
 }
 
@@ -75,12 +78,14 @@ func (s *ReservationsHandler) CreateReservationForGuest(rw http.ResponseWriter, 
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logg.Error("Circuit is open. Authorization server is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
 		}
 
 		if ctxx.Err() == context.DeadlineExceeded {
+			s.logg.Error("Authorization service is not available")
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)

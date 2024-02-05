@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -17,7 +18,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
+	//"log"
 	"net/http"
 	"os"
 	"rating-service/config"
@@ -50,6 +53,29 @@ const (
 
 func init() {
 	ctx = context.TODO()
+	// Create a new logger instance
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/rating-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logger.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logger.Error("Error closing log file:", err)
+		}
+	}()
+	//defer file.Close()
+
+	// Set the output to the file
+	//logger.SetOutput(file)
+
+	// Example log messages
+	logger.Info("This is an info message, finaly")
+	logger.Error("This is an error message")
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
@@ -61,48 +87,41 @@ func init() {
 	if err := mongoclient.Ping(ctx, readpref.Primary()); err != nil {
 		panic(err)
 	}
-
-	fmt.Println("MongoDB successfully connected...")
-	//neo4jConnStr := "bolt://localhost:7687" // Promenite sa odgovarajućim podacima za vašu Neo4j bazu
-	//neo4jDriver, err := neo4j.NewDriver(neo4jConnStr, neo4j.BasicAuth("neo4j", "password", ""))
-	//if err != nil {
-	//	panic(err)
+	//for i := 0; i < 1500; i++ {
+	logger.Infof("MongoDB successfully connected...")
 	//}
-	//defer neo4jDriver.Close()
-
-	//fmt.Println("Neo4j successfully connected...")
+	logger.Infof("MongoDB successfully connected...")
 
 	cfg := config.GetConfig()
 	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
 	if err != nil {
-		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+		logger.Fatal("JaegerTraceProvider failed to Initialize", err)
 	}
 	tracer := tracerProvider.Tracer(cfg.ServiceName)
 	// Collections
 	hostRatingCollection = mongoclient.Database("Gobnb").Collection("host-rating")
 	accommodationRatingCollection = mongoclient.Database("Gobnb").Collection("accommodation-rating")
 
-	logger := log.New(os.Stdout, "[rating-service] ", log.LstdFlags)
-
 	neo4jConnStr := "bolt://neo4j:7687"
 	neo4jDriver, err := neo4j.NewDriverWithContext(
 		neo4jConnStr,
 		neo4j.BasicAuth("neo4j", "password", ""),
-		//neo4j.WithMaxConnLifetime(30*time.Second),
 	)
 	if err != nil {
-		panic(err)
+		logger.Fatal(err)
 	}
-	//defer neo4jDriver.Close()
-	fmt.Println("Neo4j successfully connected...")
+	//for i := 0; i < 500; i++ {
+	logger.Infof("Neo4j successfully connected...")
+
+	//}
 
 	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
 	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 
 	hostRatingService = services.NewHostRatingServiceImpl(hostRatingCollection, ctx, tracer)
-	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer)
+	HostRatingHandler = handlers.NewHostRatingHandler(hostRatingService, hostRatingCollection, tracer, logger)
 	accommodationRatingService = services.NewAccommodationRatingServiceImpl(accommodationRatingCollection, ctx, tracer)
-	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, recommendationService, accommodationRatingCollection, tracer)
+	AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, recommendationService, accommodationRatingCollection, tracer, logger)
 	//AccommodationRatingHandler = handlers.NewAccommodationRatingHandler(accommodationRatingService, accommodationRatingCollection, tracer)
 	recommendationService = services.NewRecommendationServiceImpl(neo4jDriver, tracer, logger)
 	RecommendationHandler = handlers.NewRecommendationHandler(recommendationService, neo4jDriver, tracer, logger)
@@ -112,6 +131,7 @@ func init() {
 	InitCreateAccommodationHandler(recommendationService, replyPublisher, commandSubscriber)
 
 	server = gin.Default()
+
 }
 
 func main() {
@@ -137,6 +157,7 @@ func main() {
 		return
 	}
 }
+
 func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerProvider, error) {
 	exporter, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(collectorEndpoint)))
 	if err != nil {
@@ -156,6 +177,7 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 
 	return tp, nil
 }
+
 func InitPublisher(subject string) saga.Publisher {
 	cfg := config.GetConfig()
 	publisher, err := nats.NewNATSPublisher(
@@ -184,3 +206,83 @@ func InitCreateAccommodationHandler(service services.RecommendationService, publ
 		log.Fatal(err)
 	}
 }
+
+//type Logger struct {
+//	*logg.Logger
+//}
+//
+//func (l Logger) Infof(message string) {
+//	l.Infof(message)
+//}
+//func initLogger() *Logger {
+//	baseLogger := logg.New()
+//	baseLogger.SetLevel(logg.DebugLevel)
+//	baseLogger.SetFormatter(&logg.JSONFormatter{})
+//	logFile := &lumberjack.Logger{
+//		Filename:   "./logs/log.log",
+//		MaxSize:    1,
+//		MaxBackups: 3,
+//		MaxAge:     28,
+//		Compress:   true,
+//	}
+//	multiWriter := io.MultiWriter(os.Stdout, logFile)
+//	baseLogger.SetOutput(multiWriter)
+//	return &Logger{
+//		Logger: baseLogger,
+//	}
+//}
+//func (l Logger) Info(message string, fields map[string]interface{}) {
+//	l.WithFields(fields).Info(message)
+//}
+
+//func RotateLogs(file *os.File) {
+//	currentTime := time.Now().Format("2006-01-02_15-04-05")
+//	err := os.Rename("/app/rating-service/logs.log", "/app/rating-service/logs"+currentTime+".log")
+//	if err != nil {
+//		Logger.Error(err)
+//	}
+//	file.Close()
+//
+//	file, err = os.OpenFile("/app/rating-service/logs.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+//	if err != nil {
+//		Logger.Error(err)
+//	}
+//
+//	Logger.SetOutput(file)
+//}
+
+//func initLogger() {
+//	logFilePath := "logs.log"
+//
+//	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+//	if err != nil {
+//		logrus.Fatal(err)
+//	}
+//
+//	Logger.SetOutput(file)
+//
+//	rotationInterval := 24 * time.Hour
+//	ticker := time.NewTicker(rotationInterval)
+//	defer ticker.Stop()
+//
+//	go func() {
+//		for range ticker.C {
+//			rotateLogs(file)
+//		}
+//	}()
+//}
+//func rotateLogs(file *os.File) {
+//	currentTime := time.Now().Format("2006-01-02_15-04-05")
+//	err := os.Rename("logs.log", "logs"+currentTime+".log")
+//	if err != nil {
+//		Logger.Error(err)
+//	}
+//	file.Close()
+//
+//	file, err = os.OpenFile("logs.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+//	if err != nil {
+//		Logger.Error(err)
+//	}
+//
+//	Logger.SetOutput(file)
+//}

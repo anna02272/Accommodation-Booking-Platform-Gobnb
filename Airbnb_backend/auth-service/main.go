@@ -9,12 +9,13 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
-	"log"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"net/http"
 	"os"
 
@@ -41,9 +42,27 @@ var (
 
 func init() {
 	ctx = context.TODO()
-	mongoURI := os.Getenv("MONGO_DB_URI")
-	fmt.Printf("Connecting to MongoDB with URI: %s\n", mongoURI)
-	mongoconn := options.Client().ApplyURI(mongoURI)
+
+	//logging
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/auth-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logger.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logger.Error("Error closing log file:", err)
+		}
+	}()
+	logger.Info("This is an info message, finaly")
+	logger.Error("This is an error message")
+	//logging
+
+	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
 	if err != nil {
@@ -56,12 +75,12 @@ func init() {
 		panic(err)
 	}
 
-	fmt.Println("MongoDB successfully connected...")
+	logger.Info("MongoDB successfully connected...")
 
 	cfg := config.LoadConfig()
 	tracerProvider, err := NewTracerProvider(cfg.ServiceName, cfg.JaegerAddress)
 	if err != nil {
-		log.Fatal("JaegerTraceProvider failed to Initialize", err)
+		logger.Fatalf("JaegerTraceProvider failed to Initialize. Error :%s", err)
 	}
 	tracer := tracerProvider.Tracer(cfg.ServiceName)
 
@@ -69,9 +88,9 @@ func init() {
 	authCollection = mongoclient.Database("Gobnb").Collection("auth")
 	userService = services.NewUserServiceImpl(authCollection, ctx, tracer)
 	authService = services.NewAuthService(authCollection, ctx, userService, tracer)
-	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection, tracer)
+	AuthHandler = handlers.NewAuthHandler(authService, userService, authCollection, tracer, logger)
 	AuthRouteHandler = routes.NewAuthRouteHandler(AuthHandler, authService)
-	UserHandler = handlers.NewUserHandler(userService, tracer)
+	UserHandler = handlers.NewUserHandler(userService, tracer, logger)
 	UserRouteHandler = routes.NewRouteUserHandler(UserHandler)
 
 	server = gin.Default()
