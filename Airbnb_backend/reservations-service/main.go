@@ -14,17 +14,6 @@ import (
 	"reservations-service/services"
 	"time"
 
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"reservations-service/analyticsReport"
-	"reservations-service/config"
-	"reservations-service/handlers"
-	"reservations-service/repository"
-	"reservations-service/services"
-	"time"
-
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"

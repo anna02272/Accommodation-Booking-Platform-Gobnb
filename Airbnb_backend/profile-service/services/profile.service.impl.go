@@ -58,7 +58,7 @@ func (uc *UserServiceImpl) Registration(user *domain.User, ctx context.Context) 
 
 	// if user is a host, set it to featured
 	if user.UserRole == "Host" {
-		err := uc.SetFeatured(res.InsertedID.(string))
+		err := uc.SetUnfeatured(res.InsertedID.(string))
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			return err
@@ -212,20 +212,28 @@ func (uc *UserServiceImpl) IsFeatured(hostID string) (bool, error) {
 
 func (uc *UserServiceImpl) SetFeatured(hostID string) error {
 
-	_, err := uc.collection.UpdateOne(uc.ctx, bson.M{"_id": hostID}, bson.M{"$set": bson.M{"featured": true}})
+	id, _ := primitive.ObjectIDFromHex(hostID)
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{"featured": true}}
+	_, err := uc.collection.UpdateOne(uc.ctx, filter, update)
 	if err != nil {
 		return err
 	}
+
 	return nil
 
 }
 
 func (uc *UserServiceImpl) SetUnfeatured(hostID string) error {
 
-	_, err := uc.collection.UpdateOne(uc.ctx, bson.M{"_id": hostID}, bson.M{"$set": bson.M{"featured": false}})
+	id, _ := primitive.ObjectIDFromHex(hostID)
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": bson.M{"featured": false}}
+	_, err := uc.collection.UpdateOne(uc.ctx, filter, update)
 	if err != nil {
 		return err
 	}
+
 	return nil
 
 }
