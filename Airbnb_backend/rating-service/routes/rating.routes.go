@@ -37,5 +37,11 @@ func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router.POST("/createUser", rc.recommendationHandler.CreateUser)
 	router.POST("/createReservation", rc.recommendationHandler.CreateReservation)
 	router.POST("/createAccommodation", rc.recommendationHandler.CreateAccommodation)
+	router.POST("/createRecomRate", rc.recommendationHandler.CreateRecomRate)
+	router.GET("/getRecomendation/:id", rc.recommendationHandler.GetRecommendation)
+	router.DELETE("/deleteRate", rc.recommendationHandler.DeleteRate)
+	router.DELETE("/deleteReservation", rc.recommendationHandler.DeleteReservation)
+	router.DELETE("/deleteUser", rc.recommendationHandler.DeleteUser)
+	router.DELETE("/deleteAccommodation", rc.recommendationHandler.DeleteAccommodation)
 
 }

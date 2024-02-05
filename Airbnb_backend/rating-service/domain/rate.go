@@ -19,7 +19,12 @@ type RateAccommodation struct {
 	DateAndTime   primitive.DateTime `bson:"date-and-time" json:"date-and-time"`
 	Rating        Rating             `bson:"rating" json:"rating"`
 }
-
+type RateAccommodationRec struct {
+	ID            string ` json:"id"`
+	Accommodation string ` json:"accommodationID"`
+	Guest         string `json:"guest"`
+	Rating        int    `json:"rating"`
+}
 type Rating int
 
 const (
@@ -36,6 +41,7 @@ type User struct {
 	Email    string             `bson:"email" json:"email" validate:"required,email"`
 }
 type NeoUser struct {
+	ID       string `json:"id,omitempty"`
 	Username string `json:"username,omitempty"`
 	Email    string `json:"email,omitempty"`
 }

@@ -5,6 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	logger "github.com/sirupsen/logrus"
+
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -27,9 +29,10 @@ type HostRatingHandler struct {
 	DB                *mongo.Collection
 	Tracer            trace.Tracer
 	CircuitBreaker    *gobreaker.CircuitBreaker
+	logger            *logger.Logger
 }
 
-func NewHostRatingHandler(hostRatingService services.HostRatingService, db *mongo.Collection, tr trace.Tracer) HostRatingHandler {
+func NewHostRatingHandler(hostRatingService services.HostRatingService, db *mongo.Collection, tr trace.Tracer, logger *logger.Logger) HostRatingHandler {
 	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
 		Name: "HTTPSRequest",
 		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
@@ -41,6 +44,7 @@ func NewHostRatingHandler(hostRatingService services.HostRatingService, db *mong
 		DB:                db,
 		Tracer:            tr,
 		CircuitBreaker:    circuitBreaker,
+		logger:            logger,
 	}
 
 }
@@ -54,6 +58,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token, spanCtx)
 	if err != nil {
+		s.logger.Error("Failed to obtain current user information. Try again later")
 		span.SetStatus(codes.Error, "Failed to obtain current user information. Try again later")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information. Try again later"})
 		return
@@ -61,6 +66,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	hostUser, err := s.getUserByIDFromAuthService(hostID, spanCtx)
 	if err != nil {
+		s.logger.Error("Failed to obtain host information. Try again later")
 		span.SetStatus(codes.Error, "Failed to obtain host information.Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain host information.Try again later."})
 		return
@@ -77,6 +83,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logger.Error("Circuit is open. Auth service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Auth service is not available.")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Auth service is not available. Try again later."})
 		}
@@ -86,7 +93,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later"})
 			return
 		}
-
+		s.logger.Error("Failed to get reservations. Try again later")
 		span.SetStatus(codes.Error, "Failed to get reservations. Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get reservations. Try again later."})
 		return
@@ -104,12 +111,14 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	var reservations []domain.ReservationByGuest
 	if err := decoder.Decode(&reservations); err != nil {
 		fmt.Println(err)
+		s.logger.Error("Failed to decode reservations")
 		span.SetStatus(codes.Error, "Failed to decode reservations")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to decode reservations"})
 		return
 	}
 
 	if len(reservations) == 0 {
+		s.logger.Error("You cannot rate this host. You don't have reservations from him")
 		span.SetStatus(codes.Error, "You cannot rate this host. You don't have reservations from him")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this host. You don't have reservations from him"})
 		return
@@ -124,6 +133,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	}
 
 	if !canRate {
+		s.logger.Error("You cannot rate this host. You don't have reservations from him")
 		span.SetStatus(codes.Error, "You cannot rate this host. You don't have reservations from him")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "You cannot rate this host. You don't have reservations from him"})
 		return
@@ -134,6 +144,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	}
 
 	if err := c.BindJSON(&requestBody); err != nil {
+		s.logger.Error("Invalid JSON request")
 		span.SetStatus(codes.Error, "Invalid JSON request")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON request"})
 		return
@@ -152,6 +163,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	err = s.hostRatingService.SaveRating(newRateHost, spanCtx)
 	if err != nil {
+		s.logger.Error("Failed to save rating")
 		span.SetStatus(codes.Error, "Failed to save rating")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to save rating"})
 		return
@@ -167,6 +179,7 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 
 	notificationPayloadJSON, err := json.Marshal(notificationPayload)
 	if err != nil {
+		s.logger.Error("Error creating notification payload")
 		span.SetStatus(codes.Error, "Error creating notification payload")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification payload"})
 		return
@@ -182,15 +195,19 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
+			s.logger.Error("Circuit is open. Auth service is not available.")
 			span.SetStatus(codes.Error, "Circuit is open. Auth service is not available.")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Auth service is not available. Try again later."})
 		}
+		s.logger.WithError(err).Error("Error creating notification request")
 		span.SetStatus(codes.Error, "Error creating notification request")
 		if ctx.Err() == context.DeadlineExceeded {
+			s.logger.WithError(err).Error("Request timed out")
 			span.SetStatus(codes.Error, "Request timed out")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available"})
 			return
 		}
+		s.logger.WithError(err).Error("Notification service not available.")
 		span.SetStatus(codes.Error, "Notification service not available.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Notification service not available."})
 		return
@@ -198,10 +215,12 @@ func (s *HostRatingHandler) RateHost(c *gin.Context) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 201 {
+		s.logger.Errorf("Error creating notification. Status code: %d", resp.StatusCode)
 		span.SetStatus(codes.Error, "Error creating notification")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Error creating notification"})
 		return
 	}
+	s.logger.Info("Rating successfully saved")
 	span.SetStatus(codes.Ok, "Rating successfully saved")
 	c.JSON(http.StatusCreated, gin.H{"message": "Rating successfully saved", "rating": newRateHost})
 }
@@ -215,6 +234,7 @@ func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token, spanCtx)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to obtain current user information. Try again later.")
 		span.SetStatus(codes.Error, "Failed to obtain current user information.  Try again later.")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information.  Try again later."})
 		return
@@ -223,10 +243,12 @@ func (s *HostRatingHandler) DeleteRating(c *gin.Context) {
 
 	err = s.hostRatingService.DeleteRating(hostID, guestID, spanCtx)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to delete rating")
 		span.SetStatus(codes.Error, err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	s.logger.Info("Rating successfully deleted")
 	span.SetStatus(codes.Ok, "Rating successfully deleted")
 	c.JSON(http.StatusOK, gin.H{"message": "Rating successfully deleted"})
 }
@@ -237,6 +259,7 @@ func (s *HostRatingHandler) GetAllRatings(c *gin.Context) {
 
 	ratings, averageRating, err := s.hostRatingService.GetAllRatings(spanCtx)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to get all ratings")
 		span.SetStatus(codes.Error, err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -246,6 +269,7 @@ func (s *HostRatingHandler) GetAllRatings(c *gin.Context) {
 		"ratings":       ratings,
 		"averageRating": averageRating,
 	}
+	s.logger.Info("Got all ratings successfully")
 	span.SetStatus(codes.Ok, "Got all ratings successfully")
 	c.JSON(http.StatusOK, response)
 }
@@ -257,6 +281,7 @@ func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	currentUser, err := s.getCurrentUserFromAuthService(token, spanCtx)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to obtain current user information")
 		span.SetStatus(codes.Error, "Failed to obtain current user information")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to obtain current user information"})
 		return
@@ -267,10 +292,12 @@ func (s *HostRatingHandler) GetByHostAndGuest(c *gin.Context) {
 
 	ratings, err := s.hostRatingService.GetByHostAndGuest(hostID, guestID, spanCtx)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to get ratings by host and guest")
 		span.SetStatus(codes.Error, err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	s.logger.Info("Got ratings by host and guest successfully")
 	span.SetStatus(codes.Ok, "Got ratings by host and guest successfully")
 	c.JSON(http.StatusOK, gin.H{"ratings": ratings})
 }
@@ -286,6 +313,7 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.
 
 	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, "", url)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to get user by ID from auth service")
 
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
@@ -310,6 +338,7 @@ func (s *HostRatingHandler) getUserByIDFromAuthService(userID string, c context.
 
 	var userResponse domain.UserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
+		s.logger.WithError(err).Error("Failed to decode user response from auth service")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -330,6 +359,8 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c contex
 
 	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(spanCtx, token, url)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to get current user from auth service")
+
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
 			span.SetStatus(codes.Error, "Circuit is open. Accommodation service is not available.")
@@ -353,6 +384,7 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c contex
 
 	var userResponse domain.UserResponse
 	if err := json.NewDecoder(resp.Body).Decode(&userResponse); err != nil {
+		s.logger.WithError(err).Error("Failed to decode current user response from auth service")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -364,11 +396,13 @@ func (s *HostRatingHandler) getCurrentUserFromAuthService(token string, c contex
 func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
 	_, span := s.Tracer.Start(ctx, "HostRatingHandler.HTTPSPerformAuthorizationRequestWithContext")
 	defer span.End()
+	s.logger.WithField("url", url).Info("Sending HTTP request")
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to create HTTP request")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
@@ -377,10 +411,11 @@ func (s *HostRatingHandler) HTTPSPerformAuthorizationRequestWithContext(ctx cont
 	client := &http.Client{Transport: tr}
 	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
+		s.logger.WithError(err).Error("Failed to perform HTTP request")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
-
+	s.logger.WithFields(logger.Fields{"status": resp.Status, "statusCode": resp.StatusCode}).Info("Received HTTP response")
 	return resp, nil
 }
 
@@ -436,6 +471,7 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithContextAndBodyAc
 
 	resp, ok := result.(*http.Response)
 	if !ok {
+		s.logger.WithError(err).Error("Unexpected response type from retry operation")
 		err := errors.New("unexpected response type from retry operation")
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
@@ -479,6 +515,7 @@ func (s *HostRatingHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(c
 
 	resp, ok := result.(*http.Response)
 	if !ok {
+		s.logger.Error("Unexpected response type from Circuit Breaker")
 		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
 

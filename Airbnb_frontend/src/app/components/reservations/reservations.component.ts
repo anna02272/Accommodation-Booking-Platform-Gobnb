@@ -26,6 +26,10 @@ ngOnInit() {
 load() {
   this.resService.getAll().subscribe((data: GetReservation[]) => {
     this.reservations = data;
+    console.log(this.reservations)
+    console.log(this.reservations[0])
+
+    console.log(this.reservations[0].accommodation_name)
 },
  error => {
 if (error.statusText === 'Unknown Error') {

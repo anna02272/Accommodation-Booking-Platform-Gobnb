@@ -10,5 +10,7 @@ FROM alpine
 COPY --from=build_container /app/server /usr/bin
 COPY rating-service.crt /app/
 COPY rating-service.key /app/
+#RUN mkdir logs
+#COPY ./logs/log.log /app
 EXPOSE 8087
 ENTRYPOINT ["server", "https"]

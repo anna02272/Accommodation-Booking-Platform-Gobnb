@@ -129,6 +129,7 @@ func (us *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContext(
 
 	return resp, nil
 }
+
 func (s *AccommodationServiceImpl) SendToRatingService(accommodation *domain.AccommodationWithAvailability, ctx context.Context) error {
 	ctx, span := s.Tracer.Start(ctx, "AccommodationService.SendToRating")
 	defer span.End()
@@ -279,10 +280,66 @@ func (s *AccommodationServiceImpl) GetAccommodationByHostIdAndAccId(hostId strin
 
 	return &accommodation, nil
 }
+func (s *AccommodationServiceImpl) SendToDelete(rw http.ResponseWriter, accommodationId string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(ctx, "AccService.SendToDelete")
+	defer span.End()
 
+	url := "https://rating-server:8087/api/rating/deleteAccommodation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := s.HTTPSperformAuthorizationRequestWithContexttt(ctx, accommodationId, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (s *AccommodationServiceImpl) HTTPSperformAuthorizationRequestWithContexttt(ctx context.Context, accommodationId string, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(accommodationId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling accommodation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("DELETE", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, hostID string, ctx context.Context) error {
 	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.DeleteAccommodation")
 	defer span.End()
+	var rw http.ResponseWriter
+	er := s.SendToDelete(rw, accommodationID, ctx)
+	if er != nil {
+		//span.SetStatus(codes.Error, er.Error())
+		return nil
+	}
 
 	objID, err := primitive.ObjectIDFromHex(accommodationID)
 	if err != nil {

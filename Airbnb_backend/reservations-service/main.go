@@ -14,11 +14,23 @@ import (
 	"reservations-service/services"
 	"time"
 
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"reservations-service/analyticsReport"
+	"reservations-service/config"
+	"reservations-service/handlers"
+	"reservations-service/repository"
+	"reservations-service/services"
+	"time"
+
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
 	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -28,6 +40,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -71,7 +84,7 @@ func init() {
 
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
-	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
+	//logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
 	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx, tracer)
 	InitCreateAccommodationHandler(availabilityService, replyPublisher, commandSubscriber)
 
@@ -87,6 +100,24 @@ func main() {
 	if len(port) == 0 {
 		port = "8080"
 	}
+
+	logg := logrus.New()
+	logg.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/reservation-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logg.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logg.Error("Error closing log file:", err)
+		}
+	}()
+
+	logg.Info("This is an info message, finaly")
+	logg.Error("This is an error message")
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
@@ -137,7 +168,7 @@ func main() {
 	eventStore.CreateTableEventStore()
 	reportStore.CreateTableDailyReport()
 	reportStore.CreateTableMonthlyReport()
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer, logg)
 	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
 	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
 
