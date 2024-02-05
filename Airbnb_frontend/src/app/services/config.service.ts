@@ -5,6 +5,7 @@ import {Injectable} from '@angular/core';
 })
 export class ConfigService {
   private _api_url = 'https://localhost:8000/api';
+  
   // private _auth_api_url = 'https://localhost:8080/api';
   // private _acc_api_url = 'https://localhost:8083/api';
   // private _profile_api_url = 'https://localhost:8084/api';
