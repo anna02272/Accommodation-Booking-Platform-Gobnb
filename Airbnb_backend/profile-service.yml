@@ -122,6 +122,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8084
+              name: profile-port
           envFrom:
             - configMapRef:
                 name: profile-configmap
@@ -146,7 +147,7 @@ spec:
       nodePort: 30005
       targetPort: profile-port
       protocol: TCP
-      name: profile-port
+      name: profile-service-port
   type: NodePort
   selector:
     app: profile-service

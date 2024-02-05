@@ -22,14 +22,16 @@ type FileStorage struct {
 
 func New(logger *log.Logger, tracer trace.Tracer) (*FileStorage, error) {
 	// Local instance
-	hdfsUri := os.Getenv("HDFS_URI")
 
+	hdfsUri := os.Getenv("HDFS_URI")
+	logger.Printf("Initializing HDFS client with URI: %s", hdfsUri)
 	client, err := hdfs.New(hdfsUri)
 	if err != nil {
+		logger.Printf("Error initializing HDFS client: %v", err)
 		logger.Panic(err)
 		return nil, err
 	}
-
+	logger.Println("HDFS client initialized successfully")
 	// Return storage handler with logger and HDFS client
 	return &FileStorage{
 		Client: client,

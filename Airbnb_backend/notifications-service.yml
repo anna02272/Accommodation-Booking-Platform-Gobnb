@@ -104,97 +104,6 @@ data:
     w0OYkETtT1QdPHOqbDcmTPGOuZX5Ghr9JiSe/2hjPAhvls5reu9UoYOOenD+mdtI
     ZQMYmMYzfPBQMOmrd1DM3LBjau7ERUV4cZQoQVY0IYLhMF8EEvp11PbuiwJYRhWX
     wREJK/NeujleOA6KVrG/BnUG4Xwa
-# notifications-secret
-apiVersion: v1
-kind: Secret
-metadata:
-  name: notifications-tls
-type: kubernetes.io/tls
-data:
-  tls.crt: |
-    MIIF7DCCA9SgAwIBAgIUUKgoTJfTYZZ4H42ON9wjyrB7HkswDQYJKoZIhvcNAQEN
-    BQAwgYUxCzAJBgNVBAYTAlJTMRIwEAYDVQQIDAlWb2p2b2RpbmExETAPBgNVBAcM
-    CE5vdmkgU2FkMQwwCgYDVQQKDANGVE4xCzAJBgNVBAsMAklUMRQwEgYDVQQDDAtH
-    b2JuYl9ub3RpZjEeMBwGCSqGSIb3DQEJARYPZ29ibmJAZ21haWwuY29tMB4XDTI0
-    MDIwMjEwNTIzMloXDTI0MDMwMzEwNTIzMlowgYUxCzAJBgNVBAYTAlJTMRIwEAYD
-    VQQIDAlWb2p2b2RpbmExETAPBgNVBAcMCE5vdmkgU2FkMQwwCgYDVQQKDANGVE4x
-    CzAJBgNVBAsMAklUMRQwEgYDVQQDDAtHb2JuYl9ub3RpZjEeMBwGCSqGSIb3DQEJ
-    ARYPZ29ibmJAZ21haWwuY29tMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKC
-    AgEArJ5quOtTVNuiyO8z7UBlupHpY4L+r1i9VRX4fxPZUSnTe9K7O/p2KuAT/hvQ
-    Lo3Rp9pK1oMMPCkbgXHs7tNZINAVcM4pFdY9H/GrCZdYDfbA1kDGEoVdjRkePOaC
-    JG4ruO25rJSS/5xkuIeyrOGth99qsXtnDp+0UQMOwtlyvR98+WwRV9EMCKkF4/Li
-    mj9Dsn0wCVKUPWy/hG8WByygiX0ryGUx3yKG8SVDXWgd/yirDMS+MtGExLbfGPrz
-    ah7IwveCXqMpwv0nZ4qJVFGCDhS1RDJYp5T3cusoKdwhuEKDAqYXNYLlv7RnByfa
-    D0vfyi5biH2dtTOpD4zEt6MZ7EN8lc0DWrSuUtkxfcE+g4YfvD+OgRF3ozutXxFA
-    owoL3npC50zsSoLkJ7j2MHmrmothD9pYA8WiYKAFWs1CnUaAd3T9XAwlU5RYIRuo
-    OdqHaoK1eraCTZWnzObuqXhL4A4J/+ODd8pjLpR0b0+gwwOWEq6AzXShBxHZnKy9
-    CyXpH96D795Truc8u9telUt6Rk5WbyhL1FTKHmyfheGfHlEfXm5vaFfvU2x/DT/s
-    OaWBKF6gB0yH4kO7ka9bjXtnyR0Zr9YiK1Ehp1Si35D7sKR/CIvG1IAv9h3SCJsU
-    7jdXsO6688HmZlQlFMl7Zxo/vt3D0Y1fyqKqbZKCM7ZQP70CAwEAAaNSMFAwLwYD
-    VR0RBCgwJoIJbG9jYWxob3N0ggsqLmxvY2FsaG9zdIIMaHR0cHMtc2VydmVyMB0G
-    A1UdDgQWBBR6kWF1REnoZuoq/KpDqwihntAwfTANBgkqhkiG9w0BAQ0FAAOCAgEA
-    D+teUFgBO4kjGxXDJGjbtMSOE7ZmHD1FK5n9xEwvYaS74bt2dzecIKWniaIRmzcS
-    Mu1FR2wM+Yc7UGFh44vXucMrLKnCFz4K1nOfRYHbVnXEtm+7y9X1Kvg5esSJw6Lc
-    nnTkSndwuKeiNnDZ6FskKGSG0VirmpidEJ8Xy3jVuxAmFozeClfdfIXh68y3a/zo
-    OKViXTn5UPp8yWhlcvd25nT6yfTUJZEmlshZXSTfLR+7NkplONAuG0NDb2fwzfmg
-    ZOTHpXcbK92jZS/ukXizWqoE2ZmdGSPIto0/EPjF98lIzJFGSwpMjd4titJxOzcN
-    sQdZ4rH4EkFB4CkDKE2scLbTwBxapKBu9l+dS/E3RDvlW7zna5mbL3t1wO6lLT1Y
-    NFegMtML1cSS0WQ5j2DKQ5BWIAQjmIAnqo6HNPqL9Rc/UChxAF/IH3oBEb/8j6Wb
-    ckCvvirNAQiuOJYHDtb6gvtRhWoQmwJVZBNLRxoQrAiDYGKtyNcP8xMUJnb2jqNa
-    MtoUU2dZr9A7FGGSENRXaOM3wD+m2yvwGby0KJ962vYu1Yp4TcL6yTR29rxbVByj
-    oCmp9YzlFIKCrNahcTPdVNeGoUdhlyyHKCeeZ9m/Vkp5GAdtGaXVbTtxtvlmBpok
-    ookZq+AMaopNXwagcsFxguCnsDn/lrBkn9J9A/0DBr8=
-  tls.key: |
-    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
-    wREJK/NeujleOA6KVrG/BnUG4Xwa
 ---
 # notifications-service-deployment
 apiVersion: apps/v1
@@ -217,6 +126,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8089
+              name: notif-port
           envFrom:
             - configMapRef:
                 name: notifications-configmap
@@ -241,7 +151,7 @@ spec:
       nodePort: 30004
       targetPort: notif-port
       protocol: TCP
-      name: notif-port
+      name: notif-service-port
   type: NodePort
   selector:
     app: notifications-service

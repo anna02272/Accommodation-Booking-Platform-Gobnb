@@ -133,6 +133,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8083
+              name: acc-port
           envFrom:
             - configMapRef:
                 name: acc-configmap
@@ -157,7 +158,7 @@ spec:
       nodePort: 30002
       targetPort: acc-port
       protocol: TCP
-      name: acc-port
+      name: acc-service-port
   type: NodePort
   selector:
     app: acc-service

@@ -130,6 +130,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8082
+              name: res-port
           envFrom:
             - configMapRef:
                 name: res-configmap
@@ -154,7 +155,7 @@ spec:
       nodePort: 30003
       targetPort: res-port
       protocol: TCP
-      name: res-port
+      name: res-service-port
   type: NodePort
   selector:
     app: res-service

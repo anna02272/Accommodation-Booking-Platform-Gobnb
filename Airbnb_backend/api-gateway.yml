@@ -227,13 +227,13 @@ kind: Service
 metadata:
   name: api-gateway
 spec:
-  ports:
-    - port: 8000
-      nodePort: 32000
-      targetPort: gateway-port
-      protocol: TCP
-      name: gateway-port
   type: NodePort
   selector:
     app: api-gateway
+  ports:
+    - port: 8000
+      nodePort: 32000
+      targetPort: 8000
+
+
 

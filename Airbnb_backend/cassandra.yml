@@ -42,7 +42,7 @@ kind: Service
 metadata:
   labels:
     app: cassandra
-  name: cassandra-service
+  name: cassandra
 spec:
   ports:
     - port: 9042

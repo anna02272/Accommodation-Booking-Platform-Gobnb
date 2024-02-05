@@ -132,6 +132,7 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8087
+              name: rating-port
           envFrom:
             - configMapRef:
                 name: rating-configmap
@@ -156,7 +157,7 @@ spec:
       nodePort: 30007
       targetPort: rating-port
       protocol: TCP
-      name: rating-port
+      name: rating-service-port
   type: NodePort
   selector:
     app: rating-service

@@ -124,9 +124,10 @@ spec:
       containers:
         - name: auth-server
           image: docker.io/library/airbnb_backend-auth-server:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+              name: auth-port
           envFrom:
             - configMapRef:
                 name: auth-configmap
@@ -151,9 +152,10 @@ spec:
       nodePort: 30001
       targetPort: auth-port
       protocol: TCP
-      name: auth-port
+      name: auth-service-port
   type: NodePort
   selector:
     app: auth-service
+
 
 

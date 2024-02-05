@@ -36,9 +36,9 @@ spec:
           env:
             - name: SERVICE_PRECONDITION
               value: "namenode:9870"
-          volumeMounts:
-            - name: hadoopdatanode
-              mountPath: /hadoop/dfs/name
+#          volumeMounts:
+#            - name: hadoop-datanode
+#              mountPath: /hadoop/dfs/name
       volumes:
         - name: hadoop-datanode
           persistentVolumeClaim:

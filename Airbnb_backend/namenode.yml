@@ -35,9 +35,9 @@ spec:
           env:
             - name: CLUSTER_NAME
               value: "gobnb"
-          volumeMounts:
-            - name: hadoopnamenode
-              mountPath: /hadoop/dfs/name
+#          volumeMounts:
+#            - name: hadoop-namenode
+#              mountPath: /hadoop/dfs/name
       volumes:
         - name: hadoop-namenode
           persistentVolumeClaim:
