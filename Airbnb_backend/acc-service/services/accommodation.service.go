@@ -13,4 +13,5 @@ type AccommodationService interface {
 	GetAllAccommodations(ctx context.Context) ([]*domain.Accommodation, error)
 	DeleteAccommodation(accommodationID string, hostId string, ctx context.Context) error
 	GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool, ctx context.Context) ([]*domain.Accommodation, error)
+	GetHostIdByAccommodationId(accID string) (string, error)
 }

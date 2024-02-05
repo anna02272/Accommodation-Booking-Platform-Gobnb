@@ -12,6 +12,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sony/gobreaker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,11 +26,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type AccommodationHandler struct {
@@ -423,6 +424,20 @@ func (s *AccommodationHandler) DeleteAccommodation(c *gin.Context) {
 	span.SetStatus(codes.Ok, "Accommodation successfully deleted.")
 	c.JSON(http.StatusOK, gin.H{"message": "Accommodation successfully deleted."})
 	return
+}
+
+// get hostid by accommodation id
+func (s *AccommodationHandler) GetHostIdByAccommodationId(c *gin.Context) {
+	accID := c.Param("accId")
+
+	hostid, err := s.accommodationService.GetHostIdByAccommodationId(accID)
+	if err != nil {
+		errorMsg := map[string]string{"error": "HostId not found."}
+		error2.ReturnJSONError(c.Writer, errorMsg, http.StatusBadRequest)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"hostId": hostid})
+
 }
 
 func (s *AccommodationHandler) CacheAndStoreImages(c *gin.Context) {

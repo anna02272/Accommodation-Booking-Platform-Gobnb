@@ -4,6 +4,7 @@ import { ReservationService } from 'src/app/services/reservation.service';
 import { Reservation } from 'src/app/models/reservation';
 import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-reservation',
@@ -12,6 +13,10 @@ import { HttpClient } from '@angular/common/http';
 })
 export class ReservationComponent implements OnInit {
   @Input() accommodationId!: string;
+  hostId!: string;
+  hostFeatured!: boolean;
+  hostEmail!: string;
+  hostIdP!: string;
   form!: FormGroup;
   showDiv: boolean = false;
   showDivSuccess: boolean = false;
@@ -37,6 +42,31 @@ export class ReservationComponent implements OnInit {
       check_in_date: [''],
       number_of_guests: ['']
     });
+//     this.httpClient.get('https://localhost:8000/api/accommodations/get/hostid/' + this.accommodationId).pipe(
+//   switchMap((response: any) => {
+//     this.hostId = response.hostId;
+//     alert("accid " + this.accommodationId + " hostid " + this.hostId);
+//     return this.httpClient.get('https://localhost:8000/api/users/getById/' + this.hostId);
+//   }),
+//   switchMap((response: any) => {
+//     this.hostEmail = response.email;
+//     alert("hostEmail " + this.hostEmail);
+//     return this.httpClient.get('https://localhost:8000/api/profile/getUser/' + this.hostEmail);
+//   }),
+//   switchMap((response: any) => {
+//     this.hostIdP = response.id;
+//     alert("hostIdP " + this.hostIdP);
+//     return this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostIdP);
+//   })
+// ).subscribe(
+//   (response: any) => {
+//     this.hostFeatured = response;
+//     alert("hostFeatured " + this.hostFeatured);
+//   },
+//   error => {
+//     console.error('Error', error);
+//   }
+// );
   }
 
   convertToISOFormat(dateObject?: string, isCheckOut?: boolean): string {
@@ -86,14 +116,15 @@ export class ReservationComponent implements OnInit {
         next: (response) => {
           console.log('Reservation created successfully', response);
           this.showDivSuccess = true;
+          //this.isHostFeatured();
           setTimeout(() => {
             this.showDivSuccess = false;
           }, 5000);
-          //this.isHostFeatured();
         },
         error: (error) => {
           console.log(reservationCreate)
           this.showDiv = true;
+          //this.isHostFeatured();
           this.errorMessage = error.error.error;
           setTimeout(() => {
             this.showDiv = false;
@@ -133,27 +164,27 @@ export class ReservationComponent implements OnInit {
   }
 
   // isHostFeatured() {
-  //   //get all ratings for the host getAll returns one json {"ratings": "", "averageRating": ""}
+  //   alert("isHostFeatured");
   //   var featured = false;
-  //   var averageRating = 0;
-  //   this.ratingService.getAll().subscribe(
-  //     (response: any) => {
-  //       averageRating = response.averageRating;
-  //     },
-  //     error => {
-  //       console.error('Error fetching ratings', error);
-  //     }
-  //   );
-  //   if (averageRating >= 4.7) {
-  //     featured = true;
-  //   }
+    
+  //   // var averageRating = 0;
+  //   // this.ratingService.getAll().subscribe(
+  //   //   (response: any) => {
+  //   //     averageRating = response.averageRating;
+  //   //   },
+  //   //   error => {
+  //   //     console.error('Error fetching ratings', error);
+  //   //   }
+  //   // );
+  //   // if (averageRating >= 4.7) {
+  //   //   featured = true;
+  //   // }
 
   //   var cancelRate = 0;
-  //   //get cancelled rate from https://localhost:8000/api/reservations/cancelled/{hostId}
   //   this.httpClient.get('https://localhost:8000/api/reservations/cancelled/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //cancelRate = response to float
   //       cancelRate = response;
+  //       alert("cancel rate " + cancelRate);
   //     },
   //     error => {
   //       console.error('Error fetching cancel rate', error);
@@ -166,8 +197,8 @@ export class ReservationComponent implements OnInit {
   //   var total = 0;
   //   this.httpClient.get('https://localhost:8000/api/reservations/total/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //total = response to float
   //       total = response;
+  //       alert("total " + total);
   //     },
   //     error => {
   //       console.error('Error fetching total', error);
@@ -180,8 +211,8 @@ export class ReservationComponent implements OnInit {
   //   var duration = 0;
   //   this.httpClient.get('https://localhost:8000/api/reservations/duration/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //duration = response to float
   //       duration = response;
+  //       alert("duration " + duration);
   //     },
   //     error => {
   //       console.error('Error fetching duration', error);
@@ -192,34 +223,31 @@ export class ReservationComponent implements OnInit {
   //   }
 
   //   var responseFeatured = false;
-  //   this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostId).subscribe(
-  //       (response: any) => {
-  //         responseFeatured = response;
-  //       },
-  //       error => {
-  //         console.error('Error fetching isFeatured', error);
-  //       }
-  //     );
-  //   if (featured) {
+    
+  //   if (this.hostFeatured) {
   //     if (!responseFeatured) {
   //       //post to https://localhost:8000/api/hosts/featured/{hostId}
   //       this.httpClient.post('https://localhost:8000/api/profile/setFeatured/' + this.hostId, null).subscribe(
   //         (response: any) => {
   //           console.log(response);
+  //           alert("response set featured " + response);
   //         },
   //         error => {
   //           console.error('Error featuring host', error);
+  //           alert("error set featured " + error);
   //         }
   //       );
   //     }
   //   } else{
   //     if (responseFeatured) {
-  //       this.httpClient.post('https://localhost:8000/api/profile/removeFeatured/' + this.hostId, null).subscribe(
+  //       this.httpClient.post('https://localhost:8000/api/profile/setUnfeatured/' + this.hostId, null).subscribe(
   //         (response: any) => {
   //           console.log(response);
+  //           alert("response set unfeatured " + response);
   //         },
   //         error => {
   //           console.error('Error removing feature from host', error);
+  //           alert("error set unfeatured " + error);
   //         }
   //       );
   //     }

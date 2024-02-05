@@ -19,7 +19,7 @@
         <p><strong>Number of Guests:</strong> {{ reservation.NumberOfGuests }}</p>
       </div>
       <div class="button">
-      <button class="btn" type="submit" (click)="cancelReservation(reservation.ReservationIdTimeCreated)"
+      <button class="btn" type="submit" (click)="cancelReservation(reservation.ReservationIdTimeCreated, reservation.AccommodationId)"
       >Cancel reservation </button>
       </div>
  </li>

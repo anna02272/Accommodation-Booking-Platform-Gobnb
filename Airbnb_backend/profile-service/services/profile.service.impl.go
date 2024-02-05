@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -194,10 +195,17 @@ func (uc *UserServiceImpl) IsFeatured(hostID string) (bool, error) {
 
 	var user *domain.User
 	fmt.Println("hostId in service: ", hostID)
-	var err = uc.collection.FindOne(uc.ctx, bson.M{"_id": hostID}).Decode(&user)
+	oid, _ := primitive.ObjectIDFromHex(hostID)
+	//var responseUser *domain.UserResponse
+	query := bson.M{"_id": oid}
+
+	var err = uc.collection.FindOne(uc.ctx, query).Decode(&user)
 	if err != nil {
+		//span.SetStatus(codes.Error, err.Error())
+
 		return false, err
 	}
+
 	return user.Featured, nil
 
 }

@@ -138,27 +138,25 @@ export class RateHostComponent implements AfterViewInit {
   }
 
   // isHostFeatured() {
-  //   //get all ratings for the host getAll returns one json {"ratings": "", "averageRating": ""}
   //   var featured = false;
-  //   var averageRating = 0;
-  //   this.ratingService.getAll().subscribe(
-  //     (response: any) => {
-  //       averageRating = response.averageRating;
-  //     },
-  //     error => {
-  //       console.error('Error fetching ratings', error);
-  //     }
-  //   );
-  //   if (averageRating >= 4.7) {
-  //     featured = true;
-  //   }
+  //   // var averageRating = 0;
+  //   // this.ratingService.getAll().subscribe(
+  //   //   (response: any) => {
+  //   //     averageRating = response.averageRating;
+  //   //   },
+  //   //   error => {
+  //   //     console.error('Error fetching ratings', error);
+  //   //   }
+  //   // );
+  //   // if (averageRating >= 4.7) {
+  //   //   featured = true;
+  //   // }
 
   //   var cancelRate = 0;
-  //   //get cancelled rate from https://localhost:8000/api/reservations/cancelled/{hostId}
   //   this.httpClient.get('https://localhost:8000/api/reservations/cancelled/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //cancelRate = response to float
   //       cancelRate = response;
+  //       alert("cancel rate " + cancelRate);
   //     },
   //     error => {
   //       console.error('Error fetching cancel rate', error);
@@ -171,8 +169,8 @@ export class RateHostComponent implements AfterViewInit {
   //   var total = 0;
   //   this.httpClient.get('https://localhost:8000/api/reservations/total/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //total = response to float
   //       total = response;
+  //       alert("total " + total);
   //     },
   //     error => {
   //       console.error('Error fetching total', error);
@@ -185,8 +183,8 @@ export class RateHostComponent implements AfterViewInit {
   //   var duration = 0;
   //   this.httpClient.get('https://localhost:8000/api/reservations/duration/' + this.hostId).subscribe(
   //     (response: any) => {
-  //       //duration = response to float
   //       duration = response;
+  //       alert("duration " + duration);
   //     },
   //     error => {
   //       console.error('Error fetching duration', error);
@@ -200,6 +198,7 @@ export class RateHostComponent implements AfterViewInit {
   //   this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostId).subscribe(
   //       (response: any) => {
   //         responseFeatured = response;
+  //         alert("responseFeatured " + responseFeatured);
   //       },
   //       error => {
   //         console.error('Error fetching isFeatured', error);

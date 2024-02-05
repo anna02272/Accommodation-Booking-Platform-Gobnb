@@ -10,15 +10,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
-	"strconv"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -382,4 +383,23 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 
 	return accommodations, nil
 
+}
+
+func (s *AccommodationServiceImpl) GetHostIdByAccommodationId(accID string) (string, error) {
+	objID, err := primitive.ObjectIDFromHex(accID)
+	if err != nil {
+		return "", err
+	}
+
+	var accommodation domain.Accommodation
+	err = s.collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&accommodation)
+	if err != nil {
+		return "", err
+	}
+
+	//accommodation.hostid to string
+	//var hostid string
+	//hostid = accommodation.HostId
+
+	return accommodation.HostId, nil
 }
