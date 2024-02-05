@@ -56,6 +56,7 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	defer span.End()
 	s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Info("EventHandler.InsertEventIntoEventStore")
 
+
 	token := h.Header.Get("Authorization")
 	url := "https://auth-server:8080/api/users/currentUser"
 
@@ -66,7 +67,9 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreakerEvent(ctx, token, url)
 	if err != nil {
 		if ctxx.Err() == context.DeadlineExceeded {
+
 			s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Authorization service")
+
 			span.SetStatus(codes.Error, "Authorization service not available")
 			errorMsg := map[string]string{"error": "Authorization service not available.."}
 			error2.ReturnJSONError(rw, errorMsg, http.StatusInternalServerError)
@@ -75,6 +78,7 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 		if errors.Is(err, gobreaker.ErrOpenState) {
 			// Circuit is open
 			s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Circuit is open. Authorization service is not available")
+
 			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
 			return
@@ -87,6 +91,7 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	statusCode := resp.StatusCode
 	if statusCode != 200 {
 		s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Unauthorized")
+
 		span.SetStatus(codes.Error, "Unauthorized")
 		errorMsg := map[string]string{"error": "Unauthorized."}
 		error2.ReturnJSONError(rw, errorMsg, http.StatusUnauthorized)
@@ -110,11 +115,13 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	if err := decoder.Decode(&response); err != nil {
 		if strings.Contains(err.Error(), "cannot parse") {
 			s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Inavalid date format in the response")
+
 			span.SetStatus(codes.Error, "Invalid date format in the response")
 			error2.ReturnJSONError(rw, "Invalid date format in the response", http.StatusBadRequest)
 			return
 		}
 		s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Error decoding JSON response")
+
 		span.SetStatus(codes.Error, "Error decoding JSON response")
 		error2.ReturnJSONError(rw, fmt.Sprintf("Error decoding JSON response: %v", err), http.StatusBadRequest)
 		return
@@ -135,6 +142,7 @@ func (s *EventHandler) InsertEventIntoEventStore(rw http.ResponseWriter, h *http
 	errEvent := s.Repo.InsertEvent(ctx, event)
 	if errEvent != nil {
 		s.logg.WithFields(logrus.Fields{"path": "reservation/InsertEventIntoEventStore"}).Error("Error storing event")
+
 		span.SetStatus(codes.Error, "Error storing event")
 		s.logger.Print("Database exception: ", errEvent)
 		errorMsg := map[string]string{"error": "Error storing event"}
