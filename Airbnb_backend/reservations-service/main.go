@@ -169,8 +169,8 @@ func main() {
 	reportStore.CreateTableDailyReport()
 	reportStore.CreateTableMonthlyReport()
 	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer, logg)
-	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
-	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer, logg)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer, logg)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
