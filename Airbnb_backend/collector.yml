@@ -55,8 +55,6 @@ spec:
           volumeMounts:
             - name: collector-configmap
               mountPath: /etc/otel-collector-config.yaml
-            - name: otel-collector-storage
-              mountPath: /storage
       volumes:
       - name: collector-configmap
         configMap:
@@ -66,17 +64,17 @@ spec:
           claimName: collector-pvc
 
 ---
-# collector-service.yaml
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: collector
-#spec:
-#  selector:
-#    app: collector
-#  ports:
-#    - protocol: TCP
-#      port: 14250
-#      targetPort: 14250
+#collector-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: collector
+spec:
+  selector:
+    app: collector
+  ports:
+    - protocol: TCP
+      port: 4317
+      targetPort: 4317
 
 

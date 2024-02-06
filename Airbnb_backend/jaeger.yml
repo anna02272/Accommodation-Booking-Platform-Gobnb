@@ -34,6 +34,11 @@ spec:
               containerPort: 6831
             - name: jaeger-port
               containerPort: 16686
+            - name : port
+              containerPort: 14268
+            - name: api-port
+              containerPort: 14250
+
       volumes:
         - name: jaegerstore
           persistentVolumeClaim:
@@ -58,6 +63,14 @@ spec:
     - name: jaeger-port
       port: 16686
       targetPort: 16686
+      protocol: TCP
+    - name: port
+      port: 14268
+      targetPort: 14268
+      protocol: TCP
+    - name: api-port
+      port: 14250
+      targetPort: 14250
       protocol: TCP
 
 
