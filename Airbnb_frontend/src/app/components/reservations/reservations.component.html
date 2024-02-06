@@ -21,9 +21,8 @@
         <p><strong>Number of Guests:</strong> {{ reservation.number_of_guests }}</p>
       </div>
       <div class="button">
-
-        <button class="btn" type="submit" (click)="cancelReservation(reservation.reservation_id_time_created)">Cancel
-          reservation </button>
+      <button class="btn" type="submit" (click)="cancelReservation(reservation.reservation_id_time_created, reservation.accommodation_id)"
+      >Cancel reservation </button>
       </div>
     </li>
   </ul>

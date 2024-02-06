@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, UserService } from 'src/app/services';
 import { User } from 'src/app/models/user';
+import { HttpClient } from '@angular/common/http';
+import { concatMap } from 'rxjs/operators';
 
 
 @Component({
@@ -15,14 +17,19 @@ export class ProfileComponent {
   notifications!: any[];
   notifServiceAvailable: boolean = false;
   profileServiceAvailable: boolean = false;
+  hostEmail!: string;
+  hostIdP!: string;
+  hostFeatured!: boolean;
 
 
 
-  constructor(private userService: UserService, private router: Router, private authService: AuthService) {
+  constructor(private userService: UserService, private router: Router, private authService: AuthService, private httpClient: HttpClient) {
     
   }
   ngOnInit() {
     this.load();
+
+    
   }
   load() {
     this.userService.getProfile().subscribe((data: any) => {
@@ -34,6 +41,24 @@ export class ProfileComponent {
       console.log(this.currentProfile.address.city)
 
       this.getNotifications();
+
+      this.hostEmail = this.currentProfile.email;
+
+      this.httpClient.get('https://localhost:8000/api/profile/getUser/' + this.hostEmail).pipe(
+        concatMap((response: any) => {
+          this.hostIdP = response.user.id;
+          //alert("hostIdP " + this.hostIdP);
+          return this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostIdP);
+        })
+      ).subscribe(
+        (response: any) => {
+          this.hostFeatured = response.featured;
+          //alert("hostFeatured " + this.hostFeatured);
+        },
+        error => {
+          console.error('Error', error);
+        }
+      );
 
 
   },
@@ -49,6 +74,11 @@ export class ProfileComponent {
   
   );
 }
+
+isFeatured(){
+  return this.hostFeatured;
+}
+
 deleteProfile() {
     this.userService.deleteProfile().subscribe(
       () => {

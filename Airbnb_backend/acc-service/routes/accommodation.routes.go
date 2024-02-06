@@ -11,11 +11,11 @@ import (
 
 type AccommodationRouteHandler struct {
 	accommodationHandler handlers.AccommodationHandler
-	accommodationService services.AccommodationService
+	//accommodationService services.AccommodationService
 }
 
 func NewAccommodationRouteHandler(accommodationHandler handlers.AccommodationHandler, accommodationService services.AccommodationService) AccommodationRouteHandler {
-	return AccommodationRouteHandler{accommodationHandler, accommodationService}
+	return AccommodationRouteHandler{accommodationHandler}
 }
 
 func (rc *AccommodationRouteHandler) AccommodationRoute(rg *gin.RouterGroup) {
@@ -29,6 +29,7 @@ func (rc *AccommodationRouteHandler) AccommodationRoute(rg *gin.RouterGroup) {
 	router.DELETE("/delete/:accId", rc.accommodationHandler.DeleteAccommodation)
 	router.POST("/upload/images/:accId", rc.accommodationHandler.CacheAndStoreImages)
 	router.GET("/images/:accId", rc.accommodationHandler.GetAccommodationImages)
+	router.GET("/get/hostid/:accId", rc.accommodationHandler.GetHostIdByAccommodationId)
 }
 
 func MiddlewareContentTypeSet(c *gin.Context) {
