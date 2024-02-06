@@ -1,0 +1,82 @@
+# collector-persistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: collector-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# collector-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collector-configmap
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      jaeger:
+        endpoint: jaeger:14250
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [jaeger]
+
+---
+# collector-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: collector
+  template:
+    metadata:
+      labels:
+        app: collector
+    spec:
+      containers:
+        - name: collector
+          image: otel/opentelemetry-collector:0.69.0
+          volumeMounts:
+            - name: collector-configmap
+              mountPath: /etc/otel-collector-config.yaml
+            - name: otel-collector-storage
+              mountPath: /storage
+      volumes:
+      - name: collector-configmap
+        configMap:
+          name: collector-configmap
+      - name: otel-collector-storage
+        persistentVolumeClaim:
+          claimName: collector-pvc
+
+---
+# collector-service.yaml
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: collector
+#spec:
+#  selector:
+#    app: collector
+#  ports:
+#    - protocol: TCP
+#      port: 14250
+#      targetPort: 14250
+
+

@@ -1,0 +1,64 @@
+# rating-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rating-configmap
+data:
+  PORT: "8087"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+  NEO4J_DB: "bolt://neo4j:7687"
+  NEO4J_USERNAME: "neo4j"
+  NEO4J_PASS: "password"
+  NATS_HOST: "nats"
+  NATS_PORT: "4222"
+  NATS_USER: "ruser"
+  NATS_PASS: "T0pS3cr3t"
+  CREATE_ACCOMMODATION_COMMAND_SUBJECT: "accommodation.create.command"
+  CREATE_ACCOMMODATION_REPLY_SUBJECT: "accommodation.create.reply"
+---
+# rating-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rating-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rating-service
+  template:
+    metadata:
+      labels:
+        app: rating-service
+    spec:
+      containers:
+        - name: rating-server
+          image: docker.io/library/airbnb_backend-rating-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8087
+          envFrom:
+            - configMapRef:
+                name: rating-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: rating-logs
+      volumes:
+        - name: rating-logs
+          emptyDir: { }
+---
+#rating-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-server
+spec:
+  ports:
+    - port: 8087
+      targetPort: 8087
+      protocol: TCP
+  selector:
+    app: rating-service
+
+

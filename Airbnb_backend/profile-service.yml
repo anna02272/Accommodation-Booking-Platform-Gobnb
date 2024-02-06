@@ -1,0 +1,55 @@
+# profile-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: profile-configmap
+data:
+  PORT: "8084"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+---
+# profile-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: profile-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: profile-service
+  template:
+    metadata:
+      labels:
+        app: profile-service
+    spec:
+      containers:
+        - name: profile-server
+          image: docker.io/library/airbnb_backend-profile-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8084
+          envFrom:
+            - configMapRef:
+                name: profile-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: profile-logs
+      volumes:
+        - name: profile-logs
+          emptyDir: { }
+---
+#profile-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: profile-server
+spec:
+  ports:
+    - port: 8084
+      targetPort: 8084
+      protocol: TCP
+  selector:
+    app: profile-service
+
+

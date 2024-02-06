@@ -66,10 +66,12 @@ func init() {
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
 	if err != nil {
+		fmt.Printf("Error connecting to MongoDB: %v\n", err)
 		panic(err)
 	}
 
 	if err := mongoclient.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Printf("Error disconnecting from MongoDB: %v\n", err)
 		panic(err)
 	}
 

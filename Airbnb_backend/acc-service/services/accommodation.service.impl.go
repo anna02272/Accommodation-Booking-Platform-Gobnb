@@ -356,6 +356,25 @@ func (s *AccommodationServiceImpl) DeleteAccommodation(accommodationID string, h
 	//span.SetStatus(codes.Error, err.Error())
 	return nil
 }
+func (s *AccommodationServiceImpl) DeleteAccommodationForSaga(accommodationID string, hostID string, ctx context.Context) error {
+	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.DeleteAccommodation")
+	defer span.End()
+
+	objID, err := primitive.ObjectIDFromHex(accommodationID)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	filter := bson.M{"_id": objID, "host_id": hostID}
+
+	_, err = s.collection.DeleteOne(context.Background(), filter)
+
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+	return nil
+}
 
 func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, guests string, amenities map[string]bool, amenitiesExist bool, ctx context.Context) ([]*domain.Accommodation, error) {
 	ctx, span := s.Tracer.Start(s.ctx, "AccommodationService.GetAccommodationBySearch")

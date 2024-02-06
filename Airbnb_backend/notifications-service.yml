@@ -1,0 +1,61 @@
+# notifications-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notifications-configmap
+data:
+  PORT: "8089"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  SECRET_KEY: "TUZzd0RRWUpLb1pJaHZjTkFRRUJCUUFEU2dBd1J3SkFVRUw5T1owOVNuZVFKWG5jdzBRWlpjRTllbVN2Z1M5NA==Vk84ZFB6WFA2K3JDdEc0ZjhnSUVoSU1IM2lXM09ZY1RPUGl2Wkg2bE1iRTNMUndYM1dHbmVRSURBUUFC"
+  SMTP_HOST: "sandbox.smtp.mailtrap.io"
+  SMTP_USER: "22d4780d3a377d"
+  SMTP_PASS: "9915ee4595ade4"
+  SMTP_PORT: "587"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+---
+
+# notifications-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications-service
+  template:
+    metadata:
+      labels:
+        app: notifications-service
+    spec:
+      containers:
+        - name: notifications-server
+          image: docker.io/library/airbnb_backend-notifications-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8089
+          envFrom:
+            - configMapRef:
+                name: notifications-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: notification-logs
+      volumes:
+        - name: notification-logs
+          emptyDir: { }
+---
+#notifications-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications-server
+spec:
+  ports:
+    - port: 8089
+      targetPort: 8089
+      protocol: TCP
+  selector:
+    app: notifications-service
+
+

@@ -75,7 +75,7 @@ func (handler *CreateAccommodationCommandHandler) handle(command *create_accommo
 		}
 
 	case create_accommodation.RollbackAccommodation:
-		err := handler.accommodationService.DeleteAccommodation(id, accommodation.HostId, context.Background())
+		err := handler.accommodationService.DeleteAccommodationForSaga(id, accommodation.HostId, context.Background())
 		if err != nil {
 			return
 		}
