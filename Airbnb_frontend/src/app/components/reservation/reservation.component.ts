@@ -6,6 +6,7 @@ import { DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { concatMap, switchMap } from 'rxjs/operators';
 import { json } from 'express';
+import { RatingService } from 'src/app/services/rating.service';
 
 @Component({
   selector: 'app-reservation',
@@ -32,7 +33,7 @@ export class ReservationComponent implements OnInit {
   successMessage?: "Reserved successfully!"
   errorMessage2?: "Please enter your check-in time!"
 
-  constructor(private fb: FormBuilder, private reservationService: ReservationService, private datePipe: DatePipe, private httpClient: HttpClient) {
+  constructor(private fb: FormBuilder, private reservationService: ReservationService, private datePipe: DatePipe, private httpClient: HttpClient, private ratingService: RatingService) {
     this.showDivSuccess = false;
   }
 
@@ -247,94 +248,122 @@ export class ReservationComponent implements OnInit {
     //alert("isHostFeatured");
     var featured = false;
     
-    // var averageRating = 0;
-    // this.ratingService.getAll().subscribe(
-    //   (response: any) => {
-    //     averageRating = response.averageRating;
-    //   },
-    //   error => {
-    //     console.error('Error fetching ratings', error);
-    //   }
-    // );
+    var averageRating = 0;
+    this.ratingService.getAll().subscribe(
+      (response: any) => {
+        averageRating = response.averageRating;
+      },
+      error => {
+        console.error('Error fetching ratings', error);
+      }
+    );
     // if (averageRating >= 4.7) {
     //   featured = true;
+    // } else{
+    //   featured = false;
     // }
 
     var cancelRate = 0;
     this.httpClient.get('https://localhost:8000/api/reservations/cancelled/' + this.hostId).subscribe(
       (response: any) => {
         cancelRate = response;
+        // if (cancelRate < 5.0) {
+        //   featured = true;
+        //   alert("cancel rate " + cancelRate)
+        // } else{
+        //   featured = false;
+        //   alert("FALSE cancel rate " + cancelRate)
+        // }
         //alert("cancel rate " + cancelRate);
       },
       error => {
         console.error('Error fetching cancel rate', error);
       }
     );
-    if (cancelRate < 5.0) {
-      featured = true;
-    }
+    
 
     var total = 0;
     this.httpClient.get('https://localhost:8000/api/reservations/total/' + this.hostId).subscribe(
       (response: any) => {
         total = response;
+        // if (total >= 5) {
+        //   featured = true;
+        //   alert("total " + total)
+        // } else{
+        //   featured = false;
+        //   alert("FALSE total " + total)
+        // }
         //alert("total " + total);
       },
       error => {
         console.error('Error fetching total', error);
       }
     );
-    if (total >= 5) {
-      featured = true;
-    }
+    
 
     var duration = 0;
     this.httpClient.get('https://localhost:8000/api/reservations/duration/' + this.hostId).subscribe(
       (response: any) => {
         duration = response;
+        // if (duration > 50) {
+        //   featured = true;
+        //   alert("duration " + duration)
+        // } else{
+        //   featured = false;
+        //   alert("FALSE duration " + duration)
+        // }
         //alert("duration " + duration);
       },
       error => {
         console.error('Error fetching duration', error);
       }
     );
-    if (duration > 50) {
-      featured = true;
-    }
+    
 
-    //alert("featured " + featured);
+    
     //var responseFeatured = false;
     
-    if (this.hostFeatured) {
-      if (!featured) {
-        //post to https://localhost:8000/api/hosts/featured/{hostId}
-        this.httpClient.post('https://localhost:8000/api/profile/setUnfeatured/' + this.hostIdP, null).subscribe(
-          (response: any) => {
-            console.log(response);
-            console.log("Host is now not featured")
-            //alert("response set unfeatured " + response);
-          },
-          error => {
-            console.error('Error featuring host', error);
-            //alert("error set featured " + error);
-          }
-        );
+    setTimeout(() => {
+      
+      if((averageRating >= 4.5) && (cancelRate < 5.0) && (total >= 5) && (duration > 50)){
+        featured = true;
+      } else{
+        featured = false;
       }
-    } else{
-      if (featured) {
-        this.httpClient.post('https://localhost:8000/api/profile/setFeatured/' + this.hostIdP, null).subscribe(
-          (response: any) => {
-            console.log(response);
-            console.log("Host is now featured")
-            //alert("response set featured " + response);
-          },
-          error => {
-            console.error('Error removing feature from host', error);
-            //alert("error set unfeatured " + error);
-          }
-        );
+
+      //alert("featured " + featured);
+      if (this.hostFeatured) {
+        if (!featured) {
+          //post to https://localhost:8000/api/hosts/featured/{hostId}
+          this.httpClient.post('https://localhost:8000/api/profile/setUnfeatured/' + this.hostIdP, null).subscribe(
+            (response: any) => {
+              console.log(response);
+              console.log("Host is now not featured")
+              //alert("response set unfeatured " + response);
+            },
+            error => {
+              console.error('Error featuring host', error);
+              //alert("error set featured " + error);
+            }
+          );
+        }
+      } else{
+        if (featured) {
+          this.httpClient.post('https://localhost:8000/api/profile/setFeatured/' + this.hostIdP, null).subscribe(
+            (response: any) => {
+              console.log(response);
+              console.log("Host is now featured")
+              //alert("response set featured " + response);
+            },
+            error => {
+              console.error('Error removing feature from host', error);
+              //alert("error set unfeatured " + error);
+            }
+          );
+        }
       }
-    }
+
+    }, 1000);
 
   }
   
