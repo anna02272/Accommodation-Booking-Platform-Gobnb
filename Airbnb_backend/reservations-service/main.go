@@ -7,15 +7,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"reservations-service/analyticsReport"
 	"reservations-service/config"
 	"reservations-service/handlers"
 	"reservations-service/repository"
 	"reservations-service/services"
 	"time"
 
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/gin-gonic/gin"
 	gorillaHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -25,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 var (
@@ -35,6 +40,10 @@ var (
 	availabilityService    services.AvailabilityService
 	AvailabilityHandler    handlers.AvailabilityHandler
 	logger2                *log.Logger
+)
+
+const (
+	QueueGroup = "reservation_service"
 )
 
 func init() {
@@ -59,11 +68,15 @@ func init() {
 	}
 
 	fmt.Println("MongoDB successfully connected...")
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
 
 	// Collections
 	availabilityCollection = mongoclient.Database("Gobnb").Collection("availability")
-	logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
+	//logger2 = log.New(os.Stdout, "[reservation-api] ", log.LstdFlags)
 	availabilityService = services.NewAvailabilityServiceImpl(availabilityCollection, ctx, tracer)
+	InitCreateAccommodationHandler(availabilityService, replyPublisher, commandSubscriber)
+
 	AvailabilityHandler = handlers.NewAvailabilityHandler(availabilityService, availabilityCollection, logger2, tracer)
 
 	server2 = gin.Default()
@@ -76,6 +89,24 @@ func main() {
 	if len(port) == 0 {
 		port = "8080"
 	}
+
+	logg := logrus.New()
+	logg.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/reservation-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logg.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("Error closing log file:", err)
+		}
+	}()
+
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Info("This is an info message, finaly")
+	logg.WithFields(logrus.Fields{"path": "reservation/main"}).Error("This is an error message")
 
 	// Initialize context
 	timeoutContext, cancel := context.WithTimeout(context.Background(), 1000*time.Second)
@@ -119,14 +150,16 @@ func main() {
 	//	logger.Fatal(err)
 	//}
 
+	analyticsReport.GetPropertiesAnalytics()
+
 	defer store.CloseSession()
 	store.CreateTable()
 	eventStore.CreateTableEventStore()
 	reportStore.CreateTableDailyReport()
 	reportStore.CreateTableMonthlyReport()
-	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer)
-	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer)
-	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer)
+	reservationsHandler := handlers.NewReservationsHandler(logger, availabilityService, store, eventStore, availabilityCollection, tracer, logg)
+	eventHandler := handlers.NewEventHandler(logger, eventStore, tracer, logg)
+	reportHandler := handlers.NewReportHandler(logger, reportStore, eventStore, tracer, logg)
 
 	//Initialize the router and add a middleware for all the requests
 	router := mux.NewRouter()
@@ -167,6 +200,15 @@ func main() {
 
 	getPrices := router.Methods(http.MethodPost).Subrouter()
 	getPrices.HandleFunc("/api/reservations/prices/{accId}", AvailabilityHandler.GetPrices)
+
+	getTotalReservations := router.Methods(http.MethodGet).Subrouter()
+	getTotalReservations.HandleFunc("/api/reservations/total/{hostId}", reservationsHandler.GetTotalReservations)
+
+	getPercentageOfCancelledReservations := router.Methods(http.MethodGet).Subrouter()
+	getPercentageOfCancelledReservations.HandleFunc("/api/reservations/cancelled/{hostId}", reservationsHandler.GetPercentageOfCancelledReservations)
+
+	getTotalDurationOfReservations := router.Methods(http.MethodGet).Subrouter()
+	getTotalDurationOfReservations.HandleFunc("/api/reservations/duration/{hostId}", reservationsHandler.GetTotalDurationOfReservations)
 
 	headersOk := gorillaHandlers.AllowedHeaders([]string{"X-Requested-With", "Authorization", "Content-Type"})
 	originsOk := gorillaHandlers.AllowedOrigins([]string{"https://localhost:4200",
@@ -250,4 +292,33 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationHandler(service services.AvailabilityService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

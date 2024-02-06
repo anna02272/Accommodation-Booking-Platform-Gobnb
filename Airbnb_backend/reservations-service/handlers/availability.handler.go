@@ -4,7 +4,16 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/sony/gobreaker"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"reservations-service/data"
@@ -12,15 +21,6 @@ import (
 	"reservations-service/services"
 	"strings"
 	"time"
-
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
-
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // type KeyProduct struct{}
@@ -31,10 +31,24 @@ type AvailabilityHandler struct {
 	DB                  *mongo.Collection
 	logger              *log.Logger
 	Tracer              trace.Tracer
+	CircuitBreaker      *gobreaker.CircuitBreaker
 }
 
 func NewAvailabilityHandler(availabilityService services.AvailabilityService, db *mongo.Collection, lg *log.Logger, tr trace.Tracer) AvailabilityHandler {
-	return AvailabilityHandler{availabilityService, db, lg, tr}
+	circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		Name: "HTTPSRequest",
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+		},
+	})
+
+	return AvailabilityHandler{
+		availabilityService: availabilityService,
+		DB:                  db,
+		logger:              lg,
+		Tracer:              tr,
+		CircuitBreaker:      circuitBreaker,
+	}
 }
 
 func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter, h *http.Request) {
@@ -56,8 +70,15 @@ func (s *AvailabilityHandler) CreateMultipleAvailability(rw http.ResponseWriter,
 	timeout := 1000 * time.Second // Adjust the timeout duration as needed
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx, token, url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
+
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
@@ -148,8 +169,14 @@ func (s *AvailabilityHandler) GetAvailabilityByAccommodationId(rw http.ResponseW
 	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	resp, err := s.HTTPSPerformAuthorizationRequestWithContext(ctx, token, url)
+	resp, err := s.HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx, token, url)
 	if err != nil {
+		if errors.Is(err, gobreaker.ErrOpenState) {
+			// Circuit is open
+			span.SetStatus(codes.Error, "Circuit is open. Authorization service is not available.")
+			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
+			return
+		}
 		if ctxx.Err() == context.DeadlineExceeded {
 			span.SetStatus(codes.Error, "Authorization service is not available.")
 			error2.ReturnJSONError(rw, "Authorization service is not available.", http.StatusBadRequest)
@@ -275,21 +302,69 @@ func (s *AvailabilityHandler) GetPrices(rw http.ResponseWriter, h *http.Request)
 	rw.Write(jsonResponse)
 }
 
-func (s *AvailabilityHandler) HTTPSPerformAuthorizationRequestWithContext(ctx context.Context, token string, url string) (*http.Response, error) {
-	tr := http.DefaultTransport.(*http.Transport).Clone()
-	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+func (s *AvailabilityHandler) HTTPSperformAuthorizationRequestWithCircuitBreaker(ctx context.Context, token string, url string) (*http.Response, error) {
+	maxRetries := 3
 
-	req, err := http.NewRequest("GET", url, nil)
+	retryOperation := func() (interface{}, error) {
+		tr := http.DefaultTransport.(*http.Transport).Clone()
+		tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", token)
+		otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+
+		client := &http.Client{Transport: tr}
+		resp, err := client.Do(req.WithContext(ctx))
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(resp)
+		fmt.Println("resp here")
+		return resp, nil // Return the response as the first value
+	}
+
+	//retryOpErr := retryOperationWithExponentialBackoff(ctx,3, retryOperation)
+	//if (r)
+	// Use an anonymous function to convert the result to the expected type
+	result, err := s.CircuitBreaker.Execute(func() (interface{}, error) {
+		return retryOperationWithExponentialBackoff(ctx, maxRetries, retryOperation)
+	})
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", token)
-	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
-	client := &http.Client{Transport: tr}
-	resp, err := client.Do(req.WithContext(ctx))
-	if err != nil {
-		return nil, err
+	fmt.Println("result here")
+	fmt.Println(result)
+	resp, ok := result.(*http.Response)
+	if !ok {
+		fmt.Println(ok)
+		fmt.Println("OK")
+		return nil, errors.New("unexpected response type from Circuit Breaker")
 	}
-
 	return resp, nil
+}
+
+func retryOperationWithExponentialBackoff(ctx context.Context, maxRetries int, operation func() (interface{}, error)) (interface{}, error) {
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Println("attempt loop: ")
+		fmt.Println(attempt)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		result, err := operation()
+		fmt.Println(result)
+		if err == nil {
+			fmt.Println("out of loop here")
+			return result, nil
+		}
+		fmt.Printf("Attempt %d failed: %s\n", attempt, err.Error())
+		backoff := time.Duration(attempt*attempt) * time.Second
+		time.Sleep(backoff)
+	}
+	return nil, fmt.Errorf("max retries exceeded")
 }

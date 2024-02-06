@@ -1,6 +1,7 @@
 package main
 
 import (
+	"acc-service/application"
 	"acc-service/cache"
 	"acc-service/config"
 	"acc-service/handlers"
@@ -9,9 +10,12 @@ import (
 	"acc-service/services"
 	"context"
 	"fmt"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/nats"
+	"github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024-common/common/saga"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -21,6 +25,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.opentelemetry.io/otel/trace"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
 	"os"
@@ -38,8 +44,29 @@ var (
 	imageCache                *cache.ImageCache
 )
 
+const (
+	QueueGroup = "accommodation_service"
+)
+
 func init() {
 	ctx = context.TODO()
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/acc-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logger.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logger.WithFields(logrus.Fields{"path": "acc/main"}).Error("Error closing log file:", err)
+		}
+	}()
+
+	logger.WithFields(logrus.Fields{"path": "acc/main"}).Info("This is an info message, finaly")
+	logger.WithFields(logrus.Fields{"path": "acc/main"}).Error("This is an error message")
 
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
@@ -72,9 +99,20 @@ func init() {
 	fmt.Println("MongoDB successfully connected...")
 
 	// Collections
+	commandPublisher := InitPublisher(cfg.CreateAccommodationCommandSubject)
+	replySubscriber := InitSubscriber(cfg.CreateAccommodationReplySubject, QueueGroup)
+
+	createAccommodationOrchestrator := InitCreateAccommodationOrchestrator(commandPublisher, replySubscriber, tracer)
+
+	commandSubscriber := InitSubscriber(cfg.CreateAccommodationCommandSubject, QueueGroup)
+	replyPublisher := InitPublisher(cfg.CreateAccommodationReplySubject)
+
 	accommodationCollection = mongoclient.Database("Gobnb").Collection("accommodation")
-	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer)
-	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer)
+	accommodationService = services.NewAccommodationServiceImpl(accommodationCollection, ctx, tracer, createAccommodationOrchestrator)
+	AccommodationHandler = handlers.NewAccommodationHandler(accommodationService, imageCache, fileStorage, accommodationCollection, tracer, createAccommodationOrchestrator, logger)
+
+	InitCreateAccommodationHandler(accommodationService, replyPublisher, commandSubscriber)
+
 	AccommodationRouteHandler = routes.NewAccommodationRouteHandler(AccommodationHandler, accommodationService)
 
 	server = gin.Default()
@@ -121,4 +159,39 @@ func NewTracerProvider(serviceName, collectorEndpoint string) (*sdktrace.TracerP
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return tp, nil
+}
+func InitPublisher(subject string) saga.Publisher {
+	cfg := config.GetConfig()
+	publisher, err := nats.NewNATSPublisher(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return publisher
+}
+
+func InitSubscriber(subject, queueGroup string) saga.Subscriber {
+	cfg := config.GetConfig()
+	subscriber, err := nats.NewNATSSubscriber(
+		"nats", cfg.NatsPort,
+		cfg.NatsUser, cfg.NatsPass, subject, queueGroup)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return subscriber
+}
+
+func InitCreateAccommodationOrchestrator(publisher saga.Publisher, subscriber saga.Subscriber, tracer trace.Tracer) *application.CreateAccommodationOrchestrator {
+	orchestrator, err := application.NewCreateAccommodationOrchestrator(publisher, subscriber, tracer)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return orchestrator
+}
+func InitCreateAccommodationHandler(service services.AccommodationService, publisher saga.Publisher, subscriber saga.Subscriber) {
+	_, err := handlers.NewCreateAccommodationCommandHandler(service, publisher, subscriber)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

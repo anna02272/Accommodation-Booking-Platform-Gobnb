@@ -27,7 +27,7 @@ export class EditProfileComponent implements OnInit {
   currentName= '';
   changeInfoForm: FormGroup = new FormGroup({});
   currentProfile!: User;
-
+ profileServiceAvailable: boolean = false;
   notification = { msgType: '', msgBody: '' };
   notification2 = { msgType: '', msgBody: '' };
 
@@ -64,9 +64,14 @@ export class EditProfileComponent implements OnInit {
 
       console.log(this.currentProfile.gender)
       console.log(this.currentProfile.address.city)
-
-
-  });
+  },
+   (error) => {
+    if (error.statusText === 'Unknown Error') {
+      this.profileServiceAvailable = true;
+      }
+  } 
+  
+  );
 }
   // getName() {
   //   console.log(this.userService.currentUserProfile.user.name)
@@ -113,13 +118,18 @@ export class EditProfileComponent implements OnInit {
     console.log(this.new)
 
 
-    this.http.post('https://localhost:8084/api/profile/updateUser', this.new).subscribe(
+    this.http.post('https://localhost:8000/api/profile/updateUser', this.new).subscribe(
       () => {
         this.notification2 = { msgType: 'success', msgBody: 'Profile updated successfully.' };
       },
       (error) => {
         console.error('Error updating profile', error);
         this.notification2 = { msgType: 'error', msgBody: 'Failed to update profile.' };
+
+         if (error.statusText === 'Unknown Error') {
+           this.profileServiceAvailable = true;
+       }
+
       }
     );
   }

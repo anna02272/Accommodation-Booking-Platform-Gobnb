@@ -1,0 +1,1412 @@
+{
+	"info": {
+		"_postman_id": "b013b2f2-53cb-46a7-b51a-ba7864edfdf7",
+		"name": "Gobnb",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26870521",
+		"_collection_link": "https://blue-meadow-926042.postman.co/workspace/GoGang~24b2fce7-0954-4c99-800f-4269da0d0e5f/collection/26870521-b013b2f2-53cb-46a7-b51a-ba7864edfdf7?action=share&source=collection_link&creator=26870521"
+	},
+	"item": [
+		{
+			"name": "Auth service",
+			"item": [
+				{
+					"name": "Registration",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"host\",\r\n    \"password\": \"Host123*\",\r\n    \"email\": \"host@gmail.com\",\r\n    \"name\": \"Host\",\r\n    \"lastname\": \"Host\",\r\n    \"address\": {\r\n        \"street\" : \"Street\", \r\n        \"city\" : \"City\",\r\n        \"country\" : \"Country\"\r\n    },\r\n    \"age\": 22,\r\n    \"gender\": \"Male\",\r\n    \"userRole\": \"Host\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/auth/register",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"guest@gmail.com\",\r\n    \"password\": \"Guest123*\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/auth/login",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CurrentLoggedUser",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDA4MTgzMTksInVzZXJuYW1lIjoiZ3Vlc3QifQ.Nyy0E3HEshZ49pDZagClK1cE5a5kIWrkeChalrWOgoQ",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/users/currentUser",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"currentUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/auth/verifyEmail/ZHptcW0yY3ZYV2xtOEt3M3JKM2I=",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"verifyEmail",
+								"ZHptcW0yY3ZYV2xtOEt3M3JKM2I="
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resend verification code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/auth/resendVerification/tina@gmail.com",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"resendVerification",
+								"tina@gmail.com"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ForgotPassword",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\" : \"host@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/auth/forgotPassword",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"forgotPassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": \"Host123*\",\r\n    \"passwordConfirm\": \"Host123*\" \r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/auth/resetPassword/UlJOaEtPa29oQzJXZ01qaE1mVVE=",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"auth",
+								"resetPassword",
+								"UlJOaEtPa29oQzJXZ01qaE1mVVE="
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ChangePassword",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDA3NDcxMDMsInVzZXJuYW1lIjoiYW5hIn0.tRkMuAu4W-zbjOinDOn-KaHb23r0wY9rhsk2g-yZPP4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "",
+								"value": "",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"current_password\": \"Ana**1253\",\r\n  \"new_password\": \"Ana123**\",\r\n  \"confirm_new_password\": \"Ana123**\"\r\n}\r\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/users/changePassword",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"changePassword"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User Credentials",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDIyNDM3OTEsInVzZXJuYW1lIjoidGVhIn0.ChwTHdaCV1Un3craur13Dci6yCrxjxG-AYx0rEk9oFk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/users/delete",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"delete"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateUser",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Get User By Id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": ".eyJleHAiOjE3MDMyNjc3NTYsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.wwPv2TfBSeJ4-lUBpAGYSgiTpbRGvHzdWXfqTWSu0dU",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/users/getById/65835738354f8c4cc1028034",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"getById",
+								"65835738354f8c4cc1028034"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getProfileByEmail",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "CurrentUserProfile",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile service",
+			"item": [
+				{
+					"name": "Create user",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"nikola\",\r\n    \"password\": \"nikolanikolaN1\",\r\n    \"email\": \"nikola@gmail.com\",\r\n    \"name\": \"Nikola\",\r\n    \"lastname\": \"Cukelj\",\r\n    \"address\": {},\r\n    \"age\": 20,\r\n    \"gender\": \"Male\",\r\n    \"userRole\": \"Guest\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/profile/createUser",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"profile",
+								"createUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "check",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "getUser",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "findUser",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Accommodations service",
+			"item": [
+				{
+					"name": "Create Accommondation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDYyODMwNDEsInVzZXJuYW1lIjoiaG9zdCJ9.-jTWyLOX2vArBjAXf9yvstiwXkxUEKIOg1-rrEYaMCo",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accommodation_name\": \"Villa\",\r\n    \"accommodation_location\": \"Croatia\",\r\n    \"accommodation_amenities\": {\r\n        \"TV\": true\r\n    },\r\n    \"accommodation_min_guests\": 1,\r\n    \"accommodation_max_guests\": 5,\r\n    \"start_date\": \"2024-05-23T12:00:00.000Z\",\r\n    \"end_date\": \"2024-05-24T12:00:00.000Z\",\r\n    \"price\": 50,\r\n    \"price_type\": \"PerPerson\",\r\n    \"availability_type\": \"Available\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/create",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accommodation By Id",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDE1NDM3NDgsInVzZXJuYW1lIjoibGppbGphbmFAZ21haWwuY29tIn0.Oz1DZV7wo52yOBFMBqJJB19mXMX16dGRpdbmqHxjh_k",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/get/ed9acfd4-9133-11ee-9fd4-0242ac130002",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"get",
+								"ed9acfd4-9133-11ee-9fd4-0242ac130002"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Accommodations By Host",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/get/host/65760b59638fee7f9e65a4e5",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"get",
+								"host",
+								"65760b59638fee7f9e65a4e5"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Get Accommodations By Host",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "https://localhost:8083/api/accommodations/get/host/65760b59638fee7f9e65a4e5",
+									"protocol": "https",
+									"host": [
+										"localhost"
+									],
+									"port": "8083",
+									"path": [
+										"api",
+										"accommodations",
+										"get",
+										"host",
+										"65760b59638fee7f9e65a4e5"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Dec 2023 19:05:08 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "387"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"accommodations\": [\n        {\n            \"_id\": \"65760bc4c8e4ea42ddada926\",\n            \"host_id\": \"65760b59638fee7f9e65a4e5\",\n            \"accommodation_name\": \"Villa Sonja\",\n            \"accommodation_location\": \"Macedonia\",\n            \"accommodation_amenities\": {\n                \"TV\": true\n            },\n            \"accommodation_min_guests\": 1,\n            \"accommodation_max_guests\": 5,\n            \"accommodation_images\": [\n                \"http://www.google.com\"\n            ],\n            \"accommodation_active\": false\n        }\n    ],\n    \"message\": \"Accommodations successfully obtained\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDIxMzk0MzQsInVzZXJuYW1lIjoiZ3JvemRpYyJ9.LhM6oLHqXLPZoT3bZKg624os5dB-KYhzX7cPnK_kC20",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/get",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"get"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Accommodation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI0MjIwMTYsInVzZXJuYW1lIjoiYW5hIn0.0KtnWu0VYUCS2Voony585uwJ4CwaYW8u-OosMxyo9x4",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/delete/657637a1a6295474ad7de90b",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"delete",
+								"657637a1a6295474ad7de90b"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Images",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI4MzQxODUsInVzZXJuYW1lIjoiaG9zdCJ9.7-sI0DT__W4Bb8HfMlrjXHXQWdbmiuK0VHE46bZqugw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/C:/Users/domon/Desktop/malaysia.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/upload/images/657b11a1ec812b827981ce96",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"upload",
+								"images",
+								"657b11a1ec812b827981ce96"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fetch Accomomdation Images",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/accommodations/images/657de2eec3959204a027b35c",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"accommodations",
+								"images",
+								"657de2eec3959204a027b35c"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reservations service",
+			"item": [
+				{
+					"name": "Create Reservation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDM4ODcwMzMsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.zQqW8UWQQLXcN71ivY6eVEbcr3QfkJQfFeQGxIiJ_r8",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "3eb5a7ce65eb",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"accommodation_id\":\"658f23ff2de2535761e36711\",\r\n    \"check_in_date\": \"2024-02-10T00:00:00Z\",\r\n    \"check_out_date\": \"2024-02-13T12:34:56Z\",\r\n    \"number_of_guests\": 2\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/reservations/create",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"reservations",
+								"create"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Create Reservation",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "3eb5a7ce65eb",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"accommodation_id\": \"657636b2a6295474ad7de909\",\r\n    \"check_in_date\": \"2024-12-13T12:34:56Z\",\r\n    \"check_out_date\": \"2024-12-18T12:34:56Z\",\r\n    \"number_of_guests\": 2\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://localhost:8082/api/reservations/create",
+									"protocol": "https",
+									"host": [
+										"localhost"
+									],
+									"port": "8082",
+									"path": [
+										"api",
+										"reservations",
+										"create"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 10 Dec 2023 22:10:01 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "147"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"accommodation_id\": \"657636b2a6295474ad7de909\",\n    \"check_in_date\": \"2024-12-13T12:34:56Z\",\n    \"check_out_date\": \"2024-12-18T12:34:56Z\",\n    \"number_of_guests\": 2\n}"
+						}
+					]
+				},
+				{
+					"name": "Get All Reservations By Guest",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDEzNjIyOTksInVzZXJuYW1lIjoiaG9zdCJ9.6hY0htdQq7xSQKliI7BwGqT9dZ5RIAURkLC4Ro85f38",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/reservations/getAll",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"reservations",
+								"getAll"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Reservation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDM3NzU1NTYsInVzZXJuYW1lIjoiY3VrZWxsaSJ9._Mi_lfOgZvT-lnT2gT6wX-9mqC9xBPXglTuHzuCqtvk",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/reservations/cancel/56faa22c-a581-11ee-a4aa-0242ac120009",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"reservations",
+								"cancel",
+								"56faa22c-a581-11ee-a4aa-0242ac120009"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reservations By Accommodation And Check Out",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "657637a1a6295474ad7de90b",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/reservations/get/657636b2a6295474ad7de909",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"reservations",
+								"get",
+								"657636b2a6295474ad7de909"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Availability",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDU4NTAwOTAsInVzZXJuYW1lIjoiam9sZSJ9.u2wwzOSXVEJlP-tqcTn9UJbqidCq11uYKeDN1wkxqYM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"start_date\": \"2024-01-20T12:00:00.000Z\",\r\n    \"end_date\": \"2024-12-30T12:00:00.000Z\",\r\n    \"price\": 300,\r\n    \"price_type\": \"PerPerson\",\r\n    \"availability_type\": \"Available\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/availability/create/65ad192a786460764fb58f94",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"availability",
+								"create",
+								"65ad192a786460764fb58f94"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Availability",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI2NDM5MjQsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.DgOllXCBEwUtv37CIYZOyq5pzqYL5gu37Q-8xtmE9kg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"check_in_date\": \"2024-05-04T00:00:00Z\",\r\n    \"check_out_date\": \"2024-05-06T00:00:00Z\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/reservations/availability/657b58dfe892820943ba9c47",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"reservations",
+								"availability",
+								"657b58dfe892820943ba9c47"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get availability by acc",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI2MzU0MjEsInVzZXJuYW1lIjoiaG9zdCJ9.7MsZLPxLPWuu8SIw9WxQI9hVL0e6QfImBYewjjx4S_o",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/availability/get/657b11a1ec812b827981ce96",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"availability",
+								"get",
+								"657b11a1ec812b827981ce96"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Daily Report For Accommodation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQ5MzMyNzgsInVzZXJuYW1lIjoiam9sZSJ9.rYCmluwueHHHP47EK8ACgNqK2ry130j0z9bRJY6YPyM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/report/daily/6584907b17b79cb7688a6145",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"report",
+								"daily",
+								"6584907b17b79cb7688a6145"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Monthly Report For Accommodation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDQ5MzMyNzgsInVzZXJuYW1lIjoiam9sZSJ9.rYCmluwueHHHP47EK8ACgNqK2ry130j0z9bRJY6YPyM",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/report/monthly/6584907b17b79cb7688a6145",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"report",
+								"monthly",
+								"6584907b17b79cb7688a6145"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Rating service",
+			"item": [
+				{
+					"name": "Rate Host",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDM2MjI4ODQsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.n-Qhck6T-TY6Ulj8uqdWMx8CK0wGODhMpbnioB81VJE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"rating\" : 3\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/rating/rateHost/65835738354f8c4cc1028034",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"rateHost",
+								"65835738354f8c4cc1028034"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get all ratings of host",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDIxNzE5NzcsInVzZXJuYW1lIjoiaG9zdCJ9.WLPENApnOcLNVWqG-_ETF6VZYyfzfH_zjnfFTU_Wkrg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"rating\" : 5\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/rating/getAll",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"getAll"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete rating for host",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/rating/deleteRating/6569bed65a21cd97bd442077",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"deleteRating",
+								"6569bed65a21cd97bd442077"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get by host and guest",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDI0MDI5NjMsInVzZXJuYW1lIjoiZ3Vlc3QifQ.vecTOEZcqSa_YwWgeCRBL3k4iZH3-c8IrI2mgUI-NSg",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/rating/get/6569bed65a21cd97bd442077",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"get",
+								"6569bed65a21cd97bd442077"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Rate Accommodation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDM4MDAyMjQsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.KbTQlrX3hBAb0hxCKMf_K8BF2OjOzrs4QrYFYbdl2G0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"rating\" : 4\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/rating/rateAccommodation/658dc5adb97f4dc47e9d16a0",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"rateAccommodation",
+								"658dc5adb97f4dc47e9d16a0"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get by accommodation and guest",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Delete rating for accommodation",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDM4MDAyMjQsInVzZXJuYW1lIjoiY3VrZWxsaSJ9.KbTQlrX3hBAb0hxCKMf_K8BF2OjOzrs4QrYFYbdl2G0",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/rating/deleteRatingAccommodation/658dc5adb97f4dc47e9d16a0",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"rating",
+								"deleteRatingAccommodation",
+								"658dc5adb97f4dc47e9d16a0"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateUser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"username\": \"nikolla\",\r\n    \"email\": \"nikola@gmail.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8087/api/rating/createUser",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8087",
+							"path": [
+								"api",
+								"rating",
+								"createUser"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateReservation",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "CreateAccommodation",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "CreateRecomRate",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notifications service",
+			"item": [
+				{
+					"name": "Get Notifications For Host",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMzMzE5OTEsInVzZXJuYW1lIjoiZHVraSJ9.G5Oii060cSGgWRB7c7SjpO-nVFREF_WjBS2VLdU3jYw",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:8000/api/notifications/host",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"notifications",
+								"host"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Notification",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MDMyNjE5ODAsInVzZXJuYW1lIjoiam9sZSJ9.l0fll7PLmvZiYXPQvfBrTDvAmJQfiU4bT3vxS0IlOMI",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"host_id\":\"test\",\r\n    \"host_email\":\"jvoan.glavonjic@gmail.com\",\r\n    \"notification_text\":\"text\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:8000/api/notifications/create",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"notifications",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

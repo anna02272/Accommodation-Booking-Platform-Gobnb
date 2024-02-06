@@ -1,0 +1,53 @@
+# cassandra-persistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cassandra-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+# cassandra-statefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+spec:
+  serviceName: "cassandra"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra
+          ports:
+            - containerPort: 9042
+      volumes:
+        - name: cass-store
+          persistentVolumeClaim:
+            claimName: cassandra-pvc
+---
+# cassandra-service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cassandra
+  name: cassandra
+spec:
+  ports:
+    - port: 9042
+      targetPort: 9042
+      protocol: TCP
+      name: cassandra-port
+  selector:
+    app: cassandra

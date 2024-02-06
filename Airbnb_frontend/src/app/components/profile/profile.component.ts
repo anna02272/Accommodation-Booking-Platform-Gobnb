@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, UserService } from 'src/app/services';
 import { User } from 'src/app/models/user';
+import { HttpClient } from '@angular/common/http';
+import { concatMap } from 'rxjs/operators';
 
 
 @Component({
@@ -13,13 +15,21 @@ export class ProfileComponent {
   errorMessage: string | null = null;
   currentProfile!: User;
   notifications!: any[];
+  notifServiceAvailable: boolean = false;
+  profileServiceAvailable: boolean = false;
+  hostEmail!: string;
+  hostIdP!: string;
+  hostFeatured!: boolean;
 
 
-  constructor(private userService: UserService, private router: Router, private authService: AuthService) {
+
+  constructor(private userService: UserService, private router: Router, private authService: AuthService, private httpClient: HttpClient) {
     
   }
   ngOnInit() {
     this.load();
+
+    
   }
   load() {
     this.userService.getProfile().subscribe((data: any) => {
@@ -32,9 +42,43 @@ export class ProfileComponent {
 
       this.getNotifications();
 
+      this.hostEmail = this.currentProfile.email;
 
-  });
+      this.httpClient.get('https://localhost:8000/api/profile/getUser/' + this.hostEmail).pipe(
+        concatMap((response: any) => {
+          this.hostIdP = response.user.id;
+          //alert("hostIdP " + this.hostIdP);
+          return this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + this.hostIdP);
+        })
+      ).subscribe(
+        (response: any) => {
+          this.hostFeatured = response.featured;
+          //alert("hostFeatured " + this.hostFeatured);
+        },
+        error => {
+          console.error('Error', error);
+        }
+      );
+
+
+  },
+
+  error => {
+    console.log("here")
+    console.log(error)
+      if (error.statusText === 'Unknown Error') {
+        console.log("here if unknown error")
+          this.profileServiceAvailable = true;
+      }
+  }
+  
+  );
 }
+
+isFeatured(){
+  return this.hostFeatured;
+}
+
 deleteProfile() {
     this.userService.deleteProfile().subscribe(
       () => {
@@ -66,7 +110,11 @@ deleteProfile() {
         console.log(data)
       },
       error => {
-        console.error('Failed to delete profile:', error);
+         if (error.statusText === 'Unknown Error') {
+          this.notifServiceAvailable = true;
+       
+      }
+        // console.error('Failed to delete profile:', error);
           console.log('Error object:', error.error); // Log the entire error object
 
       }

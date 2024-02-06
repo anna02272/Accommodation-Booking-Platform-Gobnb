@@ -3,14 +3,21 @@ package services
 import (
 	"auth-service/config"
 	"auth-service/domain"
+	error2 "auth-service/error"
 	"auth-service/utils"
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/thanhpk/randstr"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
@@ -60,6 +67,11 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
+	_ = uc.SendToRatingService(credentials, ctx)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, nil
+	}
 
 	err = uc.userService.SendUserToProfileService(rw, user, ctx)
 	if err != nil {
@@ -85,7 +97,58 @@ func (uc *AuthServiceImpl) Registration(rw http.ResponseWriter, user *domain.Use
 	return newUser, nil
 
 }
+func (uc *AuthServiceImpl) SendToRatingService(user *domain.Credentials, ctx context.Context) error {
+	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendToRating")
+	defer span.End()
 
+	var rw http.ResponseWriter
+	url := "https://rating-server:8087/api/rating/createUser"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := uc.HTTPSperformAuthorizationRequest(ctx, user, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (uc *AuthServiceImpl) HTTPSperformAuthorizationRequest(ctx context.Context, user *domain.Credentials, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(user)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling reservation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (uc *AuthServiceImpl) SendVerificationEmail(credentials *domain.Credentials, ctx context.Context) error {
 	ctx, span := uc.Tracer.Start(ctx, "AuthService.SendVerificationEmail")
 	defer span.End()

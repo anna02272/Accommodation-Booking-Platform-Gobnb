@@ -1,0 +1,65 @@
+# acc-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: acc-configmap
+data:
+  PORT: "8083"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  HDFS_URI: "namenode:9000"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+  NATS_HOST: "nats"
+  NATS_PORT: "4222"
+  NATS_USER: "ruser"
+  NATS_PASS: "T0pS3cr3t"
+  CREATE_ACCOMMODATION_COMMAND_SUBJECT: "accommodation.create.command"
+  CREATE_ACCOMMODATION_REPLY_SUBJECT: "accommodation.create.reply"
+
+---
+# acc-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acc-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: acc-service
+  template:
+    metadata:
+      labels:
+        app: acc-service
+    spec:
+      containers:
+        - name: acc-server
+          image: docker.io/library/airbnb_backend-acc-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: acc-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: acc-logs
+      volumes:
+        - name: acc-logs
+          emptyDir: { }
+---
+#acc-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: acc-server
+spec:
+  ports:
+    - port: 8083
+      targetPort: 8083
+      protocol: TCP
+  selector:
+    app: acc-service
+
+

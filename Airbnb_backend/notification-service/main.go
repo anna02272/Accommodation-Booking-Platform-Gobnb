@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
 	"notification-service/config"
@@ -36,6 +38,23 @@ var (
 func init() {
 	ctx = context.TODO()
 
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+
+	lumberjackLog := &lumberjack.Logger{
+		Filename:  "/notification-service/logs/logfile.log",
+		MaxSize:   1,
+		LocalTime: true,
+	}
+	logger.SetOutput(lumberjackLog)
+	defer func() {
+		if err := lumberjackLog.Close(); err != nil {
+			logger.WithFields(logrus.Fields{"path": "notification/main"}).Error("Error closing log file:", err)
+		}
+	}()
+
+	logger.WithFields(logrus.Fields{"path": "notification/main"}).Info("This is an info message, finaly")
+	logger.WithFields(logrus.Fields{"path": "notification/main"}).Error("This is an error message")
 	mongoconn := options.Client().ApplyURI(os.Getenv("MONGO_DB_URI"))
 	mongoclient, err := mongo.Connect(ctx, mongoconn)
 
@@ -54,9 +73,18 @@ func init() {
 		log.Fatal("JaegerTraceProvider failed to Initialize", err)
 	}
 	tracer := tracerProvider.Tracer(cfg.ServiceName)
+
+	//circuitBreaker := gobreaker.NewCircuitBreaker(gobreaker.Settings{
+	//	Name: "HTTPSRequest",
+	//	OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+	//		// Optionally, you can log state changes.
+	//		fmt.Printf("Circuit Breaker state changed from %s to %s\n", from, to)
+	//	},
+	//})
+
 	notificationCollection = mongoclient.Database("Gobnb").Collection("notification")
 	notificationService = services.NewNotificationServiceImpl(notificationCollection, ctx, tracer)
-	NotificationHandler = handlers.NewNotificationHandler(notificationService, notificationCollection, tracer)
+	NotificationHandler = handlers.NewNotificationHandler(notificationService, notificationCollection, tracer, logger)
 	NotificationRouteHandler = routes.NewNotificationRouteHandler(NotificationHandler, notificationService)
 
 	server = gin.Default()

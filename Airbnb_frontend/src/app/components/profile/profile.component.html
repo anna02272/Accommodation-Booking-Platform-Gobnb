@@ -1,4 +1,12 @@
+
 <div class="container">
+<h4 *ngIf="profileServiceAvailable" id="profileService"> Profile service not available. </h4>
+<div class="serviceNotAvailable">
+
+</div>
+
+
+
   <div class="main-body">
     <div class="row gutters-sm">
       <div class="col-md-4 mb-3">
@@ -13,11 +21,14 @@
               />
               <div class="mt-3">
                 <h4 class="username">{{currentProfile.username}}</h4>
+                <h5 *ngIf="isFeatured()"> Featured </h5>
               </div>
             </div>
           </div>
         </div>
   <h5 *ngIf="getRole() === 'Host'" class="d-flex align-items-center mb-3">Notifications:</h5>
+     <h4 *ngIf="notifServiceAvailable && getRole() === 'Host'" id="notifService"> Notification service not available. </h4>
+
 <div *ngFor="let notification of notifications" class="align-items-center card mt-3">
   <h6> {{notification.date_and_time }}</h6>
   <p>{{ notification.notification_text }}</p>
@@ -25,6 +36,7 @@
 
       </div>
       <div class="col-md-8">
+
         <div class="card mb-3">
           <div class="card-body">
             <div class="row">
@@ -106,6 +118,7 @@
             <hr />
             <div class="row">
               <div class="col-sm-12">
+
                 <button class="btn" routerLink="/edit-profile">Edit Profile</button>
               <button class="btn" (click)="deleteProfile()">Delete Profile</button>
 

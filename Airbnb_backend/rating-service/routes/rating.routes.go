@@ -11,12 +11,16 @@ type RatingRouteHandler struct {
 	hostRatingService          services.HostRatingService
 	accommodationRatingHandler handlers.AccommodationRatingHandler
 	accommodationRatingService services.AccommodationRatingService
+	recommendationHandler      handlers.RecommendationHandler
+	recommendationService      services.RecommendationService
 }
 
 func NewRatingRouteHandler(hostRatingHandler handlers.HostRatingHandler, hostRatingService services.HostRatingService,
-	accommodationRatingHandler handlers.AccommodationRatingHandler, accommodationRatingService services.AccommodationRatingService) RatingRouteHandler {
+	accommodationRatingHandler handlers.AccommodationRatingHandler, accommodationRatingService services.AccommodationRatingService,
+	recommendationHandler handlers.RecommendationHandler, recommendationService services.RecommendationService) RatingRouteHandler {
 	return RatingRouteHandler{hostRatingHandler, hostRatingService,
-		accommodationRatingHandler, accommodationRatingService}
+		accommodationRatingHandler, accommodationRatingService,
+		recommendationHandler, recommendationService}
 }
 
 func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
@@ -30,5 +34,14 @@ func (rc *RatingRouteHandler) RatingRoute(rg *gin.RouterGroup) {
 	router.DELETE("/deleteRatingAccommodation/:accommodationId", rc.accommodationRatingHandler.DeleteRatingAccommodation)
 	router.GET("/getAccommodation/:accommodationId", rc.accommodationRatingHandler.GetByAccommodationAndGuest)
 	router.GET("/getAllAccomodation", rc.accommodationRatingHandler.GetAllRatingsAccommodation)
+	router.POST("/createUser", rc.recommendationHandler.CreateUser)
+	router.POST("/createReservation", rc.recommendationHandler.CreateReservation)
+	router.POST("/createAccommodation", rc.recommendationHandler.CreateAccommodation)
+	router.POST("/createRecomRate", rc.recommendationHandler.CreateRecomRate)
+	router.GET("/getRecomendation/:id", rc.recommendationHandler.GetRecommendation)
+	router.DELETE("/deleteRate", rc.recommendationHandler.DeleteRate)
+	router.DELETE("/deleteReservation", rc.recommendationHandler.DeleteReservation)
+	router.DELETE("/deleteUser", rc.recommendationHandler.DeleteUser)
+	router.DELETE("/deleteAccommodation", rc.recommendationHandler.DeleteAccommodation)
 
 }

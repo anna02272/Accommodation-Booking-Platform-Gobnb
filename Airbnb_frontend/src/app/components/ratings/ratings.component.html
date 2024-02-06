@@ -1,6 +1,8 @@
     <section id="testimonials">
         <div class="testimonial-heading">
             <h1>Accommodation Reviews (average: {{ ratingResponse2?.averageRating }})</h1>
+            <div class="notif" *ngIf="ratingServiceAvailable"> Rating service not available </div>
+
             <p class="notif" *ngIf="notification" [class]="notification.msgType">
                 {{ notification.msgBody }}
               </p>

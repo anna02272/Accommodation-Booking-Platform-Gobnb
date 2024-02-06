@@ -19,7 +19,12 @@ type RateAccommodation struct {
 	DateAndTime   primitive.DateTime `bson:"date-and-time" json:"date-and-time"`
 	Rating        Rating             `bson:"rating" json:"rating"`
 }
-
+type RateAccommodationRec struct {
+	ID            string ` json:"id"`
+	Accommodation string ` json:"accommodationID"`
+	Guest         string `json:"guest"`
+	Rating        int    `json:"rating"`
+}
 type Rating int
 
 const (
@@ -35,6 +40,12 @@ type User struct {
 	Username string             `bson:"username" json:"username"`
 	Email    string             `bson:"email" json:"email" validate:"required,email"`
 }
+type NeoUser struct {
+	ID       string `json:"id,omitempty"`
+	Username string `json:"username,omitempty"`
+	Email    string `json:"email,omitempty"`
+}
+type NeoUsers []*NeoUser
 
 type Accommodation struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id"`
@@ -43,15 +54,15 @@ type Accommodation struct {
 }
 
 type ReservationByGuest struct {
-	ReservationIdTimeCreated string
-	GuestId                  string
-	AccommodationId          string
-	AccommodationName        string
-	AccommodationLocation    string
-	AccommodationHostId      string
-	CheckInDate              time.Time
-	CheckOutDate             time.Time
-	NumberOfGuests           int
+	ReservationIdTimeCreated string    `json:"reservation_id_time_created"`
+	GuestId                  string    `json:"guest_id"`
+	AccommodationId          string    `json:"accommodation_id"`
+	AccommodationName        string    `json:"accommodation_name"`
+	AccommodationLocation    string    `json:"accommodation_location"`
+	AccommodationHostId      string    `json:"accommodation_host_id"`
+	CheckInDate              time.Time `json:"check_in_date"`
+	CheckOutDate             time.Time `json:"check_out_date"`
+	NumberOfGuests           int       `json:"number_of_guests"`
 }
 
 type UserResponse struct {
@@ -68,6 +79,17 @@ type UserResponse struct {
 		UserRole UserRole           `json:"userRole"`
 	} `json:"user"`
 }
+type AccommodationRec struct {
+	ID       string `json:"_id"`
+	HostId   string `json:"host_id"`
+	Name     string `json:"accommodation_name"`
+	Location string `json:"accommodation_location"`
+	//Amenities map[string]bool    `json:"accommodation_amenities"`
+	MinGuests int  `json:"accommodation_min_guests"`
+	MaxGuests int  `json:"accommodation_max_guests"`
+	Active    bool `json:"accommodation_active"`
+}
+
 type AccommodationResponse struct {
 	Message       string `json:"message"`
 	Accommodation struct {

@@ -14,6 +14,7 @@ export class RatingsComponent implements OnInit{
   ratingResponse!: RateHost;
   ratingResponse2!: RateAccommodation;
   notification = { msgType: '', msgBody: '' };
+  ratingServiceAvailable: boolean = false;
   
   constructor(
     private ratingService: RatingService,
@@ -27,8 +28,16 @@ export class RatingsComponent implements OnInit{
     this.ratingService.getAll().subscribe((data: RateHost) => {
       this.ratingResponse = data;
       
-      
-  });
+    
+  },
+   (error) => {
+    if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.ratingServiceAvailable = true;
+      }
+  }
+  );
   this.ratingService.getAllAccommodation().subscribe((data2: RateAccommodation) => {
     this.ratingResponse2 = data2;
 });

@@ -1,8 +1,30 @@
+<head>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'G-K20F62SQ7S', 'auto');
+  </script>
+</head>
 <div class="site-content">
   <section class="gallery">
     <div class="prices" id="main_acc_div">
+      <h3>Recommendation for you</h3>
+      <div *ngFor="let recommendation of this.recommendations; let i = index" class="img" [ngClass]="{'new-row': i % 3 === 0}">
+        <div class="img">
+          <img  [src]="'assets/images/car.jpg'" />
+          <div class="price-stamp">$</div>
+
+          <div class="description">
+            <h4><a [routerLink]="['/accommodation', recommendation._id]">{{ recommendation.accommodation_name }}</a></h4>
+            <p>{{ recommendation.accommodation_location }}</p>
+            
+          </div>
+        </div>
+      </div>
       <h3>Explore Gobnb picks</h3>
       <h4 id="notif"> No accommodations match your search criteria. </h4>
+            <h4  *ngIf="accServiceAvailable" id="accService"> Accommodation service not available. </h4>
       <div *ngIf="showErrorDiv" class="error">
         {{ errorMsg }}
       </div>

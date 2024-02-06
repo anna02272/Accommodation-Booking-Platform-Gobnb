@@ -1,11 +1,14 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { Accommodation } from 'src/app/models/accommodation';
+import { Recommendation } from 'src/app/models/recommendation';
 import { UserService } from 'src/app/services';
 import { AccommodationService } from 'src/app/services/accommodation.service';
 import { RefreshService } from 'src/app/services/refresh.service';
 import { DomSanitizer } from '@angular/platform-browser';
 import { forkJoin } from 'rxjs/internal/observable/forkJoin';
 import { ReservationService } from 'src/app/services/reservation.service';
+import { HttpClient } from '@angular/common/http';
+import { concatMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-accommodations',
@@ -15,6 +18,9 @@ import { ReservationService } from 'src/app/services/reservation.service';
 export class AccommodationsComponent implements OnInit {
   accommodations: Accommodation[] = [];
   accommodation!: Accommodation;
+  recommendations: Recommendation[]=[];
+  recommendation! : Recommendation;
+  accServiceAvailable: boolean = false;
   showErrorDiv: boolean = false;
   showSuccessMsg: boolean = false;
   errorMsg?: string;
@@ -22,6 +28,9 @@ export class AccommodationsComponent implements OnInit {
   coverImage: string = ''; 
   currentIndex: number = 0;
   gtag?: Function;
+  id:any;
+  featuredHost!: boolean;
+  accs2: Accommodation[] = [];
 
 
   constructor(
@@ -30,17 +39,20 @@ export class AccommodationsComponent implements OnInit {
     private userService: UserService,
     private sanitizer: DomSanitizer,
     private reservationService: ReservationService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private httpClient: HttpClient
   ) {}
 
   ngOnInit() {
     this.userService.getMyInfo().subscribe(
       () => {
+        this.loadGuestId();
         this.loadByHost();
         this.subscribeToRefresh();
       },
       () => {
         this.load();
+        // this.loadRecommendation();
         this.subscribeToRefresh();
       },
       () => {
@@ -50,7 +62,7 @@ export class AccommodationsComponent implements OnInit {
       
     );
   }
-
+  
   loadByHost() {
     const userRole = this.userService.currentUser?.user.userRole;
 
@@ -62,10 +74,27 @@ export class AccommodationsComponent implements OnInit {
     } else {
       this.load();
       this.loadAccommodationImages();
+      // this.loadRemmendationAccommodation();
 
     }
   }
+  loadGuestId(){
+    this.id=this.userService.currentUser?.user.id
+  }
+  loadRecommendation(){
 
+    this.accService.getAllRecommendation(this.id).subscribe((dataa:Recommendation[])=>{
+      this.recommendations=dataa;
+      console.log(dataa)
+      if(this.recommendations.length){
+        var notif = document.getElementById("notif");
+        notif!.style.display = "none";
+      } else{
+        var notif = document.getElementById("notif");
+        notif!.style.display = "block";
+      }
+    })
+  }
   load() {
     if (window.location.search){
       //alert("here")
@@ -81,29 +110,67 @@ export class AccommodationsComponent implements OnInit {
       var ac = urlParams.get('ac');
       var min_price = urlParams.get('min_price');
       var max_price = urlParams.get('max_price');
+      var featured_host = urlParams.get('featured_host');
+      if(featured_host == "true"){
+        this.featuredHost = true;
+      } else{
+        this.featuredHost = false;
+      }
+      //alert(this.featuredHost)
       //var price_type = urlParams.get('price_type');
       this.accService.getSearch(location, guests, start_date, end_date, tv, wifi, ac, min_price, max_price).subscribe((data: Accommodation[]) => {
       var arr = data;
       //var arr2: Accommodation[] = [];
       this.accommodations = arr;
-      if(this.accommodations.length){
-        var notif = document.getElementById("notif");
-        notif!.style.display = "none"; 
-      } else{
-        var notif = document.getElementById("notif");
-        notif!.style.display = "block";
+      if(this.featuredHost){
+        this.featuredHostChecker();
       }
-      this.loadAccommodationImages()
-      //this.accommodations = [...this.accommodations];
-      this.cdr.detectChanges();
-        
-      if(start_date != "" && end_date != ""){
-        this.accommodations = [];
-        for (let acc of arr){
-          var check = this.checkAvailability(acc, start_date, end_date, min_price, max_price)
-          //, price_type)
+      setTimeout(() => {
+        //alert("dve sekunde")
+
+        if(this.featuredHost){
+          //alert(this.featuredHost + " INN")
+          this.accommodations = this.accs2;
         }
-      }
+
+        if(this.accommodations.length){
+          var notif = document.getElementById("notif");
+          notif!.style.display = "none"; 
+        } else{
+          var notif = document.getElementById("notif");
+          notif!.style.display = "block";
+        }
+        this.loadAccommodationImages()
+        //this.accommodations = [...this.accommodations];
+        this.cdr.detectChanges();
+          
+        if(start_date != "" && end_date != ""){
+          this.accommodations = [];
+          for (let acc of arr){
+            var check = this.checkAvailability(acc, start_date, end_date, min_price, max_price)
+            //, price_type)
+          }
+        }
+
+      }, 2000);
+      // if(this.accommodations.length){
+      //   var notif = document.getElementById("notif");
+      //   notif!.style.display = "none"; 
+      // } else{
+      //   var notif = document.getElementById("notif");
+      //   notif!.style.display = "block";
+      // }
+      // this.loadAccommodationImages()
+      // //this.accommodations = [...this.accommodations];
+      // this.cdr.detectChanges();
+        
+      // if(start_date != "" && end_date != ""){
+      //   this.accommodations = [];
+      //   for (let acc of arr){
+      //     var check = this.checkAvailability(acc, start_date, end_date, min_price, max_price)
+      //     //, price_type)
+      //   }
+      // }
 
       
       
@@ -113,6 +180,8 @@ export class AccommodationsComponent implements OnInit {
       });
     }
     else{
+    this.loadRecommendation();
+
     this.accService.getAll().subscribe((data: Accommodation[]) => {
       this.accommodations = data;
       if(this.accommodations.length){
@@ -123,7 +192,17 @@ export class AccommodationsComponent implements OnInit {
         notif!.style.display = "block";
       }
       this.loadAccommodationImages();
-    });
+    },
+    
+    (error) => {
+    if (error.statusText === 'Unknown Error') {
+       console.log("here")
+       console.log(error)
+      this.accServiceAvailable = true;
+      }
+  }
+    
+    );
     }
   }
 
@@ -231,6 +310,8 @@ export class AccommodationsComponent implements OnInit {
             //this.showDivSuccessAvailability = true;
             errorCheck = true;
           }
+
+          
 
 
 
@@ -360,7 +441,51 @@ export class AccommodationsComponent implements OnInit {
     return 'data:image/jpeg;base64,' + btoa(binary);
   }
 
+  featuredHostChecker(){
+    for (let acc of this.accommodations){
 
-  
+      var hostId = "";
+      var hostEmail = "";
+      var hostIdP = "";
+      var hostFeatured = false;
+      var accommodationId = acc._id;
+      
+      this.httpClient.get('https://localhost:8000/api/accommodations/get/hostid/' + accommodationId).pipe(
+        concatMap((response: any) => {
+          hostId = response.hostId;
+          //alert("accid " + this.accommodationId + " hostid " + this.hostId);
+          return this.httpClient.get('https://localhost:8000/api/users/getById/' + hostId);
+        }),
+        concatMap((response: any) => {
+          hostEmail = response.user.email;
+          //alert("hostEmail " + this.hostEmail);
+          return this.httpClient.get('https://localhost:8000/api/profile/getUser/' + hostEmail);
+        }),
+        concatMap((response: any) => {
+          hostIdP = response.user.id;
+          //alert("hostIdP " + hostIdP);
+          return this.httpClient.get('https://localhost:8000/api/profile/isFeatured/' + hostIdP);
+        })
+      ).subscribe(
+        (response: any) => {
+          hostFeatured = response.featured;
+          if (hostFeatured){
+            //alert(acc.accommodation_name + " is featured")
+            this.accs2.push(acc);
+          }
+          //alert("hostFeatured " + this.hostFeatured);
+        },
+        error => {
+          console.error('Error', error);
+        }
+      );
+
+      
+
+    }
+
+    //this.accommodations = this.accs2;
+  }
+
 }
 

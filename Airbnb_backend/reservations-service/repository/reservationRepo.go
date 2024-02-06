@@ -1,16 +1,24 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gocql/gocql"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 	"log"
+	"net/http"
 	"os"
 	"reservations-service/data"
+	error2 "reservations-service/error"
 	"time"
+
+	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ReservationRepo struct {
@@ -133,7 +141,24 @@ func (sr *ReservationRepo) InsertReservationByGuest(ctx context.Context, guestRe
 
 	// If no existing reservation is found, proceed with the insertion
 	reservationIdTimeCreated := gocql.TimeUUID()
-
+	log.Println("CHECK HERE")
+	log.Println(guestReservation.AccommodationId)
+	var reservation data.ReservationByGuest
+	reservation.AccommodationId = guestReservation.AccommodationId
+	reservation.CheckInDate = guestReservation.CheckInDate
+	reservation.CheckOutDate = guestReservation.CheckOutDate
+	reservation.NumberOfGuests = guestReservation.NumberOfGuests
+	reservation.GuestId = guestId
+	reservation.AccommodationName = accommodationName
+	reservation.AccommodationLocation = accommodationLocation
+	reservation.AccommodationHostId = accommodationHostId
+	reservation.IsCanceled = false
+	log.Println(reservation.AccommodationName)
+	er := sr.SendToRatingService(&reservation, ctx)
+	if er != nil {
+		span.SetStatus(codes.Error, er.Error())
+		return nil
+	}
 	err := sr.session.Query(
 		`INSERT INTO reservations_by_guest 
          (reservation_id_time_created, guest_id,accommodation_id, accommodation_name,accommodation_location, accommodation_host_id,
@@ -188,6 +213,7 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 		reservations = append(reservations, &res)
 		m = map[string]interface{}{}
+
 	}
 
 	if err := iterable.Close(); err != nil {
@@ -198,7 +224,58 @@ func (sr *ReservationRepo) GetAllReservations(ctx context.Context, guestID strin
 
 	return reservations, nil
 }
+func (sr *ReservationRepo) SendToRatingService(reservation *data.ReservationByGuest, ctx context.Context) error {
+	ctx, span := sr.Tracer.Start(ctx, "ReservationService.SendToRating")
+	defer span.End()
 
+	var rw http.ResponseWriter
+	url := "https://rating-server:8087/api/rating/createReservation"
+
+	timeout := 2000 * time.Second // Adjust the timeout duration as needed
+	ctxx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resp, err := sr.HTTPSperformAuthorizationRequest(ctx, reservation, url)
+	if err != nil {
+		if ctxx.Err() == context.DeadlineExceeded {
+			span.SetStatus(codes.Error, "Rating service not available..")
+			errorMsg := map[string]string{"error": "Rating service not available.."}
+			error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+			return nil
+		}
+		span.SetStatus(codes.Error, "Rating service not available..")
+		errorMsg := map[string]string{"error": "Rating service not available.."}
+		error2.ReturnJSONError(rw, errorMsg, http.StatusBadRequest)
+		return nil
+	}
+
+	defer resp.Body.Close()
+
+	return nil
+}
+func (sr *ReservationRepo) HTTPSperformAuthorizationRequest(ctx context.Context, reservation *data.ReservationByGuest, url string) (*http.Response, error) {
+	reqBody, err := json.Marshal(reservation)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling reservation JSON: %v", err)
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+	// Perform the request with the provided context
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
 func (sr *ReservationRepo) GetReservationByAccommodationIDAndCheckOut(ctx context.Context, accommodationId string) int {
 	ctx, span := sr.Tracer.Start(ctx, "ReservationRepository.GetReservationByAccommodationIDAndCheckOut")
 	defer span.End()
@@ -336,3 +413,59 @@ func (sr *ReservationRepo) GetReservationCheckOutDate(ctx context.Context, reser
 //
 //	return nil
 //}
+
+// GetTotalReservations(hostId)
+func (sr *ReservationRepo) GetTotalReservations(hostID string) (int, error) {
+
+	var countVariable int
+	query := `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countVariable); err != nil {
+		return -1, err
+	}
+	return countVariable, nil
+
+}
+
+// .GetPercentageOfCancelledReservations
+func (sr *ReservationRepo) GetPercentageOfCancelledReservations(hostID string) (float64, error) {
+
+	var countVariable int
+	var countCancelled int
+	query := `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countVariable); err != nil {
+		return -1, err
+	}
+
+	query = `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = true ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countCancelled); err != nil {
+		return -1, err
+	}
+
+	if countVariable == 0 {
+		return 0, nil
+	}
+	return float64(countCancelled) / float64(countVariable) * 100, nil
+
+}
+
+// GetTotalDurationOfReservations in days
+func (sr *ReservationRepo) GetTotalDurationOfReservations(hostID string) (int, error) {
+
+	var totalDuration int
+	query := `SELECT check_in_date, check_out_date FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	iterable := sr.session.Query(query, hostID).Iter()
+
+	m := map[string]interface{}{}
+	for iterable.MapScan(m) {
+		checkInDate := m["check_in_date"].(time.Time)
+		checkOutDate := m["check_out_date"].(time.Time)
+		totalDuration += int(checkOutDate.Sub(checkInDate).Hours() / 24)
+		m = map[string]interface{}{}
+	}
+
+	if err := iterable.Close(); err != nil {
+		return -1, err
+	}
+	return totalDuration, nil
+
+}

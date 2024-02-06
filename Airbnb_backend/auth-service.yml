@@ -1,0 +1,63 @@
+# auth-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-configmap
+data:
+  PORT: "8080"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  SECRET_KEY: "TUZzd0RRWUpLb1pJaHZjTkFRRUJCUUFEU2dBd1J3SkFVRUw5T1owOVNuZVFKWG5jdzBRWlpjRTllbVN2Z1M5NA==Vk84ZFB6WFA2K3JDdEc0ZjhnSUVoSU1IM2lXM09ZY1RPUGl2Wkg2bE1iRTNMUndYM1dHbmVRSURBUUFC"
+  SMTP_HOST: "sandbox.smtp.mailtrap.io"
+  SMTP_USER: "22d4780d3a377d"
+  SMTP_PASS: "9915ee4595ade4"
+  SMTP_PORT: "587"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+---
+
+# auth-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-server
+          image: docker.io/library/airbnb_backend-auth-server:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: auth-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: auth-logs
+      volumes:
+        - name: auth-logs
+          emptyDir: { }
+
+---
+#auth-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-server
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: auth-service
+
+
+

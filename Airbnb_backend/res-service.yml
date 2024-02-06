@@ -1,0 +1,71 @@
+# res-configmap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: res-configmap
+data:
+  PORT: "8082"
+  CASS_DB: "cassandra:9042"
+  MONGO_DB_URI: "mongodb://root:root@mongo:27017"
+  JAEGER_ADDRESS: "http://jaeger:14268/api/traces"
+  NATS_HOST: "nats"
+  NATS_PORT: "4222"
+  NATS_USER: "ruser"
+  NATS_PASS: "T0pS3cr3t"
+  CREATE_ACCOMMODATION_COMMAND_SUBJECT: "accommodation.create.command"
+  CREATE_ACCOMMODATION_REPLY_SUBJECT: "accommodation.create.reply"
+
+---
+# res-service-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: res-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: res-service
+  template:
+    metadata:
+      labels:
+        app: res-service
+    spec:
+      containers:
+        - name: res-server
+          image: docker.io/library/airbnb_backend-res-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: res-configmap
+          volumeMounts:
+            - mountPath: /app/logs
+              name: reservation-logs
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: res-tls
+            items:
+              - key: tls.crt
+                path: reservation-service.crt
+              - key: tls.key
+                path: reservation_decrypted_key.pem
+        - name: reservation-logs
+          emptyDir: { }
+---
+#res-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: res-server
+spec:
+  ports:
+    - port: 8082
+      targetPort: 8082
+      protocol: TCP
+  selector:
+    app: res-service
+
+

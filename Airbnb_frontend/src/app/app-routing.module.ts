@@ -15,6 +15,7 @@ import { ReservationsComponent } from './components/reservations/reservations.co
 import { DeleteAccountComponent } from './components/delete-account/delete-account.component';
 import { RatingsComponent } from './components/ratings/ratings.component';
 import { CreateAvailabilityComponent } from './components/create-availability/create-availability.component';
+import { ReportComponent } from './components/report/report.component';
 
 const routes: Routes = [
   {
@@ -81,6 +82,18 @@ const routes: Routes = [
   {
     path: 'reviews',
     component: RatingsComponent
+  },
+   {
+    path: 'reports',
+    component: ReportComponent
+  },
+   {
+    path: 'reports/:id',
+    component: ReportComponent,
+    canActivate: [AuthGuard] ,
+    data: {
+      roles: ['Host']
+    }
   },
   // {
   //   path: 'availability-create/:accId',
