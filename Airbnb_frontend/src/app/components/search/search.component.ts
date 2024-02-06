@@ -31,6 +31,7 @@ export class SearchComponent {
     //const priceType = (document.getElementById('price_type') as HTMLInputElement).value;
     console.log(minPrice);
     console.log(maxPrice);
+    const featuredHost = (document.getElementById('featured_host') as HTMLInputElement).checked;
 
     if ((!Number.isNaN(minPrice) && Number.isNaN(maxPrice)) || (Number.isNaN(minPrice) && !Number.isNaN(maxPrice))) {
       alert('Please enter both prices!');
@@ -58,7 +59,7 @@ export class SearchComponent {
       alert('Start date must be before end date');
       return;
     }
-    window.location.href = '/home?location=' + location + '&guests=' + guests + '&start_date=' + startDate + '&end_date=' + endDate + '&tv=' + tv + '&wifi=' + wifi + '&ac=' + ac + '&min_price=' + minPrice + '&max_price=' + maxPrice;
+    window.location.href = '/home?location=' + location + '&guests=' + guests + '&start_date=' + startDate + '&end_date=' + endDate + '&tv=' + tv + '&wifi=' + wifi + '&ac=' + ac + '&min_price=' + minPrice + '&max_price=' + maxPrice + '&featured_host=' + featuredHost;
     // + '&price_type=' + priceType;
   }
 

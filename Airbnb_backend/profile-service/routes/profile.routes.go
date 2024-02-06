@@ -1,8 +1,9 @@
 package routes
 
 import (
-	"github.com/gin-gonic/gin"
 	"profile-service/handlers"
+
+	"github.com/gin-gonic/gin"
 )
 
 type ProfileRouteHandler struct {
@@ -20,5 +21,7 @@ func (rc *ProfileRouteHandler) ProfileRoute(rg *gin.RouterGroup) {
 	router.DELETE("/delete/:email", rc.profileHandler.DeleteProfile)
 	router.POST("/updateUser", rc.profileHandler.UpdateUser)
 	router.GET("/getUser/:email", rc.profileHandler.FindUserByEmail)
-
+	router.GET("/isFeatured/:hostId", rc.profileHandler.IsFeatured)
+	router.POST("/setFeatured/:hostId", rc.profileHandler.SetFeatured)
+	router.POST("/setUnfeatured/:hostId", rc.profileHandler.SetUnfeatured)
 }

@@ -10,15 +10,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"net/http"
-	"strconv"
-	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -419,9 +420,16 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 		var wifi = amenities["WiFi"]
 		var ac = amenities["AC"]
 		fmt.Println("in service: ", tv, wifi, ac)
-		filter["accommodation_amenities.TV"] = tv
-		filter["accommodation_amenities.WiFi"] = wifi
-		filter["accommodation_amenities.AC"] = ac
+		if tv == true {
+			filter["accommodation_amenities.TV"] = tv
+		}
+
+		if wifi == true {
+			filter["accommodation_amenities.WiFi"] = wifi
+		}
+		if ac == true {
+			filter["accommodation_amenities.AC"] = ac
+		}
 	}
 
 	cursor, err := s.collection.Find(context.Background(), filter)
@@ -451,4 +459,23 @@ func (s *AccommodationServiceImpl) GetAccommodationBySearch(location string, gue
 
 	return accommodations, nil
 
+}
+
+func (s *AccommodationServiceImpl) GetHostIdByAccommodationId(accID string) (string, error) {
+	objID, err := primitive.ObjectIDFromHex(accID)
+	if err != nil {
+		return "", err
+	}
+
+	var accommodation domain.Accommodation
+	err = s.collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&accommodation)
+	if err != nil {
+		return "", err
+	}
+
+	//accommodation.hostid to string
+	//var hostid string
+	//hostid = accommodation.HostId
+
+	return accommodation.HostId, nil
 }

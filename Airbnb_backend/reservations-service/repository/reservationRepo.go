@@ -7,17 +7,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gocql/gocql"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/trace"
 	"log"
 	"net/http"
 	"os"
 	"reservations-service/data"
 	error2 "reservations-service/error"
 	"time"
+
+	"github.com/gocql/gocql"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ReservationRepo struct {
@@ -412,3 +413,59 @@ func (sr *ReservationRepo) GetReservationCheckOutDate(ctx context.Context, reser
 //
 //	return nil
 //}
+
+// GetTotalReservations(hostId)
+func (sr *ReservationRepo) GetTotalReservations(hostID string) (int, error) {
+
+	var countVariable int
+	query := `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countVariable); err != nil {
+		return -1, err
+	}
+	return countVariable, nil
+
+}
+
+// .GetPercentageOfCancelledReservations
+func (sr *ReservationRepo) GetPercentageOfCancelledReservations(hostID string) (float64, error) {
+
+	var countVariable int
+	var countCancelled int
+	query := `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countVariable); err != nil {
+		return -1, err
+	}
+
+	query = `SELECT COUNT(*) FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = true ALLOW FILTERING`
+	if err := sr.session.Query(query, hostID).Scan(&countCancelled); err != nil {
+		return -1, err
+	}
+
+	if countVariable == 0 {
+		return 0, nil
+	}
+	return float64(countCancelled) / float64(countVariable) * 100, nil
+
+}
+
+// GetTotalDurationOfReservations in days
+func (sr *ReservationRepo) GetTotalDurationOfReservations(hostID string) (int, error) {
+
+	var totalDuration int
+	query := `SELECT check_in_date, check_out_date FROM reservations_by_guest WHERE accommodation_host_id = ? AND isCanceled = false ALLOW FILTERING`
+	iterable := sr.session.Query(query, hostID).Iter()
+
+	m := map[string]interface{}{}
+	for iterable.MapScan(m) {
+		checkInDate := m["check_in_date"].(time.Time)
+		checkOutDate := m["check_out_date"].(time.Time)
+		totalDuration += int(checkOutDate.Sub(checkInDate).Hours() / 24)
+		m = map[string]interface{}{}
+	}
+
+	if err := iterable.Close(); err != nil {
+		return -1, err
+	}
+	return totalDuration, nil
+
+}

@@ -12,4 +12,7 @@ type ProfileService interface {
 	FindProfileByEmail(email string, ctx context.Context) (*domain.User, error)
 	UpdateUser(user *domain.User, ctx context.Context) error
 	SendUserToAuthService(user *domain.User, ctx context.Context) error
+	IsFeatured(hostId string) (bool, error)
+	SetFeatured(hostId string) error
+	SetUnfeatured(hostId string) error
 }
