@@ -2,6 +2,79 @@
 
 This repository contains the implementation of a platform for offering and booking accommodations. This project is part of the "Service-Oriented Architectures and NoSQL Databases" course.
 
+### Launch Guide:
+
+Below are the steps to get the project up and running on your local environment.
+
+#### Prerequisites:
+1. Docker
+2. Go programming language
+3. Goland IDE
+4. Minikube
+5. Kubectl
+6. Node.js
+7. Visual Studio Code
+8. 
+#### Step 1: Clone the Repository
+Clone the Gobnb repository to your local machine:
+
+```bash
+git clone https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024
+```
+
+#### Step 2: Import the Project in Goland
+Open Goland IDE and import the cloned repository.
+
+#### Step 3: Run Go Mod Tidy
+Ensure all necessary dependencies are downloaded:
+
+```bash
+go mod tidy
+```
+
+#### Step 4: Build Docker Images and Start Docker Compose (or Kubernetes)
+Option 1: Using Docker Compose:
+```bash
+docker-compose build
+docker-compose up
+```
+
+Option 2: Using Minikube and Kubectl:
+```bash
+docker-compose build
+minikube start
+minikube load images <builded_image_name>
+cd SOA_NoSQL_IB-MRS-2023-2024/Airbnb_backend
+kubectl apply -f <file.yml> # Apply this for all .yml files in the directory
+minikube tunnel
+```
+
+#### Step 5: Start Angular Frontend
+1. Open Visual Studio Code.
+2. Navigate to the `Airbnb_frontend` directory in the cloned repository.
+3. Start the Angular app with npm:
+
+```bash
+npm install
+npm start
+```
+
+#### Step 6: Access the Platform
+Once the services are up and running, you can access the platform via the provided endpoints:
+
+- **Frontend:** Open a web browser and go to [https://localhost:4200/home](https://localhost:4200/home)
+
+#### Note:
+- Ensure all necessary ports are open and available.
+- Verify that Docker, Minikube, and Kubectl are properly configured.
+- Troubleshoot any errors by checking logs and verifying configurations.
+
+Congratulations! You have successfully launched the Gobnb accommodation booking platform. Happy hosting and booking!
+
+## Components
+- **Client App:** Provides a user interface.
+- **Server App:** Microservices, including Auth, Profile, Accommodations, Reservations, Recommendations, Notifications.
+
 ## Roles
 1. **Unauthenticated User (NK)**
    - Can create a new account or sign in.
@@ -13,11 +86,7 @@ This repository contains the implementation of a platform for offering and booki
 3. **Guest (G)**
    - Reserves accommodations.
    - Can rate accommodations and hosts.
-
-## Components
-- **Client App:** Provides a user interface.
-- **Server App:** Microservices, including Auth, Profile, Accommodations, Reservations, Recommendations, Notifications.
-
+     
 ## Functionalities
 - Registration, login, and account management.
 - Accommodation creation with details and images.
@@ -31,27 +100,27 @@ This repository contains the implementation of a platform for offering and booki
 - Accommodation statistics for hosts.
 
 ## System Requirements
-1. **Design:** Specify storage, data model, and communication between services.
+1. **Design:** Specified storage, data model, and communication between services.
 2. **API Gateway:** Entry point using REST API.
 3. **Containerization:** Docker containers using Docker Compose.
 4. **Resilience:** System functions if a service is temporarily down.
-5. **Tracing:** Implement tracing with Jeager.
-6. **Caching:** Cache accommodation images in Redis.
-7. **Saga:** Implement accommodation creation using the saga pattern.
-8. **Event Sourcing and CQRS:** Gather and display statistics using these patterns.
-9. **Kubernetes:** Run all components in a Kubernetes cluster.
+5. **Tracing:** Implemented tracing with Jeager.
+6. **Caching:** Cacheed accommodation images in Redis.
+7. **Saga:** Implemented accommodation creation using the saga pattern.
+8. **Event Sourcing and CQRS:** Gathered and displayed statistics using these patterns.
+9. **Kubernetes:** Runned all components in a Kubernetes cluster.
 
 ## Security and Data Protection
-1. **Data Validation:** Prevent injection and XSS attacks. Validate data.
-2. **HTTPS Communication:** Ensure secure communication.
-3. **Authentication and Access Control:** Implement account verification, RBAC, and access controls.
-4. **Data Protection:** Secure sensitive data during storage, transport, and usage.
+1. **Data Validation:** Prevented injection and XSS attacks. Validate data.
+2. **HTTPS Communication:** Ensured secure communication.
+3. **Authentication and Access Control:** Implemented account verification, RBAC, and access controls.
+4. **Data Protection:** Secureed sensitive data during storage, transport, and usage.
 
 ## Logging and Vulnerabilities
-1. **Completeness:** Log non-repudiable events and security-related events.
-2. **Reliability:** Ensure reliable logging.
-3. **Conciseness:** Optimize log entries.
-4. **Vulnerabilities:** Identify and resolve vulnerabilities. Create a comprehensive report.
+1. **Completeness:** Logged non-repudiable events and security-related events.
+2. **Reliability:** Ensured reliable logging.
+3. **Conciseness:** Optimized log entries.
+4. **Vulnerabilities:** Identifyed and resolved vulnerabilities. Created a comprehensive report.
 
 ## Design of the system
 - **Profile Service:** MongoDB - chosen for horizontal scaling, replication support, and dynamic schema flexibility.
