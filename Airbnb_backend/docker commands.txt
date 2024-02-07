@@ -24,6 +24,8 @@ docker container prune
 
 CREATE CERTIFICATE COMMAND:
 openssl req -new -x509 -nodes -out api-gateway.crt -keyout api-gateway.key -config api-gateway.ext -extensions req_ext
+Encrypted key command: 
+openssl rsa -in encrypted_key.pem -out decrypted_key.pem
 
 REDIS
 docker exec -it <ime_kontejnera> redis-cli
