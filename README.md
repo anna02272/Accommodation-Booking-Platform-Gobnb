@@ -14,7 +14,7 @@ Below are the steps to get the project up and running on your local environment.
 5. Kubectl
 6. Node.js
 7. Visual Studio Code
-8. 
+
 #### Step 1: Clone the Repository
 Clone the Gobnb repository to your local machine:
 
