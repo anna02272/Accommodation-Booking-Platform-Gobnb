@@ -68,6 +68,8 @@ This repository contains the implementation of a platform for offering and booki
   
 ![Gobnb-diagram](https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/a7c90281-4dd2-4693-acec-5bfd4e6fbd82)
 
+## Images of project
+
 ### Registration 
 ![registration](https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/4f56b9d9-a50f-4a58-a2fe-54343876942b)
 ![email verification](https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/a836f82e-56d3-42bf-88f9-2fe90df2b0de)
