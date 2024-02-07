@@ -66,9 +66,10 @@ This repository contains the implementation of a platform for offering and booki
 - **Rating Service:** MongoDB - universal schema for different types of ratings, ensuring fast read and write performance.
 - **Event Sourcing:** Cassandra - event store database with fast write and read capabilities for collecting and displaying statistics.
   
-![Gobnb-diagram]()
+![Gobnb-diagram](https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/a7c90281-4dd2-4693-acec-5bfd4e6fbd82)
+
 ### Registration 
-<img src="https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/b32f3bf7-49a9-460b-b290-96d9d2272e34" width="50%"> 
+<img src="https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/b32f3bf7-49a9-460b-b290-96d9d2272e34" width="80%"> 
 ### Login 
-<img src="https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/5a5d0c47-9491-4a4a-8bce-a5175052cee8"  width="50%"> 
+<img src="https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024/assets/96575598/5a5d0c47-9491-4a4a-8bce-a5175052cee8"  width="80%"> 
 
