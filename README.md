@@ -19,7 +19,7 @@ Below are the steps to get the project up and running on your local environment.
 Clone the Gobnb repository to your local machine:
 
 ```bash
-git clone https://github.com/anna02272/SOA_NoSQL_IB-MRS-2023-2024
+git clone https://github.com/anna02272/Accommodation-Booking-Platform-Gobnb
 ```
 
 #### Step 2: Import the Project in Goland
